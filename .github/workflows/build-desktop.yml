@@ -1,0 +1,116 @@
+name: Build Windows and Linux packages
+run-name: Deskbot ${{ inputs.release_tag }} native packages
+
+# Builds run only when explicitly requested. Publishing is a separate reviewed step.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact application commit or release tag to build
+        required: true
+        default: v0.2.0
+      release_tag:
+        description: Existing release version (used to validate package versions)
+        required: true
+        default: v0.2.0
+
+permissions:
+  contents: read
+concurrency:
+  group: deskbot-native-packages
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: ${{ matrix.label }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            runner: windows-2025
+            target: x86_64-pc-windows-msvc
+            platform: Windows-x64
+          - label: Windows ARM64
+            runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            platform: Windows-ARM64
+          - label: Linux x86_64
+            runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            platform: Linux-x86_64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: app
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+      DESKBOT_TARGET: ${{ matrix.target }}
+      DESKBOT_PLATFORM: ${{ matrix.platform }}
+      DESKBOT_RELEASE_TAG: ${{ inputs.release_tag }}
+      DESKBOT_ARTIFACT_DIR: ${{ github.workspace }}/packages
+    steps:
+      - name: Checkout build tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: pipeline
+          persist-credentials: false
+      - name: Checkout requested application source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          path: app
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install Linux prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev pkg-config rpm xvfb dbus-x11 xdotool
+      - name: Set up pinned Rust toolchain
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          rustup default 1.99.0
+          rustup target add ${{ matrix.target }}
+          rustc --version
+      - name: Cache Rust dependencies and native outputs
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: deskbot-${{ matrix.platform }}-rust1.99-${{ hashFiles('app/src-tauri/Cargo.lock') }}-${{ github.run_id }}
+          restore-keys: deskbot-${{ matrix.platform }}-rust1.99-${{ hashFiles('app/src-tauri/Cargo.lock') }}-
+      - name: Install locked frontend dependencies
+        run: npm ci
+      - name: Check frontend
+        run: npm run check
+      - name: Run native behavior tests
+        run: node ../pipeline/scripts/native-package-evidence.cjs test
+      - name: Build native installer packages
+        run: npm run release -- --target ${{ matrix.target }}
+      - name: Install and launch Windows package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ../pipeline/scripts/smoke-windows.ps1
+      - name: Install and launch Linux package
+        if: runner.os == 'Linux'
+        run: bash ../pipeline/scripts/smoke-linux.sh
+      - name: Verify architectures and collect packages
+        run: node ../pipeline/scripts/native-package-evidence.cjs collect
+      - name: Upload checked packages and evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Deskbot-${{ matrix.platform }}
+          path: packages/
+          if-no-files-found: error
+          retention-days: 14
