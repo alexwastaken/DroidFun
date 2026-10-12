@@ -209,11 +209,20 @@ mod tests {
         let server = std::thread::spawn(move || {
             while !done.load(Ordering::Acquire) {
                 if let Ok((mut socket, _)) = listener.accept() {
+                    // Windows can inherit the listener's nonblocking mode. The mock
+                    // server must wait for the request instead of racing its sender.
+                    socket.set_nonblocking(false).unwrap();
                     socket
                         .set_read_timeout(Some(Duration::from_secs(2)))
                         .unwrap();
                     let mut bytes = [0; 2048];
-                    let n = socket.read(&mut bytes).unwrap();
+                    let mut n = 0;
+                    while !bytes[..n].windows(4).any(|w| w == b"\r\n\r\n") {
+                        assert!(n < bytes.len(), "Mock HTTP request headers are too large");
+                        let received = socket.read(&mut bytes[n..]).unwrap();
+                        assert!(received > 0, "Mock HTTP request ended before its headers");
+                        n += received;
+                    }
                     seen.fetch_add(1, Ordering::SeqCst);
                     let reply: &[u8] = if String::from_utf8_lossy(&bytes[..n]).contains("/quota") {
                         b"HTTP/1.1 429 Too Many Requests\r\nRetry-After: 900\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}"

@@ -28,10 +28,12 @@ The Windows installers use the current-user NSIS installation mode. The Linux pa
 - Rust 1.99.0, locked Cargo dependencies and native Rust behavior tests on each target.
 - Actual application executable checked for x64/ARM64 PE or x86_64 ELF architecture.
 - Windows: silent installer succeeds, installed executable matches the extracted NSIS payload and has the requested PE architecture, process remains alive for 15 seconds and creates a native window. The installer payload includes Tauri's bundle metadata; the original build executable is restored after bundling.
-- Linux: DEB installation succeeds on Ubuntu 24.04, installed executable matches the DEB payload, app stays alive for 15 seconds and creates a window under Xvfb/D-Bus without a tray host. RPM architecture metadata is checked. Tauri changes bundle-type metadata between DEB and RPM packaging, so the final build executable may differ from the earlier DEB payload.
+- Linux: DEB installation succeeds on Ubuntu 24.04, installed executable matches the DEB payload, app stays alive for 15 seconds and creates a window under Xvfb/D-Bus without a tray host. RPM architecture metadata is checked. Tauri embeds bundle-type metadata, then restores the original build executable after each package.
 - SHA-256 hashes and byte sizes recorded for every installer package.
 
 These checks do not establish physical USB behavior, human tray interaction, live account authentication, upgrade/uninstall behavior or a 24-hour soak on the new platforms. Windows packages are unsigned development builds. Existing Mac runtime/hardware evidence is separate in [0.2.0.json](verification/0.2.0.json).
+
+The executable comparison uses each installer's payload because [the pinned Tauri bundler patches package metadata and restores the original binary](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.2/crates/tauri-bundler/src/bundle.rs). Comparing an installed executable with the restored build would incorrectly reject a successful installation.
 
 ## Build references
 

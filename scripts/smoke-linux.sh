@@ -11,8 +11,8 @@ test "$(dpkg-deb -f "${debs[0]}" Architecture)" = amd64
 rpm -qp --queryformat '%{NAME} %{VERSION} %{ARCH}\n' "${rpms[0]}"
 test "$(rpm -qp --queryformat '%{ARCH}' "${rpms[0]}")" = x86_64
 sudo apt-get install -y "${debs[0]}"
-# Tauri patches bundle-type metadata in the release binary between DEB and RPM.
-# Compare the installation against its own packaged payload, not the later RPM binary.
+# Tauri embeds bundle-type metadata and restores the original binary after each bundle.
+# Compare the installation against its own packaged payload, not the restored build.
 deb_payload="$RUNNER_TEMP/deskbot-deb-payload"
 dpkg-deb --extract "${debs[0]}" "$deb_payload"
 cmp "$deb_payload/usr/bin/deskbot" /usr/bin/deskbot
