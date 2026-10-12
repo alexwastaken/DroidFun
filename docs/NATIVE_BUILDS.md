@@ -27,7 +27,7 @@ The Windows installers use the current-user NSIS installation mode. The Linux pa
 - Locked frontend dependencies, TypeScript check and production frontend build.
 - Rust 1.99.0, locked Cargo dependencies and native Rust behavior tests on each target.
 - Actual application executable checked for x64/ARM64 PE or x86_64 ELF architecture.
-- Windows: silent installer succeeds, installed executable matches the build, process remains alive for 15 seconds and creates a native window.
+- Windows: silent installer succeeds, installed executable matches the extracted NSIS payload and has the requested PE architecture, process remains alive for 15 seconds and creates a native window. The installer payload includes Tauri's bundle metadata; the original build executable is restored after bundling.
 - Linux: DEB installation succeeds on Ubuntu 24.04, installed executable matches the DEB payload, app stays alive for 15 seconds and creates a window under Xvfb/D-Bus without a tray host. RPM architecture metadata is checked. Tauri changes bundle-type metadata between DEB and RPM packaging, so the final build executable may differ from the earlier DEB payload.
 - SHA-256 hashes and byte sizes recorded for every installer package.
 

@@ -12,7 +12,7 @@ const run = (cmd, args) => {
   return r.stdout.trim();
 };
 if (process.argv[2] === 'test') {
-  const r = spawnSync('cargo', ['test', '--locked', '--manifest-path', 'src-tauri/Cargo.toml', '--lib', '--target', process.env.DESKBOT_TARGET], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+  const r = spawnSync('cargo', ['test', '--release', '--locked', '--manifest-path', 'src-tauri/Cargo.toml', '--lib', '--target', process.env.DESKBOT_TARGET], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
   fs.writeFileSync(path.join(out, 'native-tests.txt'), (r.stdout || '') + (r.stderr || ''));
   process.stdout.write(r.stdout || '');
   process.stderr.write(r.stderr || '');
