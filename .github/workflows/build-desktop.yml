@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       source_ref:
-        description: Exact application commit or release tag to build
+        description: Application commit, branch or release tag to build
         required: true
-        default: v0.2.0
+        default: main
       release_tag:
         description: Existing release version (used to validate package versions)
         required: true

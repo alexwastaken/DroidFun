@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "platform": "Linux-x86_64",
+  "rpmPayloadElfArchitecture": "x86_64",
+  "debPayloadElfArchitecture": "x86_64",
+  "rpmRequires": [
+    "libayatana-appindicator3.so.1()(64bit)",
+    "libwebkit2gtk-4.1.so.0()(64bit)",
+    "libgtk-3.so.0()(64bit)"
+  ],
+  "runtimeScope": "DEB installed and native window opened on Ubuntu 24.04. RPM was inspected; Fedora installation/runtime remains untested."
+}
