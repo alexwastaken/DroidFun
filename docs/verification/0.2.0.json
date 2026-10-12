@@ -1,0 +1,125 @@
+{
+  "version": "0.2.0",
+  "firmware": "1.1.0",
+  "validationDatesPacific": [
+    "2026-10-11",
+    "2026-10-12"
+  ],
+  "architecturesBuilt": [
+    "arm64",
+    "x86_64"
+  ],
+  "runtimeVerified": "macOS Apple Silicon",
+  "rustTests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "frontendTypecheck": "passed",
+  "universalAppAndDmgBuild": "passed",
+  "artifacts": {
+    "build/Deskbot.app/Contents/MacOS/deskbot": {
+      "sha256": "e62a7593d7825555788442836295aebb13bd01d919ed44c1979f9f08def13ae8",
+      "bytes": 34831296
+    },
+    "build/Deskbot-0.2.0-macOS-universal.zip": {
+      "sha256": "44af750274004a4f0f8778da1d831b53f4b362a93ab2811ea04cbe9153119f81",
+      "bytes": 10341104
+    },
+    "build/Deskbot-0.2.0-macOS-universal.dmg": {
+      "sha256": "284c8dd569a4852aab9fbca90e7de755b193af774559c23ea9bebd283374c344",
+      "bytes": 10396499
+    },
+    "firmware/releases/deskbot-rp2040-zero-gp4-gp5-v1.1.0.uf2": {
+      "sha256": "82d53832d0ce8a7ec733a0276607ded3aa5d853477390aba5002ab5a3a1ab2a0",
+      "bytes": 154624
+    },
+    "src-tauri/src/core.rs": {
+      "sha256": "abebc463a9657bf76a62264691e3ebd59499fec5a651ef21688dbd11cc2d7c09",
+      "bytes": 49382
+    },
+    "src-tauri/src/lib.rs": {
+      "sha256": "650b3b695e045c6c47c990f2d671a63e117f6d74fff18b9b844149499aeb441c",
+      "bytes": 32994
+    },
+    "src-tauri/src/network.rs": {
+      "sha256": "75c076a6da8781bf4f4ecc1b6d5284f83e002282a414e16890d54a74f0700e33",
+      "bytes": 11155
+    },
+    "src-tauri/src/persistence.rs": {
+      "sha256": "ff9910f96dabe8de0af1766a3eb7bd177395cb946d408b9bcd9810e3944c94a4",
+      "bytes": 4596
+    },
+    "src-tauri/src/providers.rs": {
+      "sha256": "63d34cede149cc122117c3cf53376198c0b372730b25efb81256b1204cf2eda0",
+      "bytes": 41053
+    },
+    "src/App.tsx": {
+      "sha256": "1098e107197b3c64e8c1ceadeec9685041f22143c9d5aa2ea65a5d27a1620306",
+      "bytes": 19415
+    },
+    "src/Settings.tsx": {
+      "sha256": "06b500803239aaa66b5bd7d59953b11fc2c3a9d2493e0ddc7f8269185d9c611e",
+      "bytes": 8970
+    },
+    "package-lock.json": {
+      "sha256": "49d86c26629c8a0d94125f1fd5e4fa17026d912a4fcd746eb0ae35f7ea88705c",
+      "bytes": 35169
+    },
+    "src-tauri/Cargo.lock": {
+      "sha256": "b9743819950ea0d6f60218104a9fe40b26898b5b6e14ffdc014599b53ae46729",
+      "bytes": 133713
+    }
+  },
+  "humanObservations": {
+    "liveFiveScreens": "User confirmed all five complete and readable on OLED",
+    "initialSmallCompanion": "User confirmed blinking and readable text",
+    "enlargedOriginalFace": "Native preview visually inspected; no separate user confirmation yet"
+  },
+  "finalPreferences": {
+    "durationsSec": [
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "brightness": 88,
+    "orientation": 0,
+    "quietHours": false,
+    "launchAtLogin": false,
+    "appearance": "system",
+    "companionFace": true,
+    "companionAnimation": true,
+    "weatherLayout": "current",
+    "stockChange": false
+  },
+  "nativeChecks": [
+    "automatic robot reconnect",
+    "firmware 1.1.0 and OLED ready",
+    "quiet hours blank and temporary override",
+    "dark appearance",
+    "macOS startup enable and disable",
+    "reviewed diagnostics file saved and privacy checked",
+    "surprised-face preview",
+    "weather high/low preview",
+    "stock change +2.4 percent derived from the public regular-session price and prior close",
+    "settings reverse Tab wraps to Apply",
+    "enlarged original happy-face stock preview"
+  ],
+  "releaseGates": [
+    "Windows/Linux native builds and lifecycle",
+    "Intel Mac runtime",
+    "Developer ID/notarization and Windows signing",
+    "complete A01-A19 physical acceptance",
+    "24 hour soak and CPU/memory measurements",
+    "full accessibility and contrast matrix",
+    "macOS/Linux automatic startup cleanup on uninstall",
+    "real account switching and provider licensing/retention review"
+  ],
+  "distribution": {
+    "repository": "greensky5656/DroidFun",
+    "releaseTag": "v0.2.0",
+    "kind": "development prerelease",
+    "signing": "ad-hoc only; no Developer ID or notarization"
+  }
+}

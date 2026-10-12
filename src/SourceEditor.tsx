@@ -1,0 +1,84 @@
+import { useEffect, useState } from "react";
+import Modal from "./Modal";
+import { invoke } from "@tauri-apps/api/core";
+
+export type Location = { name: string; latitude: number; longitude: number; country: string; region: string };
+export type SourceConfig = { mode: string; location: Location | null; unit: string; symbol: string; currency: string; limitId: string; window: string; sessionId: string; cliPath: string; claudeSource: string; claudeProfile: string; claudeReportDirectory: string; claudeReportProfile: string; faceExpression: string; blink: boolean; animationSpeed: string; weatherLayout: string; showChange: boolean };
+export type Widget = { id: string; kind: string; label: string; enabled: boolean; durationSec: number; headline: string; footer: string; config: SourceConfig };
+type Window = { bucket: string; slot: string; label: string; usedPercent: number; minutes: number; resetsAt: number };
+type Bridge = { enabled: boolean; command: string; hasExisting: boolean; explanation: string };
+type SourceInfo = { claudeBridge: Bridge; claudeAccount: { signedIn: boolean; connecting: boolean; explanation: string } };
+const minutesLabel = (n: number) => n % 1440 === 0 ? `${n / 1440} days` : n % 60 === 0 ? `${n / 60} hours` : `${n} minutes`;
+
+export default function SourceEditor({ widget, onClose, onApply, onRemove }: { widget: Widget; onClose: () => void; onApply: (label: string, config: SourceConfig, headline: string, footer: string) => Promise<boolean>; onRemove: () => Promise<boolean> }) {
+  const [label, setLabel] = useState(widget.label);
+  const [config, setConfig] = useState<SourceConfig>({ ...widget.config });
+  const [headline, setHeadline] = useState(widget.headline);
+  const [footer, setFooter] = useState(widget.footer);
+  const [query, setQuery] = useState(widget.config.location?.name ?? "");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [windows, setWindows] = useState<Window[]>([]);
+  const [info, setInfo] = useState<SourceInfo | null>(null);
+  const [pending, setPending] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  useEffect(() => {
+    if(widget.kind !== "claude")return;
+    let active=true;setInfo(null);
+    const timer=window.setTimeout(() => invoke<SourceInfo>("source_info",{profile:config.claudeProfile}).then(value => {if(active)setInfo(value);}).catch(e => {if(active)setError(String(e));}),350);
+    return () => {active=false;window.clearTimeout(timer);};
+  },[widget.kind,config.claudeProfile]);
+  async function run(name: string, action: () => Promise<void>) {
+    setPending(name); setError(""); setNotice("");
+    try { await action(); } catch (e) { setError(String(e)); } finally { setPending(""); }
+  }
+  const patch = (value: Partial<SourceConfig>) => setConfig(c => ({ ...c, ...value }));
+  return <Modal title="Configure widget" onClose={onClose}><form className="editor source-editor" onSubmit={e => {
+    e.preventDefault(); run("Applying", async () => { if (await onApply(label, config, headline, footer)) onClose(); else setError("Settings could not be applied. Check the location, symbol, and name, then try again."); });
+  }}>
+    <div className="eyebrow">CONFIGURE WIDGET</div><h2>{widget.kind === "stock" ? "Stocks" : widget.kind === "codex" ? "Codex allowance" : widget.kind === "claude" ? "Claude allowance" : widget.label}</h2>
+    <label>Name<input maxLength={24} required value={label} onChange={e => setLabel(e.target.value)} /></label>
+    {widget.kind === "face" && <><label>Expression<select value={config.faceExpression} onChange={e => patch({faceExpression:e.target.value})}><option value="happy">Happy</option><option value="neutral">Neutral</option><option value="sleepy">Sleepy</option><option value="surprised">Surprised</option></select></label><label className="inline-check"><input type="checkbox" checked={config.blink} onChange={e => patch({blink:e.target.checked})}/>Blink</label><label>Animation speed<select value={config.animationSpeed} onChange={e => patch({animationSpeed:e.target.value})}><option value="slow">Relaxed</option><option value="normal">Normal</option><option value="quick">Lively</option></select></label><p>Blinks gently while this face is on screen. System reduced-motion preferences turn animation off. The disconnected robot uses its built-in happy face.</p></>}
+    {widget.kind !== "face" && <label>Data source<select value={config.mode} onChange={e => patch({ mode: e.target.value, window: widget.kind === "claude" && e.target.value === "live" ? "five_hour" : config.window })}><option value="demo">Demo / sample values</option><option value="live">Live data</option></select></label>}
+    {widget.kind !== "face" && config.mode === "demo" && <><label>Sample big text<input maxLength={24} value={headline} onChange={e => setHeadline(e.target.value)} /></label><label>Sample footer<input maxLength={24} value={footer} onChange={e => setFooter(e.target.value)} /></label><p>Demo values are labeled on the app and OLED.</p></>}
+    {config.mode === "live" && widget.kind === "weather" && <>
+      <label>City search<div className="input-action"><input value={query} onChange={e => setQuery(e.target.value)} placeholder="City or postal code" /><button type="button" disabled={!!pending || query.trim().length < 2} onClick={() => run("Searching", async () => { const found = await invoke<Location[]>("search_weather", { name: query }); setLocations(found); if (!found.length) setNotice("No places found. Try a nearby city or a different spelling."); })}>Find city</button></div></label>
+      <div className="location-results">{locations.map((l, index) => <button type="button" key={index} onClick={() => { patch({ location: l }); if (label === "Weather" || label === config.location?.name.slice(0, 24)) setLabel(l.name.slice(0, 24)); setLocations([]); }}><strong>{l.name}</strong><small>{[l.region, l.country].filter(Boolean).join(", ")}</small></button>)}</div>
+      {config.location && <p className="source-notice">Selected: {config.location.name}, {config.location.country}</p>}
+      <label>Temperature<select value={config.unit} onChange={e => patch({ unit: e.target.value })}><option value="fahrenheit">Fahrenheit (°F)</option><option value="celsius">Celsius (°C)</option></select></label>
+      <label>Weather layout<select value={config.weatherLayout} onChange={e => patch({weatherLayout:e.target.value})}><option value="current">Current temperature and condition</option><option value="high_low">Current temperature and daily high/low</option></select></label>
+      <p>Current conditions and high/low from <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>. Refreshes every 15 minutes for enabled widgets. Free service is for personal, non-commercial use.</p>
+    </>}
+    {config.mode === "live" && widget.kind === "stock" && <>
+      <label>Stock symbol<input maxLength={20} required value={config.symbol} onChange={e => patch({ symbol: e.target.value.toUpperCase() })} placeholder="For example, MSFT" /></label>
+      <label className="inline-check"><input type="checkbox" checked={config.showChange} onChange={e => patch({showChange:e.target.checked})}/>Show price change when available</label><p>The quote date stays visible. A change is shown only when the provider returns a comparable prior close.</p>
+      <p>Free public quotes from Yahoo Finance. No account, API key, or paid plan needed. Currency comes from the quote itself. Refreshes every 15 minutes while enabled; the OLED shows the quote date and values may be delayed.</p>
+      <p>For another exchange, use its symbol suffix, such as SHOP.TO. Add a separate stock widget for each symbol.</p>
+    </>}
+    {config.mode === "live" && widget.kind === "codex" && <>
+      <p>Reads your signed-in Codex CLI's account allowance. No model turn is started. These are percentages of allowance windows, not remaining token counts.</p>
+      <button type="button" disabled={!!pending} onClick={() => run("Reading account", async () => { const values = await invoke<Window[]>("codex_windows", { path: config.cliPath }); setWindows(values); if (!values.length) setNotice("This account did not return allowance windows."); })}>Read account windows</button>
+      {windows.length > 0 ? <label>Allowance window<select value={JSON.stringify([config.limitId, config.window])} onChange={e => { const [limitId, window] = JSON.parse(e.target.value); patch({ limitId, window }); }}>{!windows.some(w => w.bucket === config.limitId && w.slot === config.window) && <option value={JSON.stringify([config.limitId, config.window])} disabled hidden>Choose a returned window</option>}{windows.map(w => <option key={`${w.bucket}:${w.slot}`} value={JSON.stringify([w.bucket, w.slot])}>{w.label} · {minutesLabel(w.minutes)} · {Math.floor(Math.max(0, 100 - w.usedPercent))}% left</option>)}</select></label> : <p>Selected bucket: {config.limitId} / {config.window}. Read the account to see its available windows.</p>}
+      <details><summary>CLI location</summary><label>Codex executable (optional)<input value={config.cliPath} onChange={e => patch({ cliPath: e.target.value })} placeholder="Leave empty for automatic detection" /></label></details>
+      <p>Refreshes at most every five minutes. Missing windows and expired reports become unavailable.</p>
+    </>}
+    {config.mode === "live" && widget.kind === "claude" && <>
+      <label>Allowance window<select value={config.window} onChange={e => patch({ window: e.target.value })}><option value="five_hour">Five-hour allowance</option><option value="seven_day">Seven-day allowance</option></select></label>
+      <label>Usage source<select value={config.claudeSource} onChange={e => patch({ claudeSource: e.target.value })}><option value="account">Shared Claude account (desktop, web and Code)</option><option value="statusline">Claude Code status-line report</option></select></label>
+      {config.claudeSource === "account" ? <>
+        <div className="source-group"><strong>Claude account</strong><p>{info?.claudeAccount.explanation ?? "Checking your local Claude sign-in…"}</p><p>Reads the allowance shared by the Claude desktop app, website and Code. Uses your Claude Code sign-in; no prompt is sent and no model tokens are consumed.</p><button type="button" disabled={!!pending || !!info?.claudeAccount.connecting} onClick={() => run("Complete Claude sign-in in your browser", async () => { await invoke("connect_claude_account",{profile:config.claudeProfile}); setInfo(await invoke<SourceInfo>("source_info",{profile:config.claudeProfile})); setNotice("Claude account connected. The allowance will update shortly."); })}>{info?.claudeAccount.connecting ? "Sign-in open in your browser" : "Connect Claude account"}</button></div>
+        <details><summary>Another Claude account profile</summary><label>Claude Code profile folder (optional)<input value={config.claudeProfile} onChange={e => patch({claudeProfile:e.target.value})} placeholder="Leave empty for your default sign-in"/></label><p>Use the absolute folder you configured with CLAUDE_CONFIG_DIR. This account can have different allowances. Connect uses the chosen profile; percentages are never added together.</p></details>
+        <p>Refreshes every five minutes. Missing or expired allowances show a reconnect explanation rather than a made-up percentage.</p>
+      </> : <>
+      <div className="source-group"><strong>Claude Code bridge</strong><p>{info?.claudeBridge.explanation ?? "Connect Claude Code's status line to report usage locally."}</p><p>Uses the most recent report in your local profile. A report arrives after an eligible Claude Code session receives an API response.</p><button type="button" disabled={!info || !!pending} onClick={() => run("Updating bridge", async () => { await invoke("set_claude_bridge", { enabled: !info?.claudeBridge.enabled }); setInfo(await invoke<SourceInfo>("source_info",{profile:config.claudeProfile})); setNotice(info?.claudeBridge.enabled ? "Original status line restored." : "Bridge enabled. Use Claude Code to send its first report."); })}>{info?.claudeBridge.enabled ? "Restore original status line" : "Enable Claude Code bridge"}</button><details><summary>Proposed integration</summary><code>{info?.claudeBridge.command}</code><p>{info?.claudeBridge.enabled ? "The bridge is enabled. Restore original status line removes this integration and restores your saved setting." : info?.claudeBridge.hasExisting ? "Your current status-line command will be backed up and its output chained unchanged." : "No existing status-line command was found. A short Claude status line will be added."}</p></details></div>
+      <details><summary>Choose a report folder or session</summary><label>Reports folder (optional)<input value={config.claudeReportDirectory} onChange={e => patch({claudeReportDirectory:e.target.value})} placeholder="Leave empty for local default reports"/></label><label>Report profile<input value={config.claudeReportProfile} onChange={e => patch({claudeReportProfile:e.target.value})}/></label><p>For WSL, use an accessible Windows path to the reports folder, and configure the helper inside WSL separately.</p><label>Session ID (optional)<input value={config.sessionId} onChange={e => patch({ sessionId: e.target.value })} placeholder="Leave empty for the most recent report" /></label></details>
+      <p>Last reported by Claude Code; stale after 10 minutes. No report means waiting, never 0% usage.</p>
+      </>}
+
+    </>}
+    {pending && <p role="status">{pending}…</p>}{notice && <p className="source-notice" role="status">{notice}</p>}{error && <p className="source-error" role="alert">{error}</p>}
+    <div className="modal-actions"><button type="button" onClick={onClose}>Cancel</button><button type="submit" className="primary-control" disabled={!!pending}>Apply</button></div>
+    {widget.id !== "face" && <div className="remove-widget">{confirmRemove ? <><span>Remove this widget from your playlist?</span><button type="button" disabled={!!pending} onClick={() => run("Removing", async () => { if (await onRemove()) onClose(); })}>Remove widget</button><button type="button" onClick={() => setConfirmRemove(false)}>Keep it</button></> : <button type="button" onClick={() => setConfirmRemove(true)}>Remove from playlist</button>}</div>}
+  </form></Modal>;
+}

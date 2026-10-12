@@ -1,0 +1,39 @@
+[package]
+name = "deskbot"
+version = "0.2.0"
+description = "The Deskbot tray companion"
+authors = ["Deskbot"]
+edition = "2021"
+default-run = "deskbot"
+
+[features]
+device-smoke = []
+
+[[bin]]
+name = "device_smoke"
+path = "src/bin/device_smoke.rs"
+required-features = ["device-smoke"]
+
+[lib]
+name = "deskbot_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.2", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.3", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "=2.5.3"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+font8x8 = "=0.3.1"
+serialport = "=4.10.1"
+reqwest = { version = "=0.12.28", default-features = false, features = ["json", "rustls-tls"] }
+chrono = { version = "=0.4.45", default-features = false, features = ["clock", "std"] }
+sha2 = "=0.10.9"
+libc = "=0.2.190"
+tauri-plugin-autostart = "=2.7.0"
+tauri-plugin-dialog = "=2.8.2"
+
+
+tokio = { version = "=1.53.2", features = ["rt-multi-thread", "time", "macros"] }

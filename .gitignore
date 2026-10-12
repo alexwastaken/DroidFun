@@ -1,0 +1,20 @@
+node_modules/
+dist/
+build/
+src-tauri/target/
+src-tauri/gen/schemas/
+.DS_Store
+._*
+*.log
+
+# Local credentials and account integration state
+.env
+.env.*
+!.env.example
+.claude/
+.codex/
+providers/
+claude-bridge/
+*.pem
+*.key
+*.token
