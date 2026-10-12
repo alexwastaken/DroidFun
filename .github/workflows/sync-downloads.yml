@@ -1,0 +1,98 @@
+name: Sync Droid Fun downloads
+run-name: Publish controller downloads to Droid Fun
+on:
+  release:
+    types: [published, edited]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to sync (blank selects newest published version)'
+        required: false
+        default: ''
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: droid-fun-download-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name || '' }}
+      SITE: https://droid-fun.blooio-pipedrive-alex.workers.dev
+    steps:
+      - name: Verify and mirror published installers
+        shell: bash
+        run: |
+          node <<'JS'
+          const {createHash} = require('node:crypto');
+          const {appendFileSync} = require('node:fs');
+          const repo = 'greensky5656/DroidFun';
+          const api = 'https://api.github.com/repos/' + repo;
+          const endpoint = process.env.SITE + '/api/release-sync';
+          const headers = {Authorization:'Bearer '+process.env.GH_TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'DroidFun-download-sync'};
+          async function github(path) {
+            const r = await fetch(api+path,{headers});
+            if(!r.ok) throw Error('GitHub API failed: '+r.status);
+            return r.json();
+          }
+          async function identity() {
+            const url = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+            url.searchParams.set('audience',endpoint);
+            const r = await fetch(url,{headers:{Authorization:'Bearer '+process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}});
+            if(!r.ok) throw Error('GitHub identity unavailable: '+r.status);
+            return (await r.json()).value;
+          }
+          async function send(path,method,body,type='application/json') {
+            for(let attempt=0;attempt<3;attempt++) {
+              const r = await fetch(endpoint+path,{method,headers:{Authorization:'Bearer '+await identity(),'Content-Type':type},body});
+              const text = await r.text();
+              if(r.ok) return JSON.parse(text);
+              if(r.status<500||attempt===2) throw Error('Cloudflare sync failed: '+r.status+' '+text.slice(0,500));
+              await new Promise(resolve=>setTimeout(resolve,2000*(attempt+1)));
+            }
+          }
+          (async()=>{
+            let release;
+            if(process.env.RELEASE_TAG) {
+              if(!/^v\d+\.\d+\.\d+$/.test(process.env.RELEASE_TAG)) throw Error('Use a version tag like v0.3.0');
+              release = await github('/releases/tags/'+encodeURIComponent(process.env.RELEASE_TAG));
+            } else {
+              const releases = (await github('/releases?per_page=100')).filter(r=>!r.draft&&r.published_at&&/^v\d+\.\d+\.\d+$/.test(r.tag_name));
+              releases.sort((a,b)=>{const aa=a.tag_name.slice(1).split('.').map(Number),bb=b.tag_name.slice(1).split('.').map(Number);for(let i=0;i<3;i++)if(aa[i]!==bb[i])return bb[i]-aa[i];return 0;});
+              release = releases[0];
+            }
+            if(!release||release.draft||!release.published_at) throw Error('A published release is required');
+            const version = release.tag_name.slice(1);
+            const suffixes = {'macos':'macOS-universal.dmg','windows-x64':'Windows-x64-setup.exe','windows-arm64':'Windows-ARM64-setup.exe','linux-deb':'Linux-x86_64.deb','linux-rpm':'Linux-x86_64.rpm'};
+            const selected = Object.entries(suffixes).map(([platform,suffix])=>{
+              const filename = `Deskbot-${version}-${suffix}`;
+              const matches = release.assets.filter(a=>a.name===filename&&a.state==='uploaded');
+              const asset = matches[0];
+              if(matches.length!==1||!asset.size||asset.size>32*1024*1024||!/^sha256:[a-f0-9]{64}$/.test(asset.digest||'')) throw Error('Missing, oversized, or unverified installer: '+filename);
+              return {platform,filename,size:asset.size,sha256:asset.digest.slice(7),asset_id:asset.id};
+            });
+            const manifest = {tag:release.tag_name,version,release_id:String(release.id),published_at:release.published_at,prerelease:release.prerelease,draft:false,assets:selected.map(({asset_id,...asset})=>asset)};
+            const staged = await send('','POST',JSON.stringify(manifest));
+            if(staged.active) {
+              appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Downloads are current\nDeskbot ${version} is already mirrored on [Droid Fun](${process.env.SITE}/downloads).\n`);
+              return;
+            }
+            for(const asset of selected) {
+              // GitHub automatically removes Authorization when redirecting to its asset host.
+              const r = await fetch(api+'/releases/assets/'+asset.asset_id,{headers:{...headers,Accept:'application/octet-stream'}});
+              if(!r.ok) throw Error('Installer download failed: '+r.status);
+              const bytes = Buffer.from(await r.arrayBuffer());
+              if(bytes.length!==asset.size||createHash('sha256').update(bytes).digest('hex')!==asset.sha256) throw Error('Installer checksum mismatch: '+asset.filename);
+              await send('/'+staged.id+'/'+asset.platform,'PUT',bytes,'application/octet-stream');
+              console.log('Verified and mirrored '+asset.filename);
+            }
+            await send('/'+staged.id+'/activate','POST','{}');
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Downloads updated\nDeskbot ${version}: all five installers verified and published together.\n[Open Droid Fun downloads](${process.env.SITE}/downloads)\n`);
+          })().catch(error=>{console.error(error.message);process.exitCode=1;});
+          JS
