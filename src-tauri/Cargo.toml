@@ -1,6 +1,6 @@
 [package]
 name = "deskbot"
-version = "0.2.0"
+version = "0.3.0"
 description = "The Deskbot tray companion"
 authors = ["Deskbot"]
 edition = "2021"
@@ -30,6 +30,8 @@ font8x8 = "=0.3.1"
 serialport = "=4.10.1"
 reqwest = { version = "=0.12.28", default-features = false, features = ["json", "rustls-tls"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["clock", "std"] }
+chrono-tz = "=0.10.4"
+sysinfo = { version = "=0.39.6", default-features = false, features = ["system"] }
 sha2 = "=0.10.9"
 libc = "=0.2.190"
 tauri-plugin-autostart = "=2.7.0"

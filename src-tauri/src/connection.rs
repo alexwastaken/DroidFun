@@ -140,6 +140,23 @@ fn exchange(
     )
 }
 
+#[derive(Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LinkMetrics {
+    pub command_acks: u64,
+    pub frame_acks: u64,
+    pub last_frame_crc: Option<u32>,
+    pub last_ack_at: u64,
+}
+
+fn validate_frame_ack(payload: &[u8], health: &serde_json::Value) -> Result<u32, String> {
+    let expected = protocol::crc32(payload);
+    if health["displayHealth"] != "ready" || health["frameCrc"].as_u64() != Some(expected as u64) {
+        return Err("Robot did not confirm the expected frame CRC and display health".into());
+    }
+    Ok(expected)
+}
+
 pub struct Link {
     port: Box<dyn SerialPort>,
     decoder: Decoder,
@@ -151,6 +168,7 @@ pub struct Link {
     frame_interval: Duration,
     last_display: Option<(bool, u8, u16)>,
     pub status: ConnectionSnapshot,
+    pub metrics: LinkMetrics,
 }
 
 impl Link {
@@ -200,6 +218,7 @@ impl Link {
                 } as u64,
             ),
             last_display: None,
+            metrics: LinkMetrics::default(),
             status: ConnectionSnapshot {
                 state: if ack.display_health == "ready" {
                     "connected"
@@ -224,13 +243,21 @@ impl Link {
     fn command(&mut self, kind: u8, payload: Vec<u8>) -> Result<(), String> {
         let packet = Packet::new(kind, self.session, self.sequence, payload);
         let reply = exchange(&mut *self.port, &mut self.decoder, &packet, protocol::ACK)?;
+        let health: serde_json::Value = serde_json::from_slice(&reply.payload)
+            .map_err(|_| "Robot returned invalid ACK health")?;
+        if kind == protocol::FRAME {
+            self.metrics.last_frame_crc = Some(validate_frame_ack(&packet.payload, &health)?);
+            self.metrics.frame_acks += 1;
+        }
+        self.metrics.command_acks += 1;
+        self.metrics.last_ack_at = crate::core::unix_now();
         self.sequence = self
             .sequence
             .checked_add(1)
             .ok_or("Sequence limit reached; reconnect required")?;
         self.last_command = Instant::now();
         // Firmware ACKs carry bounded JSON health, so a display fault stays visible.
-        if let Ok(health) = serde_json::from_slice::<serde_json::Value>(&reply.payload) {
+        {
             #[cfg(feature = "device-smoke")]
             eprintln!("reply kind={kind:#x}: {health}");
             if let Some(value) = health.get("displayHealth").and_then(|v| v.as_str()) {
@@ -256,6 +283,13 @@ impl Link {
         brightness: u8,
         orientation: u16,
     ) -> Result<bool, String> {
+        // The firmware may have replaced our cached frame with its fallback
+        // after a stalled host. Restore display policy and pixels even if the
+        // current static widget has not changed since the last ACK.
+        if self.last_command.elapsed() >= Duration::from_secs(8) {
+            self.last_frame.clear();
+            self.last_display = None;
+        }
         let mut changed = false;
         if self.last_display != Some((display_on, brightness, orientation)) {
             let contrast = ((brightness as u16 * 255 + 50) / 100) as u8;
@@ -290,6 +324,23 @@ impl Link {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn frame_ack_must_confirm_the_sent_bitmap() {
+        let frame = vec![0x55; 1024];
+        let crc = protocol::crc32(&frame);
+        assert!(validate_frame_ack(
+            &frame,
+            &serde_json::json!({"displayHealth":"ready","frameCrc":crc})
+        )
+        .is_ok());
+        for health in [
+            serde_json::json!({"displayHealth":"ready","frameCrc":crc ^ 1}),
+            serde_json::json!({"displayHealth":"ready"}),
+            serde_json::json!({"displayHealth":"i2c_error","frameCrc":crc}),
+        ] {
+            assert!(validate_frame_ack(&frame, &health).is_err());
+        }
+    }
     #[test]
     fn initial_status_has_no_selected_port() {
         let snapshot = ConnectionSnapshot::default();

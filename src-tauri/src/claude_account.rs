@@ -96,7 +96,7 @@ fn credential_json(profile: &str) -> Result<Value, String> {
     }
     Err("Connect your Claude account in Edit. Deskbot uses your local Claude Code sign-in to read the shared account allowance.".into())
 }
-fn token(profile: &str) -> Result<String, String> {
+fn stored_token(profile: &str) -> Result<String, String> {
     let credentials = credential_json(profile)?;
     let auth = &credentials["claudeAiOauth"];
     let token = auth["accessToken"]
@@ -115,6 +115,179 @@ fn token(profile: &str) -> Result<String, String> {
     }
     Ok(token.into())
 }
+
+fn token(profile: &str) -> Result<String, String> {
+    match stored_token(profile) {
+        Ok(token) => Ok(token),
+        Err(error) if error.contains("sign-in expired") => {
+            refresh_with_installed_client(profile)?;
+            stored_token(profile)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+// Let the credential owner renew its own token. Never implement another
+// refresh-token writer or send an inference prompt. Only a previously trusted,
+// Deskbot-owned scratch folder is eligible; no trust prompt is answered here.
+#[cfg(unix)]
+fn refresh_with_installed_client(profile: &str) -> Result<(), String> {
+    use std::sync::Mutex;
+    static REFRESH: Mutex<()> = Mutex::new(());
+    let _lock = crate::network::lock_cancellable(&REFRESH)?;
+    if stored_token(profile).is_ok() {
+        return Ok(());
+    }
+    let home = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .ok_or("Home unavailable")?;
+    let scratch = home.join(".cache/deskbot/claude-usage-check");
+    let metadata = if profile.is_empty() {
+        home.join(".claude.json")
+    } else {
+        config_dir(profile)?.join(".claude.json")
+    };
+    let trusted = fs::metadata(&metadata).is_ok_and(|m| m.len() <= 4 * 1024 * 1024)
+        && fs::read(&metadata)
+            .ok()
+            .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+            .is_some_and(|v| {
+                v["projects"][scratch.to_string_lossy().as_ref()]["hasTrustDialogAccepted"] == true
+            });
+    if !trusted || !scratch.is_dir() {
+        return Err("Your local Claude sign-in expired. Open Claude Code to refresh it, or use Connect Claude account in Edit.".into());
+    }
+    refresh_client_terminal(
+        profile,
+        &scratch,
+        &executable()?,
+        || stored_token(profile).is_ok(),
+        Duration::from_secs(20),
+    )
+}
+
+#[cfg(unix)]
+fn refresh_client_terminal(
+    profile: &str,
+    scratch: &std::path::Path,
+    executable: &std::path::Path,
+    refreshed: impl Fn() -> bool,
+    timeout: Duration,
+) -> Result<(), String> {
+    use std::{
+        os::fd::{AsRawFd, FromRawFd},
+        os::unix::process::CommandExt,
+    };
+    let mut master = -1;
+    let mut slave = -1;
+    let mut size = libc::winsize {
+        ws_row: 24,
+        ws_col: 80,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
+    if unsafe {
+        libc::openpty(
+            &mut master,
+            &mut slave,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            &mut size,
+        )
+    } != 0
+    {
+        return Err("Could not start the installed Claude credential refresh".into());
+    }
+    let mut reader = unsafe { fs::File::from_raw_fd(master) };
+    let terminal = unsafe { fs::File::from_raw_fd(slave) };
+    unsafe {
+        libc::fcntl(reader.as_raw_fd(), libc::F_SETFL, libc::O_NONBLOCK);
+    }
+    let mut command = Command::new(executable);
+    command
+        .args([
+            "--safe-mode",
+            "--permission-mode",
+            "plan",
+            "--strict-mcp-config",
+            "--mcp-config",
+            "{\"mcpServers\":{}}",
+        ])
+        .current_dir(scratch)
+        .env("DISABLE_AUTOUPDATER", "1")
+        .env("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1")
+        .env("TERM", "xterm-256color")
+        .stdin(
+            terminal
+                .try_clone()
+                .map_err(|_| "Could not open refresh terminal")?,
+        )
+        .stdout(
+            terminal
+                .try_clone()
+                .map_err(|_| "Could not open refresh terminal")?,
+        )
+        .stderr(terminal);
+    if !profile.is_empty() {
+        command.env("CLAUDE_CONFIG_DIR", config_dir(profile)?);
+    }
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setsid() < 0 || libc::ioctl(0, libc::TIOCSCTTY as _, 0) < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+    let mut child = ChildGuard(
+        command
+            .spawn()
+            .map_err(|_| "Installed Claude credential refresh could not start")?,
+    );
+    struct SessionGuard(i32);
+    impl Drop for SessionGuard {
+        fn drop(&mut self) {
+            unsafe {
+                libc::kill(-self.0, libc::SIGKILL);
+            }
+        }
+    }
+    // This child created its own session above. Reap its helpers as well as
+    // the terminal client, without touching any existing Claude session.
+    let _session = SessionGuard(child.0.id() as i32);
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        let mut discarded = [0; 4096];
+        // Bound draining too, so an unexpectedly chatty client cannot stall
+        // timeout/cancellation. Never persist terminal contents.
+        for _ in 0..16 {
+            if !matches!(reader.read(&mut discarded), Ok(n) if n > 0) {
+                break;
+            }
+        }
+        if crate::network::canceled() {
+            return Err("Request canceled because the source changed".into());
+        }
+        if refreshed() {
+            return Ok(());
+        }
+        if child
+            .0
+            .try_wait()
+            .map_err(|_| "Credential refresh stopped")?
+            .is_some()
+        {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(500));
+    }
+    Err("Your local Claude sign-in needs reconnecting. Open Claude Code or use Connect Claude account in Edit.".into())
+}
+
+#[cfg(not(unix))]
+fn refresh_with_installed_client(_profile: &str) -> Result<(), String> {
+    Err("Your local Claude sign-in expired. Open Claude Code to refresh it, or use Connect Claude account in Edit.".into())
+}
 static CONNECTING: AtomicBool = AtomicBool::new(false);
 struct LoginGuard;
 impl Drop for LoginGuard {
@@ -123,7 +296,7 @@ impl Drop for LoginGuard {
     }
 }
 pub fn status(profile: &str) -> Value {
-    match token(profile) {
+    match stored_token(profile) {
         Ok(_) => {
             json!({"signedIn":true,"connecting":CONNECTING.load(Ordering::Acquire),"explanation":"A local sign-in is available. Reads the account allowance shared by Claude desktop, web and Code."})
         }
@@ -256,6 +429,39 @@ pub fn login(profile: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn credential_refresh_uses_a_terminal_without_sending_input_and_reaps_client() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("deskbot-refresh-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let client = dir.join("client");
+        fs::write(&client, "#!/bin/sh\ntest -t 0 && test -t 1 && test -t 2 || exit 2\necho $$ > pid\necho renewed > refreshed\nwhile :; do sleep 1; done\n").unwrap();
+        fs::set_permissions(&client, fs::Permissions::from_mode(0o700)).unwrap();
+        refresh_client_terminal(
+            "",
+            &dir,
+            &client,
+            || dir.join("refreshed").is_file(),
+            Duration::from_secs(3),
+        )
+        .unwrap();
+        let pid: i32 = fs::read_to_string(dir.join("pid"))
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        assert_eq!(
+            unsafe { libc::kill(pid, 0) },
+            -1,
+            "refresh client must be reaped"
+        );
+        fs::write(&client, "#!/bin/sh\nexit 1\n").unwrap();
+        assert!(
+            refresh_client_terminal("", &dir, &client, || false, Duration::from_secs(1)).is_err()
+        );
+        fs::remove_dir_all(dir).unwrap();
+    }
     #[test]
     fn account_windows_are_separate_and_missing_is_not_zero() {
         let v = json!({"five_hour":{"utilization":42.4,"resets_at":"2026-10-12T01:00:00Z"},"seven_day":{"utilization":13,"resets_at":"2026-10-17T01:00:00Z"}});

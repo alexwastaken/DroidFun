@@ -6,6 +6,7 @@ src-tauri/gen/schemas/
 .DS_Store
 ._*
 *.log
+__pycache__/
 
 # Local credentials and account integration state
 .env

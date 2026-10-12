@@ -2,11 +2,13 @@ pub mod claude_account;
 pub mod claude_bridge;
 mod connection;
 mod core;
+mod local_widgets;
 mod network;
 mod persistence;
 mod platform;
 mod protocol;
 mod providers;
+mod reliability;
 
 use connection::{ConnectionSnapshot, Link, RobotPort};
 use core::{Engine, Location, Preferences, Settings, Snapshot, SourceConfig};
@@ -37,10 +39,16 @@ struct AppState {
         std::collections::HashMap<String, Vec<std::sync::Weak<std::sync::atomic::AtomicBool>>>,
     >,
     providers: Arc<Providers>,
+    link_metrics: Mutex<connection::LinkMetrics>,
 }
 
 fn publish(app: &AppHandle, snapshot: &Snapshot) {
-    let _ = app.emit("deskbot-state", snapshot);
+    reliability::transition(snapshot);
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.emit("deskbot-state", snapshot);
+        }
+    }
 }
 
 fn publish_connection(app: &AppHandle, next: ConnectionSnapshot) {
@@ -389,6 +397,137 @@ fn show_face(app: AppHandle, state: State<AppState>) -> Result<Snapshot, String>
 }
 
 #[tauri::command]
+fn timer_action(
+    id: String,
+    action: String,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<Snapshot, String> {
+    mutate(&app, state, true, |e| {
+        e.timer_action_at(&id, &action, core::unix_now())
+    })
+}
+#[tauri::command]
+fn time_zones() -> Vec<String> {
+    chrono_tz::TZ_VARIANTS
+        .iter()
+        .map(|tz| tz.name().to_string())
+        .collect()
+}
+
+fn monitor_worker(app: AppHandle) {
+    let mut system = sysinfo::System::new();
+    let mut warmed = false;
+    let mut last: std::collections::HashMap<String, (Instant, SourceConfig)> =
+        std::collections::HashMap::new();
+    let mut history: std::collections::HashMap<String, std::collections::VecDeque<(u64, f32)>> =
+        std::collections::HashMap::new();
+    loop {
+        let state = app.state::<AppState>();
+        let widgets = state
+            .engine
+            .lock()
+            .map(|e| {
+                e.settings
+                    .widgets
+                    .iter()
+                    .filter(|w| w.enabled && matches!(w.kind.as_str(), "cpu" | "memory"))
+                    .cloned()
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let ids: std::collections::HashSet<_> = widgets.iter().map(|w| w.id.clone()).collect();
+        last.retain(|id, _| ids.contains(id));
+        history.retain(|id, _| ids.contains(id));
+        if widgets.is_empty() {
+            warmed = false;
+            std::thread::sleep(Duration::from_secs(1));
+            continue;
+        }
+        if !widgets.iter().any(|w| w.kind == "cpu") {
+            warmed = false;
+        }
+        let due: Vec<_> = widgets
+            .into_iter()
+            .filter(|w| {
+                last.get(&w.id).is_none_or(|(at, config)| {
+                    config != &w.config
+                        || at.elapsed() >= Duration::from_secs(w.config.monitor_interval as u64)
+                })
+            })
+            .collect();
+        let wants_cpu = due.iter().any(|w| w.kind == "cpu");
+        if wants_cpu {
+            system.refresh_cpu_usage();
+        }
+        if !warmed && wants_cpu {
+            warmed = true;
+            std::thread::sleep(Duration::from_secs(1));
+            continue;
+        }
+        if due.iter().any(|w| w.kind == "memory") {
+            system.refresh_memory();
+        }
+        for w in due {
+            let wall = core::unix_now();
+            let card = if w.kind == "cpu" {
+                if !sysinfo::IS_SUPPORTED_SYSTEM || system.cpus().is_empty() {
+                    continue;
+                }
+                let percent = system.global_cpu_usage();
+                if !percent.is_finite() {
+                    continue;
+                }
+                let values = history.entry(w.id.clone()).or_default();
+                values.push_back((wall, percent));
+                while values
+                    .front()
+                    .is_some_and(|(at, _)| wall.saturating_sub(*at) > 60)
+                    || values.len() > 61
+                {
+                    values.pop_front();
+                }
+                local_widgets::cpu_card(
+                    &w,
+                    wall,
+                    percent,
+                    &values.iter().map(|(_, v)| *v).collect::<Vec<_>>(),
+                )
+            } else {
+                let total = system.total_memory();
+                if total == 0 {
+                    continue;
+                }
+                local_widgets::memory_card(
+                    &w,
+                    wall,
+                    system.used_memory(),
+                    system.available_memory(),
+                    total,
+                )
+            };
+            last.insert(w.id.clone(), (Instant::now(), w.config.clone()));
+            let snapshot = if let Ok(mut e) = state.engine.lock() {
+                if e.settings.widgets.iter().any(|current| {
+                    current.id == w.id && current.enabled && current.config == w.config
+                }) {
+                    e.set_data(&w.id, card);
+                    Some(e.snapshot())
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+            if let Some(snapshot) = snapshot {
+                publish(&app, &snapshot);
+            }
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    }
+}
+
+#[tauri::command]
 fn platform_info(state: State<AppState>, app: AppHandle) -> serde_json::Value {
     serde_json::json!({"os":state.platform.os,"trayAvailable":state.platform.tray_available,"explanation":state.platform.explanation,"launchAtLogin":app.autolaunch().is_enabled().unwrap_or(false)})
 }
@@ -554,8 +693,7 @@ fn tray_action(app: &AppHandle, id: &str) {
     match id {
         "open" => show_window(app),
         "settings" => {
-            show_window(app);
-            let _ = app.emit("deskbot-open-settings", ());
+            platform::show_settings(app);
         }
         "quit" => app.exit(0),
         _ => {
@@ -577,6 +715,18 @@ fn tray_action(app: &AppHandle, id: &str) {
 fn connection_worker(app: AppHandle) {
     let mut backoff = 0;
     loop {
+        if reliability::fault("link-interruption") {
+            publish_connection(
+                &app,
+                ConnectionSnapshot {
+                    state: "reconnecting".into(),
+                    detail: "Reliability test: host link temporarily interrupted".into(),
+                    ..ConnectionSnapshot::default()
+                },
+            );
+            std::thread::sleep(Duration::from_millis(200));
+            continue;
+        }
         let selected = {
             let state = app.state::<AppState>();
             state
@@ -630,6 +780,9 @@ fn connection_worker(app: AppHandle) {
                 backoff = 0;
                 publish_connection(&app, link.status.clone());
                 loop {
+                    if reliability::fault("link-interruption") {
+                        break;
+                    }
                     let current = {
                         let state = app.state::<AppState>();
                         state.engine.lock().ok().map(|engine| {
@@ -675,6 +828,9 @@ fn connection_worker(app: AppHandle) {
                             );
                             break;
                         }
+                    }
+                    if let Ok(mut metrics) = app.state::<AppState>().link_metrics.lock() {
+                        *metrics = link.metrics.clone();
                     }
                     std::thread::sleep(Duration::from_millis(100));
                 }
@@ -791,11 +947,17 @@ pub fn run() {
                     .map_err(std::io::Error::other)?,
             );
             engine.restore_data(providers.startup_cards(&engine.settings.widgets));
+            if reliability::fault("static-face") {
+                if let Some(id) = engine.settings.widgets.iter().find(|w|w.kind=="face").map(|w|w.id.clone()) {
+                    engine.pin(&id).map_err(std::io::Error::other)?;
+                }
+            }
             app.manage(AppState {
                 engine: Mutex::new(engine),
                 connection: Mutex::new(ConnectionSnapshot::default()),
                 settings_path,
                 providers,
+                link_metrics: Mutex::new(connection::LinkMetrics::default()),
                 started: Instant::now(),
                 platform: platform::info(),
                 diagnostics: Mutex::new(None),
@@ -844,7 +1006,7 @@ pub fn run() {
                 && prefs.window_mode != "window"
             {
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
+                    let _ = window.destroy();
                 }
             } else {
                 platform::show(app.handle(), false);
@@ -874,6 +1036,27 @@ pub fn run() {
                 let provider_handle = app.handle().clone();
                 std::thread::spawn(move || provider_worker(provider_handle, kind));
             }
+            let monitor_handle=app.handle().clone();
+            std::thread::spawn(move||monitor_worker(monitor_handle));
+            if reliability::directory().is_some() {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || loop {
+                    let state = handle.state::<AppState>();
+                    let snapshot = state.engine.lock().ok().map(|e| e.snapshot());
+                    if let Some(s) = snapshot {
+                        let now = core::unix_now();
+                        let widgets: Vec<_> = s.settings.widgets.iter().enumerate().map(|(index,w)| serde_json::json!({"index":index,"kind":w.kind,"enabled":w.enabled,"mode":w.config.mode,"durationSeconds":w.duration_sec,"current":w.id==s.current_id,"dataState":s.data.get(&w.id).map(|d|d.state_at(now)),"fetchedAt":s.data.get(&w.id).map(|d|d.fetched_at),"expiresAt":s.data.get(&w.id).map(|d|d.expires_at)})).collect();
+                        let connection = state.connection.lock().ok().map(|c|serde_json::json!({"state":c.state,"firmware":c.firmware,"displayHealth":c.display_health}));
+                        let metrics = state.link_metrics.lock().ok().map(|m|serde_json::to_value(&*m).unwrap_or_default());
+                        let pending = state.pending.lock().ok().map(|p|p.values().map(|v|v.iter().filter(|w|w.strong_count()>0).count()).sum::<usize>());
+                        let events = state.events.lock().ok().map(|e|e.clone());
+                        let visible = handle.get_webview_window("main").is_some_and(|w|w.is_visible().unwrap_or(false));
+                        let value = serde_json::json!({"formatVersion":1,"at":now,"pid":std::process::id(),"uptimeSeconds":state.started.elapsed().as_secs(),"controlsVisible":visible,"connection":connection,"link":metrics,"playback":s.playback,"displayOn":s.display_on,"displayReason":s.display_reason,"orientation":s.settings.preferences.orientation,"brightness":s.settings.brightness,"frameCrc":protocol::crc32(&s.frame),"widgets":widgets,"pendingRequests":pending,"connectionEvents":events,"faults":{"networkOffline":reliability::fault("network-offline"),"linkInterruption":reliability::fault("link-interruption")}});
+                        if let Err(error) = reliability::write(&value) { eprintln!("Reliability telemetry could not be written: {error}"); }
+                    }
+                    std::thread::sleep(Duration::from_secs(5));
+                });
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -887,7 +1070,9 @@ pub fn run() {
                 if mode == "window" || (!state.platform.tray_available && mode != "background") {
                     let _ = window.minimize();
                 } else {
-                    let _ = window.hide();
+                    // The engine, USB link and providers live outside this
+                    // panel. Reopening restores their current state.
+                    let _ = window.destroy();
                 }
                 api.prevent_close();
             }
@@ -927,7 +1112,17 @@ pub fn run() {
             show_now,
             pin_widget,
             show_face
+            ,timer_action,time_zones
         ])
-        .run(tauri::generate_context!())
-        .expect("Deskbot could not start");
+        .build(tauri::generate_context!())
+        .expect("Deskbot could not start")
+        .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { code: None, api, .. } = event {
+                let state = app.state::<AppState>();
+                if state.platform.tray_available {
+                    // Last control window closed; explicit Quit uses exit(0).
+                    api.prevent_exit();
+                }
+            }
+        });
 }

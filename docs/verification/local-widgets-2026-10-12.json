@@ -1,0 +1,69 @@
+{
+  "build": "0.2.0 / unpublished local widget and animation implementation",
+  "referenceMachine": "MacBookPro18,2 / Apple Silicon / 32 GiB RAM",
+  "appSha256": "93f2b82693734936df36638ede017bbe365b3b1d66bcb5812897c3633edc8030",
+  "sourceSha256": {
+    "src-tauri/src/core.rs": "7773e27f9e83e74c989135f74063b17784f1a163780c9d06c642e0bc9318ebc7",
+    "src-tauri/src/local_widgets.rs": "078a51a0de117efb1bd060b87dac249cb55e6097a3aab67527a475f6ce5ff770",
+    "src-tauri/src/lib.rs": "badac35512a87ea56bf880d954012a5e851341deb7b727b4732d93b378c05f1c",
+    "src-tauri/Cargo.toml": "44559dbf51cb5d84cd5423df825ef5782c0fd215eb56e14e67ecf5ad592e4013",
+    "src-tauri/Cargo.lock": "c0b3b64798cbe6a677805b61e03b991c1aeaf7db2822e721b1c9c1ff16188f2d",
+    "src/App.tsx": "6831519aa0994b334621f6aad405f4a7b9ff39681efa8d317af6259da17e17d8",
+    "src/SourceEditor.tsx": "6d0877d811ddcdbc4b761a61043f746672168dea0f04ab8543db2793ae209ff3",
+    "src/Settings.tsx": "345804d07806c30b640b19bf96bb5ab29d89929251132fe3e51011c73d76c279",
+    "src/styles.css": "a094a992220b2d6b89cae71a578c3ec1e96194fa550631a2e607f972e1290323",
+    "scripts/reliability-soak.py": "cb7ec3f3fea8d671d2aebb2b281569d441a8291f72a073ac958944ef1c0be931"
+  },
+  "rustBehaviorTests": 34,
+  "typescript": "passed",
+  "frontendProductionBuild": "passed",
+  "macUniversalBuild": "passed",
+  "nativeChecks": [
+    "Add/Edit of all five local widgets",
+    "24-hour clock with seconds",
+    "Pomodoro Start/Pause/Skip and interval-reset",
+    "Natural focus/short-break/long-break with short test intervals",
+    "Manual meeting date/time edits and NOW/DONE",
+    "Live CPU and available/used RAM",
+    "Animation controls visible and enabled"
+  ],
+  "physicalReview": {
+    "state": "user-confirmed",
+    "confirmedDate": "2026-10-12",
+    "evidence": "Readable, and the new movements are visible",
+    "scope": [
+      "Clock, Pomodoro, meeting, CPU and memory text readable on physical OLED",
+      "Quicker blinks and occasional glances/open-mouth movements visible"
+    ],
+    "boundary": "Does not establish 24-hour reliability or remaining physical/platform gates"
+  },
+  "staticBaseline": {
+    "result": "static_app_targets_passed",
+    "durationSeconds": 300.11341166496277,
+    "healthySamples": 60,
+    "samples": 60,
+    "averageCpuPercent": 0.2220996202216635,
+    "peakResidentBytes": 69468160,
+    "memoryScope": "Deskbot, its named WebKit XPC services and sampled helper descendants, excluding only the optional Codex child subtree. RSS sum can double count shared pages; short-lived helpers may fall between samples."
+  },
+  "soak": {
+    "state": "running",
+    "runDirectory": "/Users/hansparsons/.cache/deskbot/reliability/2026-10-12-local-widgets-24h",
+    "startedUtc": "2026-10-12T21:01:19.007807+00:00",
+    "expectedEndUtc": "2026-10-13T21:01:19.007807+00:00",
+    "result": "pending",
+    "enabledKinds": [
+      "face",
+      "weather",
+      "stock",
+      "codex",
+      "claude",
+      "clock",
+      "pomodoro",
+      "cpu",
+      "memory"
+    ],
+    "meeting": "Unset and disabled until user configuration",
+    "previousRun": "Interrupted after 80.8 minutes for the authorized feature update; evidence retained separately"
+  }
+}

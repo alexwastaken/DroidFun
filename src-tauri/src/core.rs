@@ -56,6 +56,23 @@ pub struct SourceConfig {
     pub animation_speed: String,
     pub weather_layout: String,
     pub show_change: bool,
+    pub clock_zone: String,
+    pub clock_format: String,
+    pub clock_seconds: bool,
+    pub clock_date: String,
+    pub focus_minutes: u16,
+    pub break_minutes: u16,
+    pub long_break_minutes: u16,
+    pub focus_sessions: u8,
+    pub timer_running: bool,
+    pub timer_started_at: u64,
+    pub timer_elapsed: u64,
+    pub meeting_starts_at: u64,
+    pub meeting_minutes: u16,
+    pub monitor_interval: u8,
+    pub show_graph: bool,
+    pub memory_metric: String,
+    pub memory_unit: String,
 }
 impl Default for SourceConfig {
     fn default() -> Self {
@@ -78,11 +95,32 @@ impl Default for SourceConfig {
             animation_speed: "normal".into(),
             weather_layout: "current".into(),
             show_change: false,
+            clock_zone: "local".into(),
+            clock_format: "12".into(),
+            clock_seconds: false,
+            clock_date: "weekday".into(),
+            focus_minutes: 25,
+            break_minutes: 5,
+            long_break_minutes: 15,
+            focus_sessions: 4,
+            timer_running: false,
+            timer_started_at: 0,
+            timer_elapsed: 0,
+            meeting_starts_at: 0,
+            meeting_minutes: 30,
+            monitor_interval: 2,
+            show_graph: true,
+            memory_metric: "used".into(),
+            memory_unit: "gib".into(),
         }
     }
 }
 impl SourceConfig {
     pub fn validate(&self, kind: &str) -> Result<(), String> {
+        crate::local_widgets::validate(self)?;
+        if crate::local_widgets::local(kind) && self.mode != "live" {
+            return Err("Local widgets use the computer's actual time and readings".into());
+        }
         if !["demo", "live"].contains(&self.mode.as_str())
             || !["celsius", "fahrenheit"].contains(&self.unit.as_str())
             || self.symbol.len() > 20
@@ -221,6 +259,9 @@ pub struct Preferences {
     pub setup_complete: bool,
     pub companion_face: bool,
     pub companion_animation: bool,
+    pub companion_speed: String,
+    pub companion_glances: bool,
+    pub companion_mouth: bool,
 }
 impl Default for Preferences {
     fn default() -> Self {
@@ -233,6 +274,9 @@ impl Default for Preferences {
             setup_complete: false,
             companion_face: true,
             companion_animation: true,
+            companion_speed: "quick".into(),
+            companion_glances: true,
+            companion_mouth: true,
         }
     }
 }
@@ -241,6 +285,7 @@ impl Preferences {
         if ![0, 180].contains(&self.orientation)
             || !["system", "light", "dark"].contains(&self.appearance.as_str())
             || !["auto", "window", "background"].contains(&self.window_mode.as_str())
+            || !["slow", "normal", "quick"].contains(&self.companion_speed.as_str())
             || self.quiet_hours.start_minute >= 1440
             || self.quiet_hours.end_minute >= 1440
             || (self.quiet_hours.enabled
@@ -361,7 +406,12 @@ impl Settings {
             {
                 return Err("Invalid widget ID or duration".into());
             }
-            if !["face", "weather", "stock", "codex", "claude"].contains(&widget.kind.as_str()) {
+            if ![
+                "face", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting",
+                "cpu", "memory",
+            ]
+            .contains(&widget.kind.as_str())
+            {
                 return Err("Unknown widget type".into());
             }
             if widget.label.chars().count() > 24
@@ -423,6 +473,7 @@ pub struct Engine {
     quiet_override_until: u64,
     phase_ms: u64,
     reduced_motion: bool,
+    local_second: u64,
 }
 
 impl Engine {
@@ -453,6 +504,7 @@ impl Engine {
             quiet_override_until: 0,
             phase_ms: 0,
             reduced_motion: false,
+            local_second: 0,
         }
     }
 
@@ -466,6 +518,7 @@ impl Engine {
     fn eligible(&self, w: &Widget) -> bool {
         w.enabled
             && (w.kind == "face"
+                || crate::local_widgets::dynamic(&w.kind)
                 || w.config.mode == "demo"
                 || self.data.get(&w.id).is_some_and(|d| d.usable(unix_now())))
     }
@@ -478,35 +531,58 @@ impl Engine {
     pub fn render_widget(&self, id: &str) -> Vec<u8> {
         self.render_current(id, true)
     }
-    fn animation_state(&self) -> (bool, bool) {
-        let animated = !self.reduced_motion && self.settings.preferences.companion_animation;
-        (
-            animated && self.phase_ms % 5200 >= 4800,
-            animated && self.phase_ms % 10400 >= 5200,
+    fn animation_state(&self) -> CompanionPose {
+        if self.reduced_motion
+            || !self.settings.preferences.companion_animation
+            || self.playback == Playback::Paused
+            || self.quiet_active
+            || !self.display_on
+        {
+            return CompanionPose::default();
+        }
+        CompanionPose::at(
+            self.phase_ms,
+            &self.settings.preferences.companion_speed,
+            self.settings.preferences.companion_glances,
+            self.settings.preferences.companion_mouth,
         )
     }
     fn face_closed(&self, w: &Widget) -> bool {
         let period = match w.config.animation_speed.as_str() {
-            "slow" => 8000,
-            "quick" => 3000,
-            _ => 5000,
+            "slow" => 6000,
+            "quick" => 2400,
+            _ => 3600,
         };
-        !self.reduced_motion && w.config.blink && self.phase_ms % period >= period - 400
+        !self.reduced_motion
+            && self.playback != Playback::Paused
+            && w.config.blink
+            && self.phase_ms % period >= period - 200
     }
-    fn current_animation_state(&self) -> (bool, bool) {
+    fn current_animation_state(&self) -> CompanionPose {
         match self.current_widget() {
-            Some(w) if w.kind == "face" => (self.face_closed(w), false),
+            Some(w) if w.kind == "face" => {
+                let mut pose = self.animation_state();
+                pose.closed = self.face_closed(w);
+                pose
+            }
             Some(_) if self.settings.preferences.companion_face => self.animation_state(),
-            _ => (false, false),
+            _ => CompanionPose::default(),
         }
     }
     fn render_current(&self, id: &str, on: bool) -> Vec<u8> {
         let Some(mut w) = self.settings.widgets.iter().find(|w| w.id == id).cloned() else {
             return render(None, on);
         };
-        if w.kind != "face" && w.config.mode == "live" {
+        let mut local_values = serde_json::Value::Null;
+        if crate::local_widgets::dynamic(&w.kind) {
+            let d = crate::local_widgets::dynamic_card(&w, unix_now());
+            w.headline = d.headline;
+            w.footer = d.footer;
+            local_values = d.values;
+        } else if w.kind != "face" && w.config.mode == "live" {
             if let Some(d) = self.data.get(id) {
                 let d = d.summary(unix_now());
+                local_values = d.values.clone();
                 w.headline = d.headline;
                 w.footer = if d.state == "stale" {
                     "STALE CACHED".into()
@@ -525,9 +601,19 @@ impl Engine {
         }
         if w.kind == "face" && on {
             let mut f = Frame::new();
-            f.expression(&w.config.face_expression, self.face_closed(&w));
+            let mut pose = self.animation_state();
+            pose.closed = self.face_closed(&w);
+            f.animated_face(&w.config.face_expression, pose);
             f.bytes
         } else {
+            let companion = self
+                .settings
+                .preferences
+                .companion_face
+                .then(|| self.animation_state());
+            if crate::local_widgets::local(&w.kind) {
+                return render_local(&w, on, companion, &local_values);
+            }
             render_card(
                 Some(&w),
                 on,
@@ -565,16 +651,45 @@ impl Engine {
             .find(|w| w.id == id)
             .ok_or("Widget not found")?;
         config.validate(&w.kind)?;
+        if w.kind == "pomodoro" {
+            if (
+                config.focus_minutes,
+                config.break_minutes,
+                config.long_break_minutes,
+                config.focus_sessions,
+            ) == (
+                w.config.focus_minutes,
+                w.config.break_minutes,
+                w.config.long_break_minutes,
+                w.config.focus_sessions,
+            ) {
+                config.timer_running = w.config.timer_running;
+                config.timer_started_at = w.config.timer_started_at;
+                config.timer_elapsed = w.config.timer_elapsed;
+            } else {
+                config.timer_running = false;
+                config.timer_started_at = 0;
+                config.timer_elapsed = 0;
+            }
+        }
         w.label = label.trim().into();
         w.config = config;
+        let local_card = crate::local_widgets::dynamic(&w.kind)
+            .then(|| crate::local_widgets::dynamic_card(w, unix_now()));
         self.data.remove(id);
+        if let Some(card) = local_card {
+            self.data.insert(id.into(), card);
+        }
         if self.current_id == id && !self.enabled(id) {
             self.advance_to_next();
         }
         Ok(())
     }
     pub fn add_widget(&mut self, kind: &str) -> Result<(), String> {
-        if !["weather", "stock", "codex", "claude"].contains(&kind)
+        if ![
+            "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu", "memory",
+        ]
+        .contains(&kind)
             || self.settings.widgets.len() >= 30
         {
             return Err("Choose a widget type; limit is 30 widgets".into());
@@ -590,10 +705,30 @@ impl Engine {
             .widgets
             .into_iter()
             .find(|w| w.kind == kind)
-            .unwrap();
+            .unwrap_or_else(|| Widget {
+                id: String::new(),
+                kind: kind.into(),
+                label: match kind {
+                    "clock" => "Clock",
+                    "pomodoro" => "Pomodoro",
+                    "meeting" => "Meeting",
+                    "cpu" => "CPU",
+                    "memory" => "Memory",
+                    _ => "Widget",
+                }
+                .into(),
+                enabled: true,
+                duration_sec: 8,
+                headline: String::new(),
+                footer: String::new(),
+                config: SourceConfig {
+                    mode: "live".into(),
+                    ..SourceConfig::default()
+                },
+            });
         self.settings.widgets.push(Widget {
             id,
-            enabled: false,
+            enabled: crate::local_widgets::local(kind),
             ..template
         });
         Ok(())
@@ -612,6 +747,43 @@ impl Engine {
             self.playback = Playback::Running;
             self.advance_to_next();
         }
+        Ok(())
+    }
+
+    pub fn timer_action_at(&mut self, id: &str, action: &str, wall: u64) -> Result<(), String> {
+        let w = self
+            .settings
+            .widgets
+            .iter_mut()
+            .find(|w| w.id == id && w.kind == "pomodoro")
+            .ok_or("Pomodoro widget not found")?;
+        let c = &mut w.config;
+        match action {
+            "start" => {
+                if !c.timer_running {
+                    c.timer_started_at = wall;
+                    c.timer_running = true;
+                }
+            }
+            "pause" => {
+                c.timer_elapsed = crate::local_widgets::elapsed(c, wall);
+                c.timer_running = false;
+                c.timer_started_at = 0;
+            }
+            "reset" => {
+                c.timer_running = false;
+                c.timer_started_at = 0;
+                c.timer_elapsed = 0;
+            }
+            "skip" => {
+                c.timer_elapsed = crate::local_widgets::elapsed(c, wall)
+                    .saturating_add(crate::local_widgets::timer(c, wall).remaining);
+                c.timer_started_at = if c.timer_running { wall } else { 0 };
+            }
+            _ => return Err("Choose Start, Pause, Reset or Skip phase".into()),
+        }
+        self.data
+            .insert(id.into(), crate::local_widgets::dynamic_card(w, wall));
         Ok(())
     }
 
@@ -646,6 +818,17 @@ impl Engine {
         self.tick_at(now, unix_now(), (local.hour() * 60 + local.minute()) as u16)
     }
     pub fn tick_at(&mut self, now: Instant, wall: u64, minute: u16) -> bool {
+        let mut local_changed = false;
+        if self.local_second != wall {
+            self.local_second = wall;
+            for w in &self.settings.widgets {
+                if crate::local_widgets::dynamic(&w.kind) {
+                    self.data
+                        .insert(w.id.clone(), crate::local_widgets::dynamic_card(w, wall));
+                    local_changed = true;
+                }
+            }
+        }
         let was_quiet = self.quiet_active;
         self.quiet_active = self.settings.preferences.quiet_hours.contains(minute)
             && wall >= self.quiet_override_until;
@@ -666,13 +849,13 @@ impl Engine {
         }
         let animation_changed = prior_animation != self.current_animation_state();
         if self.quiet_active {
-            return policy_changed;
+            return policy_changed || local_changed;
         }
         if self.current_id != "face" && !self.enabled(&self.current_id) {
             self.advance_to_next();
         }
         if self.playback != Playback::Running || elapsed == 0 {
-            return policy_changed || animation_changed;
+            return policy_changed || animation_changed || local_changed;
         }
         // A suspended computer should resume at a full dwell, not replay hours of transitions.
         if elapsed > 60_000 {
@@ -709,6 +892,7 @@ impl Engine {
         }
         self.remaining_ms = self.remaining_ms.saturating_sub(left);
         policy_changed
+            || local_changed
             || animation_changed
             || old_remaining.div_ceil(1000) != self.remaining_ms.div_ceil(1000)
             || elapsed >= old_remaining
@@ -956,6 +1140,51 @@ impl Engine {
     }
 }
 
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+struct CompanionPose {
+    closed: bool,
+    glance: i8,
+    mouth: u8,
+    bounce: bool,
+}
+impl CompanionPose {
+    fn at(ms: u64, speed: &str, glances: bool, mouths: bool) -> Self {
+        let blink_period = match speed {
+            "slow" => 6000,
+            "quick" => 2400,
+            _ => 3600,
+        };
+        let cycle = match speed {
+            "slow" => 12000,
+            "quick" => 6400,
+            _ => 8000,
+        };
+        let phase = (ms % cycle) * 6400 / cycle;
+        Self {
+            closed: ms % blink_period >= blink_period - 200,
+            glance: if !glances {
+                0
+            } else {
+                match phase {
+                    600..=799 | 1600..=1799 => -1,
+                    800..=1599 => -2,
+                    _ => 0,
+                }
+            },
+            mouth: if !mouths {
+                0
+            } else {
+                match phase {
+                    2200..=2599 => 1,
+                    2600..=2999 => 2,
+                    _ => 0,
+                }
+            },
+            bounce: (4200..4400).contains(&phase),
+        }
+    }
+}
+
 struct Frame {
     bytes: Vec<u8>,
 }
@@ -1099,9 +1328,46 @@ impl Frame {
     }
     // Reuse the original happy-face bitmap at half size, including its blink.
     // Crop its blank margins into a dedicated 40 × 26 corner above the data.
-    fn companion(&mut self, closed: bool, beaming: bool) {
+    fn animated_face(&mut self, expression: &str, pose: CompanionPose) {
+        self.expression(expression, pose.closed);
+        if expression != "happy" {
+            return;
+        }
+        if !pose.closed && pose.glance != 0 {
+            // The familiar hollow-eye outlines stay intact. Tiny pupils look
+            // down and left toward the information, then disappear on return.
+            for cx in [38, 90] {
+                for y in 25..29 {
+                    for x in cx + pose.glance as i32 * 2 - 1..=cx + pose.glance as i32 * 2 + 1 {
+                        self.pixel(x, y);
+                    }
+                }
+            }
+        }
+        if pose.mouth != 0 {
+            for y in 40..56 {
+                for x in 52..77 {
+                    self.bytes[(y / 8) * WIDTH + x] &= !(1 << (y % 8));
+                }
+            }
+            let (rx, ry) = if pose.mouth == 1 {
+                (7.0, 5.0)
+            } else {
+                (4.0, 6.0)
+            };
+            for y in 41..55 {
+                for x in 56..73 {
+                    let d = ((x as f32 - 64.0) / rx).powi(2) + ((y as f32 - 48.0) / ry).powi(2);
+                    if (0.48..=1.0).contains(&d) {
+                        self.pixel(x, y);
+                    }
+                }
+            }
+        }
+    }
+    fn companion(&mut self, pose: CompanionPose) {
         let mut original = Frame::new();
-        original.expression("happy", closed);
+        original.animated_face("happy", pose);
         for y in 0..25 {
             for x in 0..37 {
                 let mut lit = false;
@@ -1113,7 +1379,7 @@ impl Frame {
                     }
                 }
                 if lit {
-                    self.pixel(88 + x as i32, y as i32 + i32::from(beaming));
+                    self.pixel(88 + x as i32, y as i32 + i32::from(pose.bounce));
                 }
             }
         }
@@ -1121,12 +1387,12 @@ impl Frame {
 }
 
 pub fn render(widget: Option<&Widget>, display_on: bool) -> Vec<u8> {
-    render_card(widget, display_on, Some((false, false)))
+    render_card(widget, display_on, Some(CompanionPose::default()))
 }
 fn render_card(
     widget: Option<&Widget>,
     display_on: bool,
-    companion: Option<(bool, bool)>,
+    companion: Option<CompanionPose>,
 ) -> Vec<u8> {
     let mut frame = Frame::new();
     if !display_on {
@@ -1154,8 +1420,8 @@ fn render_card(
         _ => "DESKBOT",
     };
     frame.text(title, 4, 2, 1, if companion.is_some() { 10 } else { 15 });
-    if let Some((closed, beaming)) = companion {
-        frame.companion(closed, beaming);
+    if let Some(pose) = companion {
+        frame.companion(pose);
     }
     let (scale, capacity) = if widget.headline.chars().count() <= 7 {
         (2, 7)
@@ -1178,10 +1444,186 @@ fn render_card(
     frame.bytes
 }
 
+fn render_local(
+    widget: &Widget,
+    on: bool,
+    companion: Option<CompanionPose>,
+    values: &serde_json::Value,
+) -> Vec<u8> {
+    let mut f = Frame::new();
+    if !on {
+        return f.bytes;
+    }
+    f.text(
+        match widget.kind.as_str() {
+            "clock" => "CLOCK",
+            "pomodoro" => "POMODORO",
+            "meeting" => "MEETING",
+            "cpu" => "CPU",
+            _ => "MEMORY",
+        },
+        4,
+        2,
+        1,
+        if companion.is_some() { 10 } else { 15 },
+    );
+    f.text(
+        values["context"].as_str().unwrap_or("LOADING"),
+        4,
+        14,
+        1,
+        if companion.is_some() { 10 } else { 15 },
+    );
+    if let Some(pose) = companion {
+        f.companion(pose);
+    }
+    let scale = if widget.headline.chars().count() <= 7 {
+        2
+    } else {
+        1
+    };
+    f.text(
+        &widget.headline,
+        4,
+        28,
+        scale,
+        if scale == 2 { 7 } else { 15 },
+    );
+    let history = values["history"].as_array().filter(|h| h.len() > 1);
+    if let Some(series) = history {
+        let mut previous: Option<(i32, i32)> = None;
+        for (i, value) in series.iter().enumerate() {
+            let height =
+                (value.as_f64().unwrap_or(0.0).clamp(0.0, 100.0) * 7.0 / 100.0).round() as i32;
+            let x = 4 + i as i32 * 119 / (series.len() as i32 - 1);
+            let y = 52 - height;
+            if let Some((mut xx, mut yy)) = previous {
+                let dx = (x - xx).abs();
+                let dy = -(y - yy).abs();
+                let sx = if xx < x { 1 } else { -1 };
+                let sy = if yy < y { 1 } else { -1 };
+                let mut error = dx + dy;
+                loop {
+                    f.pixel(xx, yy);
+                    if xx == x && yy == y {
+                        break;
+                    }
+                    let e2 = 2 * error;
+                    if e2 >= dy {
+                        error += dy;
+                        xx += sx;
+                    }
+                    if e2 <= dx {
+                        error += dx;
+                        yy += sy;
+                    }
+                }
+            } else {
+                f.pixel(x, y);
+            }
+            previous = Some((x, y));
+        }
+    } else if let Some(percent) = values["progress"].as_f64() {
+        for x in 4..124 {
+            f.pixel(x, 49);
+            f.pixel(x, 52);
+        }
+        for y in 49..53 {
+            f.pixel(4, y);
+            f.pixel(123, y);
+        }
+        for x in 6..6 + (percent.clamp(0.0, 100.0) * 116.0 / 100.0).round() as i32 {
+            f.pixel(x, 50);
+            f.pixel(x, 51);
+        }
+    } else {
+        f.text(values["status"].as_str().unwrap_or(""), 4, 45, 1, 15);
+    }
+    f.text(&widget.footer, 4, 55, 1, 15);
+    f.bytes
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn companion_gestures_preserve_all_local_widget_information_and_original_identity() {
+        assert_eq!(crate::protocol::crc32(&render(None, true)), 2039582962);
+        for kind in ["clock", "pomodoro", "meeting", "cpu", "memory"] {
+            let w = Widget {
+                id: kind.into(),
+                kind: kind.into(),
+                label: "Test".into(),
+                enabled: true,
+                duration_sec: 3,
+                headline: "12:34".into(),
+                footer: "MON OCT 12".into(),
+                config: SourceConfig {
+                    mode: "live".into(),
+                    ..SourceConfig::default()
+                },
+            };
+            let values = serde_json::json!({"context":"LOCAL","progress":50});
+            let base = render_local(&w, true, Some(CompanionPose::default()), &values);
+            for ms in [600, 800, 1600, 2200, 2600, 4200, 4600] {
+                let pose = CompanionPose::at(ms, "quick", true, true);
+                let animated = render_local(&w, true, Some(pose), &values);
+                assert_ne!(base, animated, "{kind} at {ms}");
+                for y in 0..64 {
+                    for x in 0..128 {
+                        if x < 88 || y >= 26 {
+                            let bit = 1 << (y % 8);
+                            assert_eq!(
+                                base[y / 8 * 128 + x] & bit,
+                                animated[y / 8 * 128 + x] & bit
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        assert!(!CompanionPose::at(2199, "quick", true, true).closed);
+        assert!(CompanionPose::at(2200, "quick", true, true).closed);
+        assert!(!CompanionPose::at(2400, "quick", true, true).closed);
+    }
+
+    #[test]
+    fn pomodoro_controls_persist_independently_of_playlist_pause_and_configuration_edits() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.add_widget("pomodoro").unwrap();
+        let id = e.settings.widgets.last().unwrap().id.clone();
+        e.timer_action_at(&id, "start", 1000).unwrap();
+        e.toggle_pause();
+        let c = &e.settings.widgets.last().unwrap().config;
+        assert_eq!(crate::local_widgets::timer(c, 1030).remaining, 1470);
+        e.timer_action_at(&id, "pause", 1030).unwrap();
+        assert_eq!(
+            crate::local_widgets::timer(&e.settings.widgets.last().unwrap().config, 2000).remaining,
+            1470
+        );
+        e.timer_action_at(&id, "skip", 2000).unwrap();
+        assert_eq!(
+            crate::local_widgets::timer(&e.settings.widgets.last().unwrap().config, 2000).phase,
+            "BREAK"
+        );
+        e.timer_action_at(&id, "start", 2000).unwrap();
+        let mut edited = e.settings.widgets.last().unwrap().config.clone();
+        edited.timer_running = false;
+        e.configure_source(&id, "Work".into(), edited.clone())
+            .unwrap();
+        assert!(e.settings.widgets.last().unwrap().config.timer_running);
+        edited.focus_minutes = 30;
+        e.configure_source(&id, "Work".into(), edited).unwrap();
+        let c = &e.settings.widgets.last().unwrap().config;
+        assert!(!c.timer_running);
+        assert_eq!(crate::local_widgets::timer(c, 3000).remaining, 1800);
+        let restored: Settings =
+            serde_json::from_str(&serde_json::to_string(&e.settings).unwrap()).unwrap();
+        restored.validate().unwrap();
+        assert_eq!(restored.widgets.last().unwrap().config.focus_minutes, 30);
+    }
 
     #[test]
     fn companion_animation_preserves_every_data_pixel_and_can_be_disabled() {
@@ -1202,7 +1644,7 @@ mod tests {
             engine.phase_ms = 0;
             engine.last_tick = now;
             let open = engine.render_widget(&id);
-            assert!(engine.tick_at(now + Duration::from_millis(4800), 10000, 720));
+            assert!(engine.tick_at(now + Duration::from_millis(4600), 10000, 720));
             let closed = engine.render_widget(&id);
             assert_ne!(open, closed);
             let pixel =
@@ -1219,7 +1661,7 @@ mod tests {
                     }
                 }
             }
-            engine.phase_ms = 5600;
+            engine.phase_ms = 4200;
             let beaming = engine.render_widget(&id);
             assert_ne!(open, beaming);
             for i in WIDTH * 4..FRAME_BYTES {
@@ -1279,7 +1721,7 @@ mod tests {
         let now = Instant::now();
         let mut e = Engine::new(Settings::default(), now);
         let happy = e.render_widget("face");
-        e.tick_at(now + Duration::from_millis(4700), 10000, 720);
+        e.tick_at(now + Duration::from_millis(3500), 10000, 720);
         let blink = e.render_widget("face");
         assert_ne!(happy, blink);
         e.set_reduced_motion(true);

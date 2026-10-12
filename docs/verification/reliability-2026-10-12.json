@@ -1,0 +1,60 @@
+{
+  "referenceMachine": "MacBookPro18,2 / 32 GiB RAM / Apple Silicon runtime",
+  "firmware": "1.1.0",
+  "applicationVersion": "0.2.0 with unpublished reliability changes",
+  "appSha256": "7809accf981999156b6e2f92e14e58759121f121e08667a4d9457905e86c70b3",
+  "sourceSha256": {
+    "src-tauri/src/connection.rs": "e4b23ddf5ca5e3e7b007fdc7db6f5838cf675b77919aaaeddf0f11250f8d8e5a",
+    "src-tauri/src/claude_account.rs": "05f16fb885e7570373896098498613dab62965f2529c1ed18d232ea32ea3238e",
+    "src-tauri/src/providers.rs": "1b7f9408ce5b226dbdd5fbd01d510046098bb951185a69e6f5840055d633e780",
+    "src-tauri/src/network.rs": "b8a65059a3487b0f23d7a2697a2ed3a61bb6a72ada533c5bc13ef94067f98b76",
+    "src-tauri/src/lib.rs": "4297ac15397a63cccc50582af9527b77a56401223d9211018f29a21f7ae98a65",
+    "src-tauri/src/reliability.rs": "5841cbcc87081c6b7603f48107e2bada3fe49f6c36218e14646094e598049eb5",
+    "src-tauri/src/platform.rs": "f7e0d25fe63f74dc6aeb79d0cf6a8455bdfd38ad6c936ffa63ffbb66af758233",
+    "src-tauri/tauri.conf.json": "0cf50643e4e5a1dd2ed4fa940d34bea5131ad34c0b98a4dece3431d5d245bb38",
+    "src/App.tsx": "ac8c405112c30d087862f24d0e1216e8abec3365611fd48fbfad3db8b0ce63fd",
+    "scripts/reliability-soak.py": "542b35211d035bf1a383f2d6097f81e94ea1b7717b971450540e308b9779e6be"
+  },
+  "buildChecks": {
+    "rustBehaviorTests": 29,
+    "typescript": "passed",
+    "frontendBuild": "passed",
+    "macUniversalBuild": "passed"
+  },
+  "protocolChecks": {
+    "realBoard": 12,
+    "result": "passed"
+  },
+  "staticFrameRecovery": "passed",
+  "physicalFallbackAndDim": "user_confirmed_repeat",
+  "physicalChangedPortRecoverySecondsUpperBound": 1.223,
+  "staticBaseline": {
+    "result": "static_app_targets_passed",
+    "seconds": 300.1117479801178,
+    "healthySamples": 60,
+    "samples": 60,
+    "averageCpuPercent": 0.14575114673432688,
+    "peakResidentBytes": 77168640,
+    "memoryScope": "Deskbot, its named WebKit XPC services and sampled helper descendants, excluding only the optional Codex child subtree. RSS sum can double count shared pages; short-lived helpers may fall between samples.",
+    "coldStartupBoundary": "Earlier builds exceeded 100 MB while webview services settled; latest background startup creates no webview."
+  },
+  "soak24Hours": {
+    "state": "interrupted",
+    "startedUtc": "2026-10-12T18:49:14.060472+00:00",
+    "expectedEndUtc": "2026-10-13T18:49:14.060472+00:00",
+    "controlledNetworkAndHostLinkFaults": true,
+    "runDirectory": "/Users/hansparsons/.cache/deskbot/reliability/2026-10-12-24h",
+    "heartbeatId": "deskbot-24-hour-reliability-test",
+    "result": "partial observation, not 24-hour acceptance",
+    "replacementVerification": "local-widgets-2026-10-12.json",
+    "reason": "User-authorized local widgets and animation update"
+  },
+  "remainingPhysicalGates": [
+    "ten-minute blanking",
+    "OLED disconnection",
+    "real OS sleep/wake",
+    "rotated pattern photographs",
+    "supply and pull-up voltages"
+  ],
+  "panelRecreation": "native controls and settings opened after background startup; same backend remained connected"
+}

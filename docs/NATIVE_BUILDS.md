@@ -6,7 +6,7 @@ The **Build Windows and Linux packages** workflow builds Windows x64, Windows AR
 
 1. Open [the manual build workflow](https://github.com/greensky5656/DroidFun/actions/workflows/build-desktop.yml).
 2. Choose the pipeline branch, normally `main`.
-3. Set `source_ref` to the exact application commit or release tag. Set `release_tag` to the matching existing release, for example `v0.2.0`. Choose `all` or one platform to retry.
+3. Set `source_ref` to the exact application commit or release tag. Set `release_tag` to the matching release version, for example `v0.3.0`. Choose `all` or one platform to retry.
 4. Run the workflow. Download each successful job's artifact. Failed tests, installer failures, wrong binary architecture or a missing native window prevent upload of a successful package artifact.
 5. Review the verification JSON and checksums before attaching the installer packages to the release. The workflow does not publish releases or need write access to repository contents.
 

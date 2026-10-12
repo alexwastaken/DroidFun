@@ -56,8 +56,13 @@ fn error_state(error: &str) -> &'static str {
     }
 }
 fn retry_seconds(state: &str, attempt: u8, key: &str) -> u64 {
-    if ["authentication_required", "invalid_configuration"].contains(&state) {
+    if state == "invalid_configuration" {
         return u64::MAX;
+    }
+    // A client outside Deskbot can renew the shared local sign-in. Recheck
+    // occasionally so an authentication failure is not cached forever.
+    if state == "authentication_required" {
+        return 300;
     }
     if state == "rate_limited" {
         return 600;
@@ -1001,7 +1006,7 @@ mod tests {
         );
         assert!((30..=36).contains(&retry_seconds("unavailable", 1, "a")));
         assert!((120..=144).contains(&retry_seconds("unavailable", 2, "a")));
-        assert_eq!(retry_seconds("authentication_required", 1, "a"), u64::MAX);
+        assert_eq!(retry_seconds("authentication_required", 1, "a"), 300);
         assert_eq!(retry_seconds("rate_limited", 1, "a"), 600);
     }
 

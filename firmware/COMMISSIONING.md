@@ -1,5 +1,11 @@
 # Robot commissioning record
 
+## October 12 reliability follow-up
+
+The user confirmed the enlarged original companion face and all text remain readable. Twelve independent malformed-packet/recovery checks passed on this board. During a repeat 120-second host pause, the user observed the full happy-face fallback and subsequent dimming; the app then restored the identical fixed test bitmap with a matching frame ACK. A separate real unplug/replug changed the Mac port to `/dev/cu.usbmodem2101`; the same selected board restored its expected frame within an observed upper bound of 1.223 seconds after port enumeration. Initial failed/unconfirmed observations are retained in the test record.
+
+See [reliability tests](../RELIABILITY_TESTS.md) for fixes, measurements and the 24-hour run. Ten-minute blanking, real OS suspend/wake, OLED-disconnect health, rotated physical patterns and voltage measurements remain open. The chronological records below retain their original context.
+
 Date: October 11, 2026. The original panel failed image-fidelity checks. **The replacement displays complete test text and cycles readable app-driven screens, confirmed by the user.** Remaining acceptance is listed below.
 
 ## Current configuration: firmware 1.1.0 / app 0.2.0

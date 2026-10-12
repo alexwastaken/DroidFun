@@ -70,3 +70,9 @@
 [data-theme=dark] .source-editor .settings-tabs button[aria-pressed=true]{background:#087458;color:#fff;border:2px solid #91d6ae}
 
 .robot-head{width:334px}
+
+.timer-controls {grid-column:1 / -1;width:100%; padding:10px 14px; border-top:1px solid var(--border, #dbe5df); font-size:12px;}
+.timer-controls span {display:block; margin-bottom:8px;}
+.timer-controls div {display:flex; gap:6px; flex-wrap:wrap;}
+.timer-controls button {font-size:12px; padding:6px 8px;}
+[data-theme=dark] .timer-controls button {background:#294c3a;color:#e4f6eb;border-color:#607d6d;}

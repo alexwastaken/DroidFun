@@ -76,6 +76,9 @@ pub fn json(
     headers: &[(&str, &str)],
     limit: usize,
 ) -> Result<Value, String> {
+    if crate::reliability::fault("network-offline") {
+        return Err("The provider could not be reached. Try again later.".into());
+    }
     let key = format!(
         "{:x}",
         Sha256::digest(

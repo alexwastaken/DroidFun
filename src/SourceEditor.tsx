@@ -3,7 +3,7 @@ import Modal from "./Modal";
 import { invoke } from "@tauri-apps/api/core";
 
 export type Location = { name: string; latitude: number; longitude: number; country: string; region: string };
-export type SourceConfig = { mode: string; location: Location | null; unit: string; symbol: string; currency: string; limitId: string; window: string; sessionId: string; cliPath: string; claudeSource: string; claudeProfile: string; claudeReportDirectory: string; claudeReportProfile: string; faceExpression: string; blink: boolean; animationSpeed: string; weatherLayout: string; showChange: boolean };
+export type SourceConfig = { mode: string; location: Location | null; unit: string; symbol: string; currency: string; limitId: string; window: string; sessionId: string; cliPath: string; claudeSource: string; claudeProfile: string; claudeReportDirectory: string; claudeReportProfile: string; faceExpression: string; blink: boolean; animationSpeed: string; weatherLayout: string; showChange: boolean; clockZone: string; clockFormat: string; clockSeconds: boolean; clockDate: string; focusMinutes: number; breakMinutes: number; longBreakMinutes: number; focusSessions: number; timerRunning: boolean; timerStartedAt: number; timerElapsed: number; meetingStartsAt: number; meetingMinutes: number; monitorInterval: number; showGraph: boolean; memoryMetric: string; memoryUnit: string };
 export type Widget = { id: string; kind: string; label: string; enabled: boolean; durationSec: number; headline: string; footer: string; config: SourceConfig };
 type Window = { bucket: string; slot: string; label: string; usedPercent: number; minutes: number; resetsAt: number };
 type Bridge = { enabled: boolean; command: string; hasExisting: boolean; explanation: string };
@@ -11,6 +11,10 @@ type SourceInfo = { claudeBridge: Bridge; claudeAccount: { signedIn: boolean; co
 const minutesLabel = (n: number) => n % 1440 === 0 ? `${n / 1440} days` : n % 60 === 0 ? `${n / 60} hours` : `${n} minutes`;
 
 export default function SourceEditor({ widget, onClose, onApply, onRemove }: { widget: Widget; onClose: () => void; onApply: (label: string, config: SourceConfig, headline: string, footer: string) => Promise<boolean>; onRemove: () => Promise<boolean> }) {
+  const local = ["clock","pomodoro","meeting","cpu","memory"].includes(widget.kind);
+  const [zones,setZones] = useState<string[]>([]);
+  useEffect(() => {if(widget.kind!=="clock")return;let active=true;invoke<string[]>("time_zones").then(z => {if(active)setZones(z);}).catch(e => {if(active)setError(String(e));});return () => {active=false;};},[widget.kind]);
+  const meetingDate = (epoch:number) => {if(!epoch)return "";const d=new Date(epoch*1000);return `${String(d.getFullYear()).padStart(4,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
   const [label, setLabel] = useState(widget.label);
   const [config, setConfig] = useState<SourceConfig>({ ...widget.config });
   const [headline, setHeadline] = useState(widget.headline);
@@ -35,13 +39,35 @@ export default function SourceEditor({ widget, onClose, onApply, onRemove }: { w
   }
   const patch = (value: Partial<SourceConfig>) => setConfig(c => ({ ...c, ...value }));
   return <Modal title="Configure widget" onClose={onClose}><form className="editor source-editor" onSubmit={e => {
-    e.preventDefault(); run("Applying", async () => { if (await onApply(label, config, headline, footer)) onClose(); else setError("Settings could not be applied. Check the location, symbol, and name, then try again."); });
+    e.preventDefault(); run("Applying", async () => { if (await onApply(label, config, headline, footer)) onClose(); else setError("Settings could not be applied. Check the widget settings, then try again."); });
   }}>
     <div className="eyebrow">CONFIGURE WIDGET</div><h2>{widget.kind === "stock" ? "Stocks" : widget.kind === "codex" ? "Codex allowance" : widget.kind === "claude" ? "Claude allowance" : widget.label}</h2>
     <label>Name<input maxLength={24} required value={label} onChange={e => setLabel(e.target.value)} /></label>
     {widget.kind === "face" && <><label>Expression<select value={config.faceExpression} onChange={e => patch({faceExpression:e.target.value})}><option value="happy">Happy</option><option value="neutral">Neutral</option><option value="sleepy">Sleepy</option><option value="surprised">Surprised</option></select></label><label className="inline-check"><input type="checkbox" checked={config.blink} onChange={e => patch({blink:e.target.checked})}/>Blink</label><label>Animation speed<select value={config.animationSpeed} onChange={e => patch({animationSpeed:e.target.value})}><option value="slow">Relaxed</option><option value="normal">Normal</option><option value="quick">Lively</option></select></label><p>Blinks gently while this face is on screen. System reduced-motion preferences turn animation off. The disconnected robot uses its built-in happy face.</p></>}
-    {widget.kind !== "face" && <label>Data source<select value={config.mode} onChange={e => patch({ mode: e.target.value, window: widget.kind === "claude" && e.target.value === "live" ? "five_hour" : config.window })}><option value="demo">Demo / sample values</option><option value="live">Live data</option></select></label>}
-    {widget.kind !== "face" && config.mode === "demo" && <><label>Sample big text<input maxLength={24} value={headline} onChange={e => setHeadline(e.target.value)} /></label><label>Sample footer<input maxLength={24} value={footer} onChange={e => setFooter(e.target.value)} /></label><p>Demo values are labeled on the app and OLED.</p></>}
+    {!local && widget.kind !== "face" && <label>Data source<select value={config.mode} onChange={e => patch({ mode: e.target.value, window: widget.kind === "claude" && e.target.value === "live" ? "five_hour" : config.window })}><option value="demo">Demo / sample values</option><option value="live">Live data</option></select></label>}
+    {!local && widget.kind !== "face" && config.mode === "demo" && <><label>Sample big text<input maxLength={24} value={headline} onChange={e => setHeadline(e.target.value)} /></label><label>Sample footer<input maxLength={24} value={footer} onChange={e => setFooter(e.target.value)} /></label><p>Demo values are labeled on the app and OLED.</p></>}
+    {widget.kind === "clock" && <>
+      <label>Time zone<select value={config.clockZone} onChange={e => patch({clockZone:e.target.value})}><option value="local">This computer’s time zone</option>{zones.map(zone => <option key={zone} value={zone}>{zone.replaceAll("_"," ")}</option>)}</select></label>
+      <label>Time format<select value={config.clockFormat} onChange={e => patch({clockFormat:e.target.value})}><option value="12">12-hour · AM/PM</option><option value="24">24-hour</option></select></label>
+      <label className="inline-check"><input type="checkbox" checked={config.clockSeconds} onChange={e => patch({clockSeconds:e.target.checked})}/>Show seconds</label>
+      <label>Date line<select value={config.clockDate} onChange={e => patch({clockDate:e.target.value})}><option value="weekday">Weekday, month and day</option><option value="date">Year-month-day</option><option value="none">Hide date</option></select></label><p>Uses the computer’s clock. Add another clock for a different time zone. Seconds stay below the large time so the bot has room.</p>
+    </>}
+    {widget.kind === "pomodoro" && <>
+      <label>Focus minutes<input type="number" required min={1} max={120} value={config.focusMinutes} onChange={e => patch({focusMinutes:Number(e.target.value)})}/></label>
+      <label>Short break minutes<input type="number" required min={1} max={60} value={config.breakMinutes} onChange={e => patch({breakMinutes:Number(e.target.value)})}/></label>
+      <label>Long break minutes<input type="number" required min={1} max={120} value={config.longBreakMinutes} onChange={e => patch({longBreakMinutes:Number(e.target.value)})}/></label>
+      <label>Focus sessions before long break<input type="number" required min={2} max={12} value={config.focusSessions} onChange={e => patch({focusSessions:Number(e.target.value)})}/></label>
+      <p>Use Start, Pause, Reset and Skip phase beside this widget in the playlist. The timer keeps going while other screens show, the playlist is paused, or Deskbot is closed. Changing these lengths resets the timer to paused. Breaks switch automatically; reminders are visual.</p>
+    </>}
+    {widget.kind === "meeting" && <>
+      <label>Meeting date and time<input type="datetime-local" required value={meetingDate(config.meetingStartsAt)} onChange={e => patch({meetingStartsAt:Number.isFinite(new Date(e.target.value).getTime()) ? Math.floor(new Date(e.target.value).getTime()/1000):0})}/></label>
+      <label>Meeting duration (minutes)<input type="number" required min={1} max={480} value={config.meetingMinutes} onChange={e => patch({meetingMinutes:Number(e.target.value)})}/></label>
+      <p>Use Name for the meeting title. The time uses this computer’s time zone ({Intl.DateTimeFormat().resolvedOptions().timeZone}). This is a manually entered meeting; it shows the countdown, then NOW during the meeting and DONE afterward. Add a separate widget for another meeting.</p>
+    </>}
+    {(widget.kind === "cpu" || widget.kind === "memory") && <>
+      <label>Update every<select value={config.monitorInterval} onChange={e => patch({monitorInterval:Number(e.target.value)})}>{[1,2,5,10,30].map(n => <option key={n} value={n}>{n} seconds</option>)}</select></label>
+      {widget.kind === "cpu" ? <><label className="inline-check"><input type="checkbox" checked={config.showGraph} onChange={e => patch({showGraph:e.target.checked})}/>Show last-minute history</label><p>Shows CPU load across all cores on this computer. History builds as readings arrive; disabled monitors stop sampling.</p></> : <><label>Memory to show<select value={config.memoryMetric} onChange={e => patch({memoryMetric:e.target.value})}><option value="used">Used memory</option><option value="available">Available memory</option></select></label><label>Units<select value={config.memoryUnit} onChange={e => patch({memoryUnit:e.target.value})}><option value="gib">GiB · matches installed RAM sizes</option><option value="gb">GB · decimal gigabytes</option></select></label><p>Shows this computer’s RAM, with its total and a percentage bar. Disabled monitors stop sampling.</p></>}
+    </>}
     {config.mode === "live" && widget.kind === "weather" && <>
       <label>City search<div className="input-action"><input value={query} onChange={e => setQuery(e.target.value)} placeholder="City or postal code" /><button type="button" disabled={!!pending || query.trim().length < 2} onClick={() => run("Searching", async () => { const found = await invoke<Location[]>("search_weather", { name: query }); setLocations(found); if (!found.length) setNotice("No places found. Try a nearby city or a different spelling."); })}>Find city</button></div></label>
       <div className="location-results">{locations.map((l, index) => <button type="button" key={index} onClick={() => { patch({ location: l }); if (label === "Weather" || label === config.location?.name.slice(0, 24)) setLabel(l.name.slice(0, 24)); setLocations([]); }}><strong>{l.name}</strong><small>{[l.region, l.country].filter(Boolean).join(", ")}</small></button>)}</div>

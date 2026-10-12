@@ -4,12 +4,16 @@ mod claude_account;
 mod connection;
 #[path = "../core.rs"]
 mod core;
+#[path = "../local_widgets.rs"]
+mod local_widgets;
 #[path = "../network.rs"]
 mod network;
 #[path = "../protocol.rs"]
 mod protocol;
 #[path = "../providers.rs"]
 mod providers;
+#[path = "../reliability.rs"]
+mod reliability;
 
 use std::{
     thread,
@@ -52,7 +56,9 @@ fn main() -> Result<(), String> {
         config: core::SourceConfig::default(),
     };
     let test_frame = if checker {
-        vec![0xAA; 1024]
+        (0..1024)
+            .map(|i| if i % 2 == 0 { 0xAA } else { 0x55 })
+            .collect()
     } else {
         core::render(Some(&test), true)
     };

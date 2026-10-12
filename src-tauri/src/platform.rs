@@ -91,7 +91,35 @@ pub fn clamp_panel(
 }
 
 pub fn show(app: &AppHandle, anchor: bool) {
-    if let Some(window) = app.get_webview_window("main") {
+    show_panel(app, anchor, false);
+}
+
+pub fn show_settings(app: &AppHandle) {
+    show_panel(app, false, true);
+}
+
+fn show_panel(app: &AppHandle, anchor: bool, open_settings: bool) {
+    let existed = app.get_webview_window("main").is_some();
+    // Tray mode releases the webview when controls close. Recreate it from
+    // the same configuration; frontend startup reads current Rust state.
+    let window = app.get_webview_window("main").or_else(|| {
+        let config = app
+            .config()
+            .app
+            .windows
+            .iter()
+            .find(|w| w.label == "main")?;
+        tauri::WebviewWindowBuilder::from_config(app, config)
+            .ok()?
+            .initialization_script(if open_settings {
+                "window.__deskbotOpenSettings = true;"
+            } else {
+                "window.__deskbotOpenSettings = false;"
+            })
+            .build()
+            .ok()
+    });
+    if let Some(window) = window {
         let _ = window.unminimize();
         let rect = if anchor {
             app.tray_by_id("deskbot")
@@ -138,6 +166,10 @@ pub fn show(app: &AppHandle, anchor: bool) {
         }
         let _ = window.show();
         let _ = window.set_focus();
+        if open_settings && existed {
+            use tauri::Emitter;
+            let _ = window.emit("deskbot-open-settings", ());
+        }
     }
 }
 #[cfg(test)]

@@ -1,0 +1,410 @@
+{
+  "sampleData": true,
+  "dimensions": [
+    128,
+    64
+  ],
+  "displayScale": 4,
+  "faceSourceSha256": "2c1fa3fb7b765f5739f4935a66e0d889f1a7d7484c5728e7308015cf446d13bb",
+  "fontSource": "font8x8 0.3.1 BASIC_LEGACY (same BASIC_FONTS glyphs as app)",
+  "widgets": [
+    {
+      "name": "Desk clock",
+      "title": "CLOCK",
+      "context": "LOCAL PDT",
+      "value": "12:34",
+      "status": "PM",
+      "footer": "MON OCT 12",
+      "number": 1,
+      "rawImage": "01-desk-clock-128x64.png",
+      "documentImage": "01-desk-clock.png",
+      "pixelSha256": "de887f1bb79f101f72bf68e97d309c9c25b371a1b1de377930a7a2d27ec7889d"
+    },
+    {
+      "name": "World clocks",
+      "title": "WORLD TIME",
+      "context": "TOKYO",
+      "value": "04:34",
+      "status": "JST",
+      "footer": "TUE OCT 13",
+      "number": 2,
+      "rawImage": "02-world-clocks-128x64.png",
+      "documentImage": "02-world-clocks.png",
+      "pixelSha256": "8ffa3800cc22a90dad8e344a77ba11d93030883355b85ce682051ad23324810e"
+    },
+    {
+      "name": "Pomodoro",
+      "title": "POMODORO",
+      "context": "FOCUS 3/4",
+      "value": "18:42",
+      "progress": 0.252,
+      "footer": "BREAK: 5 MIN",
+      "number": 3,
+      "rawImage": "03-pomodoro-128x64.png",
+      "documentImage": "03-pomodoro.png",
+      "pixelSha256": "f349fa4bb050279ea9e2ad41156ce55a94168d251dfd00c993cbcecf97fe2193"
+    },
+    {
+      "name": "Meeting countdown",
+      "title": "MEETING",
+      "context": "TEAM SYNC",
+      "value": "12 MIN",
+      "status": "STARTS AT 13:00",
+      "footer": "30 MIN / ONLINE",
+      "number": 4,
+      "rawImage": "04-meeting-countdown-128x64.png",
+      "documentImage": "04-meeting-countdown.png",
+      "pixelSha256": "83c0641bb6ef90dfa6bd07ee69ea1530f0b888827e008ca2a7ac7aa89686f783"
+    },
+    {
+      "name": "Event countdown",
+      "title": "COUNTDOWN",
+      "context": "VACATION",
+      "value": "12 DAYS",
+      "status": "SAT / 09:00",
+      "footer": "TRIP: OCT 24",
+      "number": 5,
+      "rawImage": "05-event-countdown-128x64.png",
+      "documentImage": "05-event-countdown.png",
+      "pixelSha256": "ee42c582608d998ce1987ff9f4df9053d2ace569154003ed93ca25fbdb24846a"
+    },
+    {
+      "name": "Stopwatch",
+      "title": "STOPWATCH",
+      "context": "LAP 03",
+      "value": "04:28.6",
+      "status": "LAST LAP 01:12",
+      "footer": "RUNNING",
+      "number": 6,
+      "rawImage": "06-stopwatch-128x64.png",
+      "documentImage": "06-stopwatch.png",
+      "pixelSha256": "033c84c55ec6ffd9e8bba1b93d4b7fcdb60c4adf6a6f314df6f9fbbffc793048"
+    },
+    {
+      "name": "Alarm",
+      "title": "ALARM",
+      "context": "NEXT ALARM",
+      "value": "07:30",
+      "status": "AM / WEEKDAYS",
+      "footer": "VISUAL REMINDER",
+      "number": 7,
+      "rawImage": "07-alarm-128x64.png",
+      "documentImage": "07-alarm.png",
+      "pixelSha256": "b0ab7100c4ff684a33f71a672500c8b7872cf3efaec365f39e9eac5bec2ebcea"
+    },
+    {
+      "name": "Stretch reminder",
+      "title": "STRETCH",
+      "context": "BREAK TIME",
+      "lines": [
+        "STAND & STRETCH",
+        "FOR 60 SECONDS"
+      ],
+      "footer": "NEXT: 30 MIN",
+      "number": 8,
+      "rawImage": "08-stretch-reminder-128x64.png",
+      "documentImage": "08-stretch-reminder.png",
+      "pixelSha256": "2033d7faa2152562dc7d6a5776631e589922826620a8a8edb9e9485561550eda"
+    },
+    {
+      "name": "Water reminder",
+      "title": "WATER",
+      "context": "DRINK NOW",
+      "value": "4 / 8",
+      "progress": 0.5,
+      "footer": "GLASSES TODAY",
+      "number": 9,
+      "rawImage": "09-water-reminder-128x64.png",
+      "documentImage": "09-water-reminder.png",
+      "pixelSha256": "8d9020a4ecc7c8d7148e34e896164791fbd048924416ce0daee0634d25339e45"
+    },
+    {
+      "name": "Screen break",
+      "title": "EYE BREAK",
+      "context": "REST EYES",
+      "value": "00:20",
+      "status": "LOOK 20 FT AWAY",
+      "footer": "BREAK EVERY 20M",
+      "number": 10,
+      "rawImage": "10-screen-break-128x64.png",
+      "documentImage": "10-screen-break.png",
+      "pixelSha256": "ee14f4a7cbac382e06112fea9db7dd7c78b7adbc2370668e14da04be5068e307"
+    },
+    {
+      "name": "Tiny to-do list",
+      "title": "TO-DO",
+      "context": "NEXT TASK",
+      "lines": [
+        "REVIEW THE",
+        "DESIGN MOCKUPS"
+      ],
+      "footer": "3 / 5 COMPLETE",
+      "number": 11,
+      "rawImage": "11-tiny-to-do-list-128x64.png",
+      "documentImage": "11-tiny-to-do-list.png",
+      "pixelSha256": "fb469de664cd201565564f67f083436e9fc4a097d16f1f206ddcd4e2cde48088"
+    },
+    {
+      "name": "Habit streak",
+      "title": "HABITS",
+      "context": "MORNING",
+      "value": "12 DAYS",
+      "status": "STREAK",
+      "footer": "TODAY: 2/3 DONE",
+      "number": 12,
+      "rawImage": "12-habit-streak-128x64.png",
+      "documentImage": "12-habit-streak.png",
+      "pixelSha256": "fedf0a5367a81a310c9e30380d489f5f60ad8df1c1743b2d0e3d66a679a6158e"
+    },
+    {
+      "name": "Daily goal",
+      "title": "GOAL",
+      "context": "DAILY GOAL",
+      "value": "6 / 10",
+      "progress": 0.6,
+      "footer": "TASKS COMPLETE",
+      "number": 13,
+      "rawImage": "13-daily-goal-128x64.png",
+      "documentImage": "13-daily-goal.png",
+      "pixelSha256": "6487be74d675a24854be645ea935ab4f8e0b359c3b72a9abb828af0f2b42c1c8"
+    },
+    {
+      "name": "Custom note",
+      "title": "NOTE",
+      "context": "FOR YOU",
+      "lines": [
+        "YOU'VE GOT THIS",
+        "ONE STEP AT"
+      ],
+      "footer": "A TIME.",
+      "number": 14,
+      "rawImage": "14-custom-note-128x64.png",
+      "documentImage": "14-custom-note.png",
+      "pixelSha256": "1203adceeb799ada16b97997e651a17f7fdad88ad1c2e66e9e486fef3ee6c4b4"
+    },
+    {
+      "name": "Computer CPU",
+      "title": "CPU",
+      "context": "HOST PC",
+      "value": "23%",
+      "chart": [
+        4,
+        12,
+        26,
+        48,
+        31,
+        78,
+        96,
+        51,
+        39,
+        61,
+        30,
+        23
+      ],
+      "footer": "LAST 60 SECONDS",
+      "number": 15,
+      "rawImage": "15-computer-cpu-128x64.png",
+      "documentImage": "15-computer-cpu.png",
+      "pixelSha256": "fc3a4bfd08549dcfde1adfdde450fb9854099bc705788da51a704330f24994d5"
+    },
+    {
+      "name": "Computer memory",
+      "title": "MEMORY",
+      "context": "HOST PC",
+      "value": "12.4GB",
+      "progress": 0.3875,
+      "footer": "OF 32 GB / 39%",
+      "number": 16,
+      "rawImage": "16-computer-memory-128x64.png",
+      "documentImage": "16-computer-memory.png",
+      "pixelSha256": "06723c22577264d12892306f0906b38e73cae7f85b54d28e31151563741b32b0"
+    },
+    {
+      "name": "Disk space",
+      "title": "DISK",
+      "context": "MAIN DRIVE",
+      "value": "214 GB",
+      "progress": 0.41796875,
+      "footer": "FREE OF 512 GB",
+      "number": 17,
+      "rawImage": "17-disk-space-128x64.png",
+      "documentImage": "17-disk-space.png",
+      "pixelSha256": "c1fcb3612dc96721ef033aa1cb940aaa7cdf1966ac907387e58356c21f0ae4c7"
+    },
+    {
+      "name": "Laptop battery",
+      "title": "BATTERY",
+      "context": "LAPTOP",
+      "value": "78%",
+      "progress": 0.78,
+      "footer": "CHARGING / AC",
+      "number": 18,
+      "rawImage": "18-laptop-battery-128x64.png",
+      "documentImage": "18-laptop-battery.png",
+      "pixelSha256": "ca058a5feeae301ec38d8fcda7455b0d2faee7f708794c9949901983dc2c1edf"
+    },
+    {
+      "name": "Network activity",
+      "title": "NETWORK",
+      "context": "LIVE",
+      "lines": [
+        "DOWN 12.4 MB/S",
+        "UP 0.8 MB/S"
+      ],
+      "chart": [
+        3,
+        6,
+        4,
+        8,
+        10,
+        6,
+        9,
+        12,
+        8,
+        11,
+        10,
+        13
+      ],
+      "footer": "TOTAL / 60 SEC",
+      "number": 19,
+      "rawImage": "19-network-activity-128x64.png",
+      "documentImage": "19-network-activity.png",
+      "pixelSha256": "fc5c2354c4be22bfe332517b7f4546e13e1e4e6e192f505bbb0b54ee597973a3"
+    },
+    {
+      "name": "Connection health",
+      "title": "CONNECTION",
+      "context": "INTERNET",
+      "value": "ONLINE",
+      "status": "PING 18 MS",
+      "footer": "CHECKED 5S AGO",
+      "number": 20,
+      "rawImage": "20-connection-health-128x64.png",
+      "documentImage": "20-connection-health.png",
+      "pixelSha256": "8d368dcfaccf15467fe948ef76de6d013009bffedc134e777949bf680738e8e7"
+    },
+    {
+      "name": "Download progress",
+      "title": "DOWNLOAD",
+      "context": "FILE 1/2",
+      "value": "63%",
+      "progress": 0.63,
+      "footer": "400MB / 2M LEFT",
+      "number": 21,
+      "rawImage": "21-download-progress-128x64.png",
+      "documentImage": "21-download-progress.png",
+      "pixelSha256": "bfa6b3f08999aa1cc78405427e4dbf6f0be97edfd34a91a81a5a2494fb07fc30"
+    },
+    {
+      "name": "Git status",
+      "title": "GIT",
+      "context": "DROIDFUN",
+      "value": "MAIN",
+      "status": "3 MOD / 1 NEW",
+      "footer": "STAGED 2 / 4",
+      "number": 22,
+      "rawImage": "22-git-status-128x64.png",
+      "documentImage": "22-git-status.png",
+      "pixelSha256": "dc6edc8decb4a484ea213289846764f15e347ba39ed1dcb6b7031b1453beb518"
+    },
+    {
+      "name": "Build/test status",
+      "title": "BUILD",
+      "context": "TEST SUITE",
+      "value": "PASS",
+      "status": "29 / 29 PASSED",
+      "footer": "TIME: 8.2 SEC",
+      "number": 23,
+      "rawImage": "23-build-test-status-128x64.png",
+      "documentImage": "23-build-test-status.png",
+      "pixelSha256": "49199d8d4b90f1fa9da0d4e11b8f33eb81620f04fa67212e407b13eabeb77ddb"
+    },
+    {
+      "name": "Service health",
+      "title": "SERVICES",
+      "context": "LOCAL",
+      "value": "3 / 3",
+      "status": "DB WEB CACHE",
+      "footer": "CHECKED 10S AGO",
+      "number": 24,
+      "rawImage": "24-service-health-128x64.png",
+      "documentImage": "24-service-health.png",
+      "pixelSha256": "cea4178b4d62d1e67eb8e35c89c1098cef13b7fd7fb183a11246d11d4bc0ec5d"
+    },
+    {
+      "name": "Now playing",
+      "title": "MUSIC",
+      "context": "PLAYING",
+      "lines": [
+        "MIDNIGHT CITY",
+        "M83"
+      ],
+      "progress": 0.2962962962962963,
+      "footer": "01:12 / 04:03",
+      "number": 25,
+      "rawImage": "25-now-playing-128x64.png",
+      "documentImage": "25-now-playing.png",
+      "pixelSha256": "9c86dc9d06d9f88f6647c17af4d6954d0b13d07ecb7d7c83b878d1193fe6314a"
+    },
+    {
+      "name": "Rain outlook",
+      "title": "RAIN",
+      "context": "NEXT HOUR",
+      "value": "70%",
+      "status": "AT 14:00 / 2MM",
+      "footer": "BRING UMBRELLA",
+      "number": 26,
+      "rawImage": "26-rain-outlook-128x64.png",
+      "documentImage": "26-rain-outlook.png",
+      "pixelSha256": "9d29436053bb06e2b5f89255ff5d91ee903ad8597ec56e91136cb99e9ee128f6"
+    },
+    {
+      "name": "Air quality",
+      "title": "AIR",
+      "context": "US AQI",
+      "value": "42 AQI",
+      "status": "GOOD",
+      "footer": "UPDATED 5M AGO",
+      "number": 27,
+      "rawImage": "27-air-quality-128x64.png",
+      "documentImage": "27-air-quality.png",
+      "pixelSha256": "ccc303b00ee39683495ce5f0c3cdf4fc4f27439674dae3ed3808b83a2d097ed3"
+    },
+    {
+      "name": "UV reminder",
+      "title": "UV INDEX",
+      "context": "TODAY",
+      "value": "6 HIGH",
+      "status": "PEAK AT 13:00",
+      "footer": "TAKE SHADE",
+      "number": 28,
+      "rawImage": "28-uv-reminder-128x64.png",
+      "documentImage": "28-uv-reminder.png",
+      "pixelSha256": "35c13481209855c57473248c70c3bceaddd4b04238f45a3beed7592327f0adc1"
+    },
+    {
+      "name": "Sunrise/sunset",
+      "title": "SUN",
+      "context": "SUNSET",
+      "value": "18:21",
+      "status": "IN 3H 12M",
+      "footer": "NEXT DAWN 06:52",
+      "number": 29,
+      "rawImage": "29-sunrise-sunset-128x64.png",
+      "documentImage": "29-sunrise-sunset.png",
+      "pixelSha256": "db7e216d45146c14d7b77fe741598cf7e8cec2aa6ce19676bab3f35f45f63c76"
+    },
+    {
+      "name": "Inbox count",
+      "title": "INBOX",
+      "context": "WORK MAIL",
+      "value": "7 NEW",
+      "status": "UNREAD MESSAGES",
+      "footer": "SYNCED 1M AGO",
+      "number": 30,
+      "rawImage": "30-inbox-count-128x64.png",
+      "documentImage": "30-inbox-count.png",
+      "pixelSha256": "6ae19ec4f8978a7ef274a5bbf94c9771a1bd5786861adf882685bb19094e6e8b"
+    }
+  ]
+}
