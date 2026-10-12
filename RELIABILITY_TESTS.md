@@ -1,6 +1,6 @@
 # Mac and robot reliability tests
 
-October 12, 2026. This record supplements [spec acceptance](IMPLEMENTATION_SPEC.md) and [completion status](SPEC_COMPLETION.md). A started soak is not a passed soak. Windows/Linux release packages have not been changed by this work.
+October 12, 2026. This record supplements [spec acceptance](IMPLEMENTATION_SPEC.md) and [completion status](SPEC_COMPLETION.md). A started soak is not a passed soak. The separate 0.3.0 Windows/Linux release packages were built and published on October 12; those native package checks do not replace this Mac/robot run.
 
 ## Preflight evidence
 
@@ -91,3 +91,7 @@ The final five-minute closed-panel static baseline passed: average app CPU **0.2
 The collector now gives the deliberate host-link return its five-second recovery window, avoiding an immediate false alert from the telemetry snapshot written just before fault removal. Actual recovery timestamps and all raw snapshots are retained; this grace does not establish a five-second recovery pass by itself.
 
 Cleanup must use the replacement run directory and replacement LaunchAgent label/plist, and only its measured app PID. Never remove unrelated files or restart another process sharing a name. The previous first-run collector/plist and app binary are archived. Do not join elapsed times from different binaries.
+
+### Release publication during observation
+
+Version 0.3.0 was published on October 12 with the same widget/animation production source and a package version bump. The exact measured internal executable, selected robot, saved preferences, collector and fault schedule were left unchanged. The release package was not launched during the run. [Native build evidence](docs/NATIVE_BUILDS.md#version-030-build-records) is separate from continuous observation and physical acceptance.

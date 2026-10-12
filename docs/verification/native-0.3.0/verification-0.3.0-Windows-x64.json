@@ -1,0 +1,44 @@
+{
+  "version": "0.3.0",
+  "platform": "Windows-x64",
+  "target": "x86_64-pc-windows-msvc",
+  "applicationCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+  "pipelineCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+  "runUrl": "https://github.com/greensky5656/DroidFun/actions/runs/38311819047",
+  "runner": {
+    "os": "Windows",
+    "architecture": "X64",
+    "image": "20260925.250.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 33,
+    "failed": 0
+  },
+  "architecture": "x64",
+  "smoke": {
+    "result": "passed",
+    "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+    "aliveSeconds": 15,
+    "installerExitCode": 0,
+    "installedBinaryMatchesPackage": true,
+    "installedBinaryArchitecture": "x64",
+    "nativeWindowCreated": true
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "Deskbot-0.3.0-Windows-x64-setup.exe",
+      "bytes": 3702185,
+      "sha256": "726ef1cda2ffc08d8ff5a16d1ff7f5619af880461b97905d31c2aa3abfc44e04"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

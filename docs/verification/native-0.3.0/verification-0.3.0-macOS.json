@@ -1,0 +1,47 @@
+{
+  "version": "0.3.0",
+  "applicationCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "rustBehaviorTests": {
+    "passed": 34,
+    "failed": 0
+  },
+  "frontendChecks": "passed",
+  "universalAppDmgBuild": "passed",
+  "bundleVersionVerified": true,
+  "adHocSignatureVerified": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "zipExecutableMatchesApp": true,
+  "executableSha256": "a86a945ac37483bfb0c250cf2dd9aabd65fb889a9b319c7c965c825fe90fa615",
+  "assets": [
+    {
+      "name": "Deskbot-0.3.0-macOS-universal.dmg",
+      "bytes": 12110627,
+      "sha256": "7e08b2f2e6baf8c60d3329303953b813bc92a78ef464714f6efcfcd66f541d1b"
+    },
+    {
+      "name": "Deskbot-0.3.0-macOS-universal.zip",
+      "bytes": 10882257,
+      "sha256": "1aba13cc591f65cbd801e21f0ab54f4f64709a8dbb150a221808e8e36a21f509"
+    },
+    {
+      "name": "deskbot-rp2040-zero-gp4-gp5-v1.1.0.uf2",
+      "bytes": 154624,
+      "sha256": "82d53832d0ce8a7ec733a0276607ded3aa5d853477390aba5002ab5a3a1ab2a0"
+    }
+  ],
+  "runtimeEvidence": "Same production features verified on Apple Silicon in the measured internal 0.2.0 build; release bump changes package version. The 0.3.0 package has not been launched during the active soak.",
+  "physicalNewWidgetsAndGestures": "User confirmed readable and visible on October 12, 2026",
+  "soak": "24-hour run pending on unchanged internal test executable 93f2b82693734936df36638ede017bbe365b3b1d66bcb5812897c3633edc8030",
+  "remaining": [
+    "Intel Mac runtime",
+    "Full 24-hour reliability result",
+    "Remaining physical acceptance",
+    "Developer ID signing/notarization"
+  ],
+  "dmgReadOnlyMountAndPayloadVerification": "passed"
+}

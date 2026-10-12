@@ -1,0 +1,49 @@
+{
+  "version": "0.3.0",
+  "platform": "Linux-x86_64",
+  "target": "x86_64-unknown-linux-gnu",
+  "applicationCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+  "pipelineCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+  "runUrl": "https://github.com/greensky5656/DroidFun/actions/runs/38311819047",
+  "runner": {
+    "os": "Linux",
+    "architecture": "X64",
+    "image": "20261004.327.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 34,
+    "failed": 0
+  },
+  "architecture": "x86_64",
+  "smoke": {
+    "result": "passed",
+    "debInstalled": true,
+    "installedBinaryMatchesPackage": true,
+    "rpmMetadataArchitecture": "x86_64",
+    "nativeWindowCreated": true,
+    "aliveSeconds": 15,
+    "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; no tray host, robot or account credentials"
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "Deskbot-0.3.0-Linux-x86_64.deb",
+      "bytes": 6880858,
+      "sha256": "a7200458bc2d1a2c104a3f559127717c9cb0a2888aa27b640e7c7e26d94e9bc9"
+    },
+    {
+      "name": "Deskbot-0.3.0-Linux-x86_64.rpm",
+      "bytes": 6879162,
+      "sha256": "e95c2571312fa0fc51aeb3242be8eebcb4c61166dec8e57b9ad2dfb73a4eb112"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

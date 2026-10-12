@@ -1,0 +1,7 @@
+{
+  "version": "0.3.0",
+  "rpmPayloadExecutableArchitecture": "ELF64 x86_64",
+  "rpmExecutableSha256": "776917b1ce4802b0a1c10dac53ba885d7715b700d45e43ad91b556d9ef51c793",
+  "rpmExecutableBytes": 24901864,
+  "runtime": "Fedora RPM runtime remains untested"
+}

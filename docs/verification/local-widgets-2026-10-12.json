@@ -65,5 +65,12 @@
     ],
     "meeting": "Unset and disabled until user configuration",
     "previousRun": "Interrupted after 80.8 minutes for the authorized feature update; evidence retained separately"
+  },
+  "publishedRelease": {
+    "version": "0.3.0",
+    "url": "https://github.com/greensky5656/DroidFun/releases/tag/v0.3.0",
+    "applicationCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+    "boundary": "Same widget/animation production sources, package versions bumped. Internal measured test executable remains unchanged; 24-hour result pending.",
+    "nativeRecords": "native-0.3.0/"
   }
 }

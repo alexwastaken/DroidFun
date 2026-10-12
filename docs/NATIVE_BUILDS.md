@@ -50,3 +50,17 @@ The native targets follow [Tauri's distribution pipeline guidance](https://v2.ta
 | Windows-x64 | `02af44fd1b36c5317de82ca95c6b48c574b99a44` | [Native run](https://github.com/greensky5656/DroidFun/actions/runs/38219584289), [verification](verification/native-0.2.0/verification-0.2.0-Windows-x64.json) |
 
 The Windows ARM64 source includes a correction confined to `#[cfg(test)]`: the mock HTTP server explicitly uses a blocking accepted socket and waits for complete request headers. The original Windows test could fail with Winsock error 10035 before request bytes arrived. Production Rust, frontend and firmware source remain unchanged. [Microsoft documents accepted sockets inheriting listener properties](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-accept). All 27 behavior checks remain required.
+
+## Version 0.3.0 build records
+
+All three targets use application and pipeline commit `f506d20bf9b8f2fa58fb051b3b59570a1fb015f8`. [Native workflow](https://github.com/greensky5656/DroidFun/actions/runs/38311819047) completed successfully.
+
+| Platform | Behavior tests | Build and installation evidence |
+| --- | --- | --- |
+| Windows x64 | 33 passed | [Verification](verification/native-0.3.0/verification-0.3.0-Windows-x64.json), matching installed payload/architecture, native window alive 15 seconds |
+| Windows ARM64 | 33 passed | [Verification](verification/native-0.3.0/verification-0.3.0-Windows-ARM64.json), matching installed payload/architecture, native window alive 15 seconds |
+| Linux x86_64 | 34 passed | [Verification](verification/native-0.3.0/verification-0.3.0-Linux-x86_64.json), installed DEB payload matches, native window alive 15 seconds under Xvfb/D-Bus |
+
+The credential-terminal test is Unix-only, explaining the test-count difference. [RPM payload inspection](verification/native-0.3.0/linux-package-inspection.json) independently confirms x86_64 ELF; Fedora runtime remains untested. [Mac packaging evidence](verification/native-0.3.0/verification-0.3.0-macOS.json) records the universal executable, ad-hoc signature and ZIP/DMG payload checks. The exact release Mac package was not launched during the ongoing reliability run. [All release upload digests](verification/native-0.3.0/release-upload-verification.json) match their local files.
+
+These development packages include the five local widgets and richer animations. The continuous Mac/robot test remains on its unchanged internal executable and has not yet completed; publication is not 24-hour acceptance. Physical Windows/Linux robot use, real account sign-in, human tray interaction, upgrade/uninstall, signing, Fedora runtime and Intel Mac runtime remain open.

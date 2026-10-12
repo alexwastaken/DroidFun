@@ -1,0 +1,87 @@
+{
+  "version": "0.3.0",
+  "releaseId": 411016604,
+  "releaseUrl": "https://github.com/greensky5656/DroidFun/releases/tag/v0.3.0",
+  "applicationCommit": "f506d20bf9b8f2fa58fb051b3b59570a1fb015f8",
+  "nativeRunUrl": "https://github.com/greensky5656/DroidFun/actions/runs/38311819047",
+  "verifiedAssets": [
+    {
+      "name": "Deskbot-0.3.0-Linux-x86_64.deb",
+      "bytes": 6880858,
+      "sha256": "a7200458bc2d1a2c104a3f559127717c9cb0a2888aa27b640e7c7e26d94e9bc9"
+    },
+    {
+      "name": "Deskbot-0.3.0-Linux-x86_64.rpm",
+      "bytes": 6879162,
+      "sha256": "e95c2571312fa0fc51aeb3242be8eebcb4c61166dec8e57b9ad2dfb73a4eb112"
+    },
+    {
+      "name": "Deskbot-0.3.0-macOS-universal.dmg",
+      "bytes": 12110627,
+      "sha256": "7e08b2f2e6baf8c60d3329303953b813bc92a78ef464714f6efcfcd66f541d1b"
+    },
+    {
+      "name": "Deskbot-0.3.0-macOS-universal.zip",
+      "bytes": 10882257,
+      "sha256": "1aba13cc591f65cbd801e21f0ab54f4f64709a8dbb150a221808e8e36a21f509"
+    },
+    {
+      "name": "Deskbot-0.3.0-Windows-ARM64-setup.exe",
+      "bytes": 3323583,
+      "sha256": "0fff9f64562bf35849c33e7dc56c2237bb42fe11ae8da52715f9376e6c08688f"
+    },
+    {
+      "name": "Deskbot-0.3.0-Windows-x64-setup.exe",
+      "bytes": 3702185,
+      "sha256": "726ef1cda2ffc08d8ff5a16d1ff7f5619af880461b97905d31c2aa3abfc44e04"
+    },
+    {
+      "name": "deskbot-rp2040-zero-gp4-gp5-v1.1.0.uf2",
+      "bytes": 154624,
+      "sha256": "82d53832d0ce8a7ec733a0276607ded3aa5d853477390aba5002ab5a3a1ab2a0"
+    },
+    {
+      "name": "SHA256SUMS-0.3.0-Linux-x86_64.txt",
+      "bytes": 194,
+      "sha256": "ec23d74855646a5c1e4e015e3cf5066799f2862f93ccc53bbade35abcd0c2ac4"
+    },
+    {
+      "name": "SHA256SUMS-0.3.0-macOS.txt",
+      "bytes": 305,
+      "sha256": "a848b921a9cd49f0f5756983593370df3bf3b7daec64500c271759d9f4b015fc"
+    },
+    {
+      "name": "SHA256SUMS-0.3.0-Windows-ARM64.txt",
+      "bytes": 104,
+      "sha256": "a110c84414a02b4fc52880ca356c61d25cf1a725b6fdb4e8fb4f76fa1de96e2f"
+    },
+    {
+      "name": "SHA256SUMS-0.3.0-Windows-x64.txt",
+      "bytes": 102,
+      "sha256": "468a29d2048af60e211491aeecda6edc69d200c8365d9410c158b0191e90f3f5"
+    },
+    {
+      "name": "verification-0.3.0-Linux-x86_64.json",
+      "bytes": 1501,
+      "sha256": "3d4c4b19c6968c3b96c3857fd6e2c378b99c5abe6178f3eabde290ef7e864f0d"
+    },
+    {
+      "name": "verification-0.3.0-macOS.json",
+      "bytes": 1717,
+      "sha256": "2a6776e56b7518ac5d38038c782b6f7beb57a161dcd1dcda13268161396d8c32"
+    },
+    {
+      "name": "verification-0.3.0-Windows-ARM64.json",
+      "bytes": 1302,
+      "sha256": "82ff176f9a0196980650ead9eaada3eeb701d3901e2314cd322d21078c884a71"
+    },
+    {
+      "name": "verification-0.3.0-Windows-x64.json",
+      "bytes": 1291,
+      "sha256": "a63360cfdd49d9b3cc63ed4b434f18cdbd233079f2ca689e2b53027db2838a8c"
+    }
+  ],
+  "allStoredDigestsMatchLocalFiles": true,
+  "developmentPrerelease": true,
+  "soak": "Still pending on unchanged internal Mac test executable"
+}
