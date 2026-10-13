@@ -1,0 +1,40 @@
+{
+  "version": "0.3.1",
+  "productName": "DroidFun App",
+  "identifier": "com.deskbot.companion",
+  "applicationCommit": "994f8993e647a7085444c8f7abda3966004e94e7",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "tests": {
+    "passed": 34,
+    "failed": 0
+  },
+  "adHocSignatureVerified": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.3.1-macOS-universal.dmg",
+      "bytes": 11668396,
+      "sha256": "074b5c1e204aa51bdd9cc8e0cc46158cb8434a496c2727c52911a156673deebe"
+    },
+    {
+      "name": "DroidFun-App-0.3.1-macOS-universal.zip",
+      "bytes": 11648260,
+      "sha256": "c9d97ba30c3a54f19e7ad07aec78035612abd564ccb88cd4ad1d8bff38c110ff"
+    }
+  ],
+  "remaining": [
+    "Local launch and upgrade verification",
+    "USB robot connection verification",
+    "Intel Mac runtime"
+  ],
+  "executableSha256": "637151caa015f03b7f1af4e675fff4f825724d0f447cb9e41e68d69efc886199",
+  "zipPayloadMatches": true,
+  "readOnlyDmgPayloadMatches": true,
+  "readOnlyDmgSignatureVerified": true,
+  "runtimeLaunchPerformed": false,
+  "runtimeBoundary": "Release app not launched because the ongoing robot soak uses the same bundle identifier. Upgrade, Intel runtime, and exact branded-app Mac launch remain open."
+}

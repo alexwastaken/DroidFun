@@ -1,0 +1,44 @@
+{
+  "version": "0.3.1",
+  "platform": "Windows-ARM64",
+  "target": "aarch64-pc-windows-msvc",
+  "applicationCommit": "994f8993e647a7085444c8f7abda3966004e94e7",
+  "pipelineCommit": "994f8993e647a7085444c8f7abda3966004e94e7",
+  "runUrl": "https://github.com/greensky5656/DroidFun/actions/runs/38335346212",
+  "runner": {
+    "os": "Windows",
+    "architecture": "ARM64",
+    "image": "20261004.176.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 33,
+    "failed": 0
+  },
+  "architecture": "ARM64",
+  "smoke": {
+    "nativeWindowCreated": true,
+    "installedBinaryArchitecture": "ARM64",
+    "result": "passed",
+    "aliveSeconds": 15,
+    "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+    "installedBinaryMatchesPackage": true,
+    "installerExitCode": 0
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.3.1-Windows-ARM64-setup.exe",
+      "bytes": 3709948,
+      "sha256": "e6e4477336475ce97305551a4f58945905012e04bc36ef227ffeaf8021e525a4"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

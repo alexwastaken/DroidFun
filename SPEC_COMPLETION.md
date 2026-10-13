@@ -1,4 +1,4 @@
-# Deskbot 0.3.0 implementation and acceptance
+# DroidFun App 0.3.1 implementation and acceptance
 
 Updated October 11–12, 2026. Mac, Windows x64/ARM64 and Linux x86_64 development packages are built. Mac hardware behavior is commissioned; native Windows/Linux package checks do not establish full hardware or desktop acceptance. The original damaged OLED diagnostic and prior app/firmware builds remain archived.
 
@@ -66,3 +66,9 @@ Clock, Pomodoro, manual meeting countdown, CPU and memory are implemented with A
 The new local widgets, richer companion animation and reliability fixes are published in [0.3.0](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.0), with Mac universal, Windows x64/ARM64 and Linux x86_64 DEB/RPM downloads, checksum files and per-platform verification records. The measured Mac soak continues on its unchanged 0.2.0 internal test executable, identified by SHA-256 in the local-widget verification record. The release version bump does not replace or restart that test. [Native Windows/Linux build and installation evidence](docs/NATIVE_BUILDS.md#version-030-build-records) is recorded separately; a published development build does not imply completed physical/platform acceptance.
 
 All 15 release assets matched GitHub’s stored SHA-256 digests. [Windows x64](docs/verification/native-0.3.0/verification-0.3.0-Windows-x64.json), [Windows ARM64](docs/verification/native-0.3.0/verification-0.3.0-Windows-ARM64.json), [Linux](docs/verification/native-0.3.0/verification-0.3.0-Linux-x86_64.json), [Mac packaging](docs/verification/native-0.3.0/verification-0.3.0-macOS.json), [upload verification](docs/verification/native-0.3.0/release-upload-verification.json). Windows has one fewer test because credential-terminal testing is Unix-only. The RPM payload was independently inspected as x86_64 ELF; Fedora runtime remains open. The Mac ZIP/DMG payloads and ad-hoc signature were checked, but the release package was not launched during the ongoing soak.
+
+## Version 0.3.1 rebuild and branding
+
+[DroidFun App 0.3.1](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.1) includes the same local widgets and companion behavior with the Droid Fun name, theme and icons. Mac universal, Windows x64/ARM64 and Linux x86_64 DEB/RPM packages were rebuilt from commit `994f8993e647a7085444c8f7abda3966004e94e7`. Mac/Linux passed 34 native behavior tests and Windows passed 33 per architecture. Windows/Linux installation and native-window checks passed. Mac architecture, ad-hoc signing, ZIP and read-only DMG payload checks passed; the exact branded Mac app was not launched during the active soak.
+
+All 15 uploads matched GitHub's stored SHA-256 digests. [Build evidence and remaining platform gates](docs/NATIVE_BUILDS.md#version-031-build-records) and [upgrade instructions](docs/BRANDING.md) are recorded separately. The running Mac/robot test retains its measured binary and deadline; neither this rebuild nor fresh Claude data alone establishes the 24-hour or natural credential-expiration acceptance gate.

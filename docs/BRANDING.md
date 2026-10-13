@@ -8,10 +8,10 @@ Keep the bundle identifier `com.deskbot.companion`, Cargo executable `deskbot`, 
 
 ## Upgrading an installed app
 
-Before replacing the old Deskbot app, turn off Start at login in its settings and quit it. Install DroidFun App, confirm your existing playlist, then re-enable Start at login if wanted. The renamed app lives at a different application path; this prevents an old login entry from opening the previous app. Native upgrade/install verification is still required before distributing 0.3.1.
+Before replacing the old Deskbot app, turn off Start at login in its settings and quit it. Install DroidFun App, confirm your existing playlist, then re-enable Start at login if wanted. The renamed app lives at a different application path; this prevents an old login entry from opening the previous app. Version 0.3.1 is available as a development release after native Windows/Linux installation checks and Mac package verification. Full upgrade acceptance and exact branded-app Mac launch remain required before production distribution.
 
 ## Packaging and publishing
 
 Run `npm ci`, `npm run check`, `npm run build`, and the existing native Rust tests. Build on each supported OS using the documented packaging scripts. Future package artifacts are named `DroidFun-App-VERSION-PLATFORM`. Native window smoke checks now expect DroidFun App. Check light/dark appearance, the robot-face app/tray icons, settings, and an upgrade with an existing playlist. The blue face is the application icon; macOS gets a monochrome template of the same face for the menu bar.
 
-The website still serves the verified 0.3.0 release until 0.3.1 native packages are built, tested, and manually published. A source-code push alone does not replace website downloads. Do not relabel the old installers as 0.3.1. Preserve release signing/notarization disclosures and the current firmware/hardware verification limits.
+Version 0.3.1 packages are now manually published on GitHub with native build evidence. The website download configuration was not changed by this rebuild and remains a separate update. A source-code push alone does not replace website downloads. Do not relabel the old installers as 0.3.1. Preserve release signing/notarization disclosures and the current firmware/hardware verification limits.

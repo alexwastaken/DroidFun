@@ -64,3 +64,18 @@ All three targets use application and pipeline commit `f506d20bf9b8f2fa58fb051b3
 The credential-terminal test is Unix-only, explaining the test-count difference. [RPM payload inspection](verification/native-0.3.0/linux-package-inspection.json) independently confirms x86_64 ELF; Fedora runtime remains untested. [Mac packaging evidence](verification/native-0.3.0/verification-0.3.0-macOS.json) records the universal executable, ad-hoc signature and ZIP/DMG payload checks. The exact release Mac package was not launched during the ongoing reliability run. [All release upload digests](verification/native-0.3.0/release-upload-verification.json) match their local files.
 
 These development packages include the five local widgets and richer animations. The continuous Mac/robot test remains on its unchanged internal executable and has not yet completed; publication is not 24-hour acceptance. Physical Windows/Linux robot use, real account sign-in, human tray interaction, upgrade/uninstall, signing, Fedora runtime and Intel Mac runtime remain open.
+
+## Version 0.3.1 build records
+
+[DroidFun App 0.3.1](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.1) was rebuilt from application and pipeline commit `994f8993e647a7085444c8f7abda3966004e94e7`. [Native Windows/Linux run](https://github.com/greensky5656/DroidFun/actions/runs/38335346212) completed successfully. The Mac universal package was built locally from the same commit.
+
+| Platform | Behavior tests | Build and package evidence |
+| --- | --- | --- |
+| Windows x64 | 33 passed | [Verification](verification/native-0.3.1/verification-0.3.1-Windows-x64.json), silent installation, payload/architecture match, native window alive 15 seconds |
+| Windows ARM64 | 33 passed | [Verification](verification/native-0.3.1/verification-0.3.1-Windows-ARM64.json), silent installation, payload/architecture match, native window alive 15 seconds |
+| Linux x86_64 | 34 passed | [Verification](verification/native-0.3.1/verification-0.3.1-Linux-x86_64.json), DEB installation and matching payload, native window alive 15 seconds on Ubuntu 24.04 under Xvfb/D-Bus |
+| macOS universal | 34 passed | [Verification](verification/native-0.3.1/verification-0.3.1-macOS.json), Intel/Apple Silicon executable, ad-hoc signature, matching ZIP and mounted read-only DMG payloads |
+
+The Mac bundle is signed before disk-image creation, so both downloads contain the verified app. [Independent RPM payload inspection](verification/native-0.3.1/linux-package-inspection.json) confirms ELF64 x86_64. All 15 release uploads match [GitHub's stored digests](verification/native-0.3.1/release-upload-verification.json). Frontend checks/build passed on every target. The test-count difference is the Unix-only credential-terminal test.
+
+This development release introduces the DroidFun App name, blue theme and icons while preserving compatibility identifiers and settings locations. The exact branded Mac app was not launched during the ongoing robot soak; its launch and upgrade acceptance remain open. Windows installers are unsigned, and Mac packages lack Developer ID signing and notarization. Windows/Linux physical USB, account authentication, human tray interaction, full upgrade/uninstall, Fedora RPM runtime and Intel Mac runtime remain open. The separate Mac/robot run continues unchanged and is not yet a 24-hour pass. Follow [upgrade instructions](BRANDING.md) when replacing Deskbot.

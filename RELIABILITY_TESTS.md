@@ -119,3 +119,7 @@ The app, collector, LaunchAgent and scoped idle-sleep prevention remain active. 
 ### Claude renewal acceptance requirement
 
 The user reaffirmed that the run should continue and notify only on completion/issues, with explicit verification of Claude after natural sign-in expiration. Require redacted evidence of expiration or the Deskbot-owned renewal helper, followed by a newly fetched fresh Claude card and return to cycling. A usage-window reset or fresh data alone is not credential-renewal proof. Inspect authentication failure persisting beyond the five-minute retry, 20-second helper and sampling margin. Do not manually renew credentials or invoke another client to conceal an app failure. If available redacted evidence cannot establish expiration, leave this check unverified and provide a follow-up verification plan at completion.
+
+### DroidFun App 0.3.1 rebuild during observation
+
+The branded 0.3.1 development release was rebuilt and published without replacing or launching over the measured internal app. Its executable hash, app/collector identities and fresh progress were verified unchanged. The robot run retains its October 13, 2:01 PM Pacific deadline; its 24-hour result and natural Claude credential-expiration proof remain pending. Native package evidence is separate in [0.3.1 build records](docs/NATIVE_BUILDS.md#version-031-build-records).
