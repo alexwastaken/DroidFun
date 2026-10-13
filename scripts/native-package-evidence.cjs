@@ -40,7 +40,7 @@ if (process.argv[2] === 'test') {
   const assets = extensions.map(ext => {
     const matches = walk(path.join(release, 'bundle')).filter(f => path.extname(f) === ext);
     if (matches.length !== 1) throw new Error(`Expected one ${ext} package, found ${matches.length}`);
-    const name = `Deskbot-${version}-${platform}${ext === '.exe' ? '-setup' : ''}${ext}`;
+    const name = `DroidFun-App-${version}-${platform}${ext === '.exe' ? '-setup' : ''}${ext}`;
     fs.copyFileSync(matches[0], path.join(out, name));
     const data = fs.readFileSync(path.join(out, name));
     return { name, bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') };

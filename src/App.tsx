@@ -120,7 +120,7 @@ export default function App() {
     finally { setBusy(false); }
   }
 
-  if (!state) return <main className="loading">Waking up Deskbot…{error && <p role="alert">{error}</p>}</main>;
+  if (!state) return <main className="loading">Waking up DroidFun App…{error && <p role="alert">{error}</p>}</main>;
   const widgets = state.settings.widgets;
   const selectedWidget = widgets.find(w => w.id === selected);
   const current = widgets.find(w => w.id === state.currentId);
@@ -133,8 +133,8 @@ export default function App() {
   const sourceLabel = visibleWidget?.kind === "face" ? "" : isLocal ? "local" : visibleWidget?.config.mode === "live" ? (liveCard?.state ?? "waiting") : "demo";
 
   return <main className="app-shell">
-    <div className="topline"><span className="brand-dot" /> <strong>deskbot</strong><span className="demo-pill">{connection?.state === "connected" ? "ROBOT CONNECTED" : "PREVIEW MODE"}</span></div>
-    <section className="intro"><div><div className="eyebrow">YOUR DESK COMPANION</div><h1>Make your desk<br /><em>a little brighter.</em></h1><p>Pick what your mini robot shows. Preview your playlist and connect its USB cable.</p></div></section>
+    <div className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><span className="demo-pill">{connection?.state === "connected" ? "ROBOT CONNECTED" : "PREVIEW MODE"}</span></div>
+    <section className="intro"><div><div className="eyebrow">YOUR DROID, YOUR WAY</div><h1>Your desk could use<br /><em>some company.</em></h1><p>Choose what your droid shows. Add your favorite widgets and connect with USB.</p></div></section>
     <section className="robot-wrap" aria-label="Robot screen preview">
       <div className="antenna"><span /></div>
       <div className="robot-head"><span className="head-highlight" /><div className="screen-bezel"><Oled frame={visibleFrame} brightness={state.displayOn || selected ? state.settings.brightness : 0} orientation={state.settings.preferences.orientation} description={`${selectedWidget?.label ?? current?.label ?? "Happy face"} OLED preview. ${liveCard?.headline ?? visibleWidget?.headline ?? ""}. ${liveCard?.footer ?? visibleWidget?.footer ?? ""}. ${liveCard?.detail ?? visibleWidget?.config.faceExpression ?? ""}`} /></div><div className="robot-cheek left" /><div className="robot-cheek right" /></div>
@@ -150,7 +150,7 @@ export default function App() {
       <p className="connection-detail">{connection?.detail ?? "Checking USB devices…"}</p>
       {connection?.boardId && <p className="connection-detail">Board {connection.boardId} · Firmware {connection.firmware} · OLED {connection.displayHealth}</p>}
       {ports.length === 0 ? <p className="connection-detail">No RP2040-Zero serial port found. A USB data cable is required.</p> : ports.map(port => <div className="port-row" key={port.serial}><div><strong>{port.product}</strong><small>{port.path} · {port.serial}</small></div><button disabled={busy} onClick={() => act("select_robot", { serial: port.serial })}>Connect</button></div>)}
-      {connection?.state === "setup_needed" && <p className="connection-detail">This device has not answered the Deskbot protocol. It may be running a diagnostic or another sketch; install the Deskbot firmware to control it here.</p>}
+      {connection?.state === "setup_needed" && <p className="connection-detail">This device has not answered the DroidFun App protocol. It may be running a diagnostic or another sketch; install the DroidFun App firmware to control it here.</p>}
     </section>
     <section className="playlist"><div className="section-heading"><div><div className="eyebrow">YOUR PLAYLIST</div><h2>Widgets</h2></div><span className="count-pill">{activeCount} enabled</span></div>
       <p className="section-intro">Switch widgets on, change their order, and choose how long each appears.</p>
@@ -168,7 +168,7 @@ export default function App() {
     <footer>Clocks, timers and computer stats run locally. Weather by Open-Meteo; public quotes by Yahoo Finance. Unavailable live widgets are skipped in the cycle.</footer>
     {error && <div className="error" role="alert">{error}<button onClick={() => setError("")}>Dismiss</button></div>}
     {settingsOpen && <SettingsPanel preferences={state.settings.preferences} connection={connection} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />}
-    {!state.settings.preferences.setupComplete && !settingsOpen && <Modal title="Welcome to Deskbot" onClose={() => act("set_preferences",{preferences:{...state.settings.preferences,setupComplete:true}})}><section className="editor source-editor"><div className="eyebrow">HELLO, DESKBOT</div><h2>Your little desk companion</h2><p>Try the face and widget previews, or connect a robot with a USB data cable. A fresh playlist starts with the face; data widgets are opt-in.</p><button onClick={() => act("set_preferences",{preferences:{...state.settings.preferences,setupComplete:true}})}>Try preview</button><button onClick={async () => {await act("set_preferences",{preferences:{...state.settings.preferences,setupComplete:true}});await scanPorts();document.querySelector(".robot-connection")?.scrollIntoView({behavior:"instant"});}}>Connect robot</button></section></Modal>}
+    {!state.settings.preferences.setupComplete && !settingsOpen && <Modal title="Welcome to DroidFun App" onClose={() => act("set_preferences",{preferences:{...state.settings.preferences,setupComplete:true}})}><section className="editor source-editor"><div className="eyebrow">HELLO, DROID FUN</div><h2>Your little desk companion</h2><p>Try the face and widget previews, or connect a robot with a USB data cable. A fresh playlist starts with the face; data widgets are opt-in.</p><button onClick={() => act("set_preferences",{preferences:{...state.settings.preferences,setupComplete:true}})}>Try preview</button><button onClick={async () => {await act("set_preferences",{preferences:{...state.settings.preferences,setupComplete:true}});await scanPorts();document.querySelector(".robot-connection")?.scrollIntoView({behavior:"instant"});}}>Connect robot</button></section></Modal>}
     {editor && <SourceEditor widget={editor} onClose={() => setEditor(null)} onApply={(label: string, config: SourceConfig, headline: string, footer: string) => act("configure_source", { id: editor.id, label, config, headline, footer })} onRemove={async () => { const ok = await act("remove_widget", { id: editor.id }); if (ok && selected === editor.id) setSelected(null); return ok; }} />}
 
   </main>;

@@ -59,7 +59,7 @@ fn retry_seconds(state: &str, attempt: u8, key: &str) -> u64 {
     if state == "invalid_configuration" {
         return u64::MAX;
     }
-    // A client outside Deskbot can renew the shared local sign-in. Recheck
+    // A client outside DroidFun App can renew the shared local sign-in. Recheck
     // occasionally so an authentication failure is not cached forever.
     if state == "authentication_required" {
         return 300;
@@ -347,7 +347,7 @@ impl Providers {
             client: Client::builder()
                 .timeout(Duration::from_secs(10))
                 .connect_timeout(Duration::from_secs(5))
-                .user_agent(concat!("Deskbot/", env!("CARGO_PKG_VERSION")))
+                .user_agent(concat!("DroidFunApp/", env!("CARGO_PKG_VERSION")))
                 .build()
                 .map_err(|_| "Could not initialize network client".to_string())?,
             cache: Mutex::new(Cache::default()),
@@ -848,7 +848,7 @@ fn read_codex(path: &str) -> Result<(Value, Value), String> {
     rpc(
         1,
         "initialize",
-        json!({"clientInfo":{"name":"deskbot","title":"Deskbot","version":env!("CARGO_PKG_VERSION")},"capabilities":{"experimentalApi":false}}),
+        json!({"clientInfo":{"name":"deskbot","title":"DroidFun App","version":env!("CARGO_PKG_VERSION")},"capabilities":{"experimentalApi":false}}),
     )?;
     // initialize notification must precede subsequent requests.
     drop(rpc);

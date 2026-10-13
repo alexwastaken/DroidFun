@@ -1,4 +1,4 @@
-//! Deskbot version 1 wire framing. No serial or Tauri dependency lives here.
+//! DroidFun App version 1 wire framing. No serial or Tauri dependency lives here.
 
 pub const VERSION: u8 = 1;
 pub const MAX_PAYLOAD: usize = 1024;

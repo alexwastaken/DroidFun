@@ -1,8 +1,12 @@
-# Deskbot
+# DroidFun App
 
-Deskbot is a robot-themed tray companion for a USB RP2040-Zero and SSD1306 128×64 OLED. Clock, Pomodoro, meeting countdown, CPU, memory, weather, free stock quotes, Codex allowance, Claude account allowance and a friendly face are configurable in the app. The controls and cycle preview also work without hardware.
+DroidFun App is a robot-themed tray companion for a USB RP2040-Zero and SSD1306 128×64 OLED. Clock, Pomodoro, meeting countdown, CPU, memory, weather, free stock quotes, Codex allowance, Claude account allowance and a friendly face are configurable in the app. The controls and cycle preview also work without hardware.
 
-## Current build: 0.3.0
+## App branding: 0.3.1
+
+The app now uses the Droid Fun logo and blue theme from [droidfun.io](https://droidfun.io). See [branding and upgrade notes](docs/BRANDING.md).
+
+## Published downloads: 0.3.0 (previous Deskbot branding)
 
 - Download the Mac app as a [universal ZIP](https://github.com/greensky5656/DroidFun/releases/download/v0.3.0/Deskbot-0.3.0-macOS-universal.zip) or [disk image](https://github.com/greensky5656/DroidFun/releases/download/v0.3.0/Deskbot-0.3.0-macOS-universal.dmg) from the [development release](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.0). Includes Apple Silicon and Intel executables; runtime tested on this Apple Silicon Mac. This is a local development build, without Developer ID signing or notarization.
 - Windows installers: [x64](https://github.com/greensky5656/DroidFun/releases/download/v0.3.0/Deskbot-0.3.0-Windows-x64-setup.exe) or [ARM64](https://github.com/greensky5656/DroidFun/releases/download/v0.3.0/Deskbot-0.3.0-Windows-ARM64-setup.exe). Unsigned development packages; native tests and installation/window startup checks passed.
@@ -22,8 +26,8 @@ Deskbot is a robot-themed tray companion for a USB RP2040-Zero and SSD1306 128×
 - Weather has Fahrenheit/Celsius and current conditions or daily high/low layouts. Stocks optionally show a verified price change while retaining currency and quote date. Public Yahoo quotes need no account or API key and may be delayed.
 - Codex and Claude display **remaining account allowance percentages**, not token counts. Claude includes desktop/web/Code usage through your existing Claude Code sign-in. An optional status-line source supports selected reports; existing commands are preserved.
 - Settings include orientation, overnight quiet hours, a 15-minute wake override, system/light/dark appearance, opt-in start at login, and tray/window behavior.
-- Review diagnostics before saving a local report. Export the included firmware with manual BOOT instructions. Reset only Deskbot preferences with a backup; account sign-ins remain intact.
-- Invalid or expired data is skipped. Requests are bounded, cancel when configuration changes, share cached results, honor retry limits, and persist only usable public weather/stock cards. Credentials, prompts and transcripts are not persisted by Deskbot.
+- Review diagnostics before saving a local report. Export the included firmware with manual BOOT instructions. Reset only DroidFun App preferences with a backup; account sign-ins remain intact.
+- Invalid or expired data is skipped. Requests are bounded, cancel when configuration changes, share cached results, honor retry limits, and persist only usable public weather/stock cards. Credentials, prompts and transcripts are not persisted by DroidFun App.
 
 On macOS the tray is the menu bar. On Windows it is the notification area beside the clock. Linux uses a compatible status notifier/system tray; without one, controls remain available as a normal minimized window and through the application launcher.
 
@@ -41,4 +45,4 @@ npm run release -- --target universal-apple-darwin
 
 Native packaging runs only on the current OS: macOS app/DMG, Windows NSIS x64 or ARM64, Linux x86_64 DEB/RPM. `--signed` requires platform signing configuration. It does not dispatch hosted builds or publish artifacts. Dependency versions and lockfiles are pinned. [Manual GitHub builds](docs/NATIVE_BUILDS.md) use native Windows/Linux runners and upload checked Actions artifacts for review; they do not publish automatically. The launcher uses an internal-disk Cargo cache on this Mac and removes only AppleDouble metadata sidecars before parsing project configuration.
 
-Windows/Linux physical robot and live-account behavior, GNOME/KDE tray interaction, Fedora RPM runtime, Intel Mac runtime, full installer lifecycle, accessibility at enlarged text sizes, signing/notarization, timed hardware recovery and the 24-hour soak remain release gates. Disable Start at login before manually removing the macOS/Linux app, and Quit Deskbot first. No automatic updater is enabled.
+Windows/Linux physical robot and live-account behavior, GNOME/KDE tray interaction, Fedora RPM runtime, Intel Mac runtime, full installer lifecycle, accessibility at enlarged text sizes, signing/notarization, timed hardware recovery and the 24-hour soak remain release gates. Disable Start at login before manually removing the macOS/Linux app, and Quit DroidFun App first. No automatic updater is enabled.

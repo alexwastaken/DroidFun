@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local, redacted collector. Does not open serial or send model requests.
 
-With --faults, briefly interrupt only Deskbot's HTTP reader and host serial
+With --faults, briefly interrupt only DroidFun App's HTTP reader and host serial
 connection. Physical removal and operating-system suspend are separate tests.
 """
 import argparse
@@ -49,15 +49,15 @@ def processes(pid):
             break
         owned |= more
     # macOS XPC webview services have launchd as their parent. Launch Services
-    # attributes their display names to Deskbot; include only its exact names
+    # attributes their display names to DroidFun App; include only its exact names
     # after independently matching the single app process PID.
     inventory = subprocess.check_output(['lsappinfo', 'list'], text=True)
     blocks = re.split(r'(?m)^\d+\) ', inventory)
-    app_found = any(b.startswith('"Deskbot" ') and re.search(r'pid = ' + str(pid) + r'\b', b) for b in blocks)
+    app_found = any(b.startswith('"DroidFun App" ') and re.search(r'pid = ' + str(pid) + r'\b', b) for b in blocks)
     xpc = set()
     if app_found:
         for block in blocks:
-            if any(block.startswith('"' + name + '" ') for name in ['Deskbot Networking', 'Deskbot Graphics and Media', 'Deskbot Web Content']):
+            if any(block.startswith('"' + name + '" ') for name in ['DroidFun App Networking', 'DroidFun App Graphics and Media', 'DroidFun App Web Content']):
                 match = re.search(r'pid = (\d+)', block)
                 if match and int(match[1]) in rows:
                     xpc.add(int(match[1]))
@@ -105,7 +105,7 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     signal.signal(signal.SIGINT, interrupted)
     started, mono = time.time(), time.monotonic()
-    run = {'formatVersion': 2, 'collectorPid': os.getpid(), 'startedAt': started, 'startedUtc': utc(started), 'expectedEndAt': started + args.seconds, 'expectedEndUtc': utc(started + args.seconds), 'durationSeconds': args.seconds, 'status': 'running', 'controlledFaults': args.faults, 'keepAwake': args.keep_awake, 'memoryScope': 'Deskbot, its named WebKit XPC services and sampled helper descendants, excluding only the optional Codex child subtree. RSS sum can double count shared pages; short-lived helpers may fall between samples.'}
+    run = {'formatVersion': 2, 'collectorPid': os.getpid(), 'startedAt': started, 'startedUtc': utc(started), 'expectedEndAt': started + args.seconds, 'expectedEndUtc': utc(started + args.seconds), 'durationSeconds': args.seconds, 'status': 'running', 'controlledFaults': args.faults, 'keepAwake': args.keep_awake, 'memoryScope': 'DroidFun App, its named WebKit XPC services and sampled helper descendants, excluding only the optional Codex child subtree. RSS sum can double count shared pages; short-lived helpers may fall between samples.'}
     atomic(directory / 'run.json', run)
     awake = subprocess.Popen(['/usr/bin/caffeinate', '-i', '-w', str(os.getpid())]) if args.keep_awake else None
     schedule = [('network-offline', 1200, 2400), ('link-interruption', 3600, 3620), ('network-offline', 43200, 44400), ('link-interruption', 64800, 64820)] if args.faults else []
@@ -135,7 +135,7 @@ def main():
                 (directory / name).unlink(missing_ok=True)
                 fault_events.append({'at': now, 'fault': name, 'active': False})
             for name in desired - active:
-                (directory / name).write_text('Owned by this Deskbot reliability collector\n')
+                (directory / name).write_text('Owned by this DroidFun App reliability collector\n')
                 fault_events.append({'at': now, 'fault': name, 'active': True})
             active = desired
             gap = now - last_sample_wall > 15 or abs((now - last_sample_wall) - (steady - last_sample_mono)) > 5

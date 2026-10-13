@@ -641,7 +641,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         let path = app
             .dialog()
             .file()
-            .set_file_name("deskbot-rp2040-zero-gp4-gp5-v1.1.0.uf2")
+            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.1.0.uf2")
             .add_filter("RP2040 firmware", &["uf2"])
             .blocking_save_file();
         let Some(path) = path else {
@@ -669,7 +669,7 @@ async fn export_diagnostics(app: AppHandle, state: State<'_, AppState>) -> Resul
         let path = app
             .dialog()
             .file()
-            .set_file_name("Deskbot-diagnostics.json")
+            .set_file_name("DroidFun-App-diagnostics.json")
             .add_filter("JSON", &["json"])
             .blocking_save_file();
         let Some(path) = path else {
@@ -770,7 +770,7 @@ fn connection_worker(app: AppHandle) {
             &app,
             ConnectionSnapshot {
                 state: "connecting".into(),
-                detail: "Checking the Deskbot firmware handshake".into(),
+                detail: "Checking the DroidFun App firmware handshake".into(),
                 port: Some(candidate.path.clone()),
                 ..ConnectionSnapshot::default()
             },
@@ -836,8 +836,8 @@ fn connection_worker(app: AppHandle) {
                 }
             }
             Err(error) => {
-                let setup = error.contains("No Deskbot reply")
-                    || error.contains("invalid Deskbot handshake");
+                let setup = error.contains("No DroidFun App reply")
+                    || error.contains("invalid DroidFun App handshake");
                 publish_connection(
                     &app,
                     ConnectionSnapshot {
@@ -968,7 +968,7 @@ pub fn run() {
                 window.set_size(tauri::LogicalSize::new(440.0, 760.0))?;
             }
 
-            let open = MenuItem::with_id(app, "open", "Open Deskbot", true, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", "Open DroidFun App", true, None::<&str>)?;
             let pause =
                 MenuItem::with_id(app, "pause", "Pause or resume cycle", true, None::<&str>)?;
             let next = MenuItem::with_id(app, "next", "Next widget", true, None::<&str>)?;
@@ -976,16 +976,19 @@ pub fn run() {
             let display =
                 MenuItem::with_id(app, "display", "Display on or off", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit Deskbot", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit DroidFun App", true, None::<&str>)?;
             let menu = Menu::with_items(
                 app,
                 &[&open, &pause, &next, &face, &display, &settings, &quit],
             )?;
             let tray = TrayIconBuilder::with_id("deskbot")
                 .menu(&menu)
-                .icon(tauri::image::Image::from_bytes(include_bytes!(
-                    "../icons/tray.png"
-                ))?)
+                .tooltip("DroidFun App")
+                .icon(tauri::image::Image::from_bytes(if cfg!(target_os = "macos") {
+                    include_bytes!("../icons/tray.png").as_slice()
+                } else {
+                    include_bytes!("../icons/64x64.png").as_slice()
+                })?)
                 .icon_as_template(cfg!(target_os = "macos"))
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| tray_action(app, event.id.as_ref()))
@@ -1115,7 +1118,7 @@ pub fn run() {
             ,timer_action,time_zones
         ])
         .build(tauri::generate_context!())
-        .expect("Deskbot could not start")
+        .expect("DroidFun App could not start")
         .run(|app, event| {
             if let tauri::RunEvent::ExitRequested { code: None, api, .. } = event {
                 let state = app.state::<AppState>();

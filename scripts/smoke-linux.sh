@@ -26,6 +26,6 @@ dbus-run-session -- xvfb-run -a bash -eu -c '
   trap "kill $app_pid 2>/dev/null || true" EXIT
   sleep 15
   kill -0 "$app_pid"
-  xdotool search --pid "$app_pid" --name Deskbot
+  xdotool search --pid "$app_pid" --name "DroidFun App"
 '
 node -e 'require("node:fs").writeFileSync(require("node:path").join(process.env.DESKBOT_ARTIFACT_DIR,"native-smoke.json"),JSON.stringify({result:"passed",debInstalled:true,installedBinaryMatchesPackage:true,rpmMetadataArchitecture:"x86_64",nativeWindowCreated:true,aliveSeconds:15,environment:"Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; no tray host, robot or account credentials"},null,2))'

@@ -94,7 +94,7 @@ fn credential_json(profile: &str) -> Result<Value, String> {
             }
         }
     }
-    Err("Connect your Claude account in Edit. Deskbot uses your local Claude Code sign-in to read the shared account allowance.".into())
+    Err("Connect your Claude account in Edit. DroidFun App uses your local Claude Code sign-in to read the shared account allowance.".into())
 }
 fn stored_token(profile: &str) -> Result<String, String> {
     let credentials = credential_json(profile)?;
@@ -129,7 +129,7 @@ fn token(profile: &str) -> Result<String, String> {
 
 // Let the credential owner renew its own token. Never implement another
 // refresh-token writer or send an inference prompt. Only a previously trusted,
-// Deskbot-owned scratch folder is eligible; no trust prompt is answered here.
+// DroidFun App-owned scratch folder is eligible; no trust prompt is answered here.
 #[cfg(unix)]
 fn refresh_with_installed_client(profile: &str) -> Result<(), String> {
     use std::sync::Mutex;
