@@ -52,16 +52,16 @@ pub fn info() -> PlatformInfo {
             None
         })()
         .unwrap_or(false);
-        return PlatformInfo { os:"linux".into(),tray_available:available,explanation:if available { "A status indicator host is available. Open Deskbot from its menu." } else { "Window mode keeps Deskbot reachable. GNOME users can add the AppIndicator and KStatusNotifierItem Support extension for a tray icon." }.into() };
+        return PlatformInfo { os:"linux".into(),tray_available:available,explanation:if available { "A status indicator host is available. Open DroidFun App from its menu." } else { "Window mode keeps DroidFun App reachable. GNOME users can add the AppIndicator and KStatusNotifierItem Support extension for a tray icon." }.into() };
     }
     #[cfg(not(target_os = "linux"))]
     PlatformInfo {
         os: std::env::consts::OS.into(),
         tray_available: true,
         explanation: if cfg!(target_os = "macos") {
-            "Open Deskbot from the menu bar. Relaunching the app always restores its controls."
+            "Open DroidFun App from the menu bar. Relaunching the app always restores its controls."
         } else {
-            "Open Deskbot from the notification area or application launcher."
+            "Open DroidFun App from the notification area or application launcher."
         }
         .into(),
     }

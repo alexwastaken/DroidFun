@@ -1,5 +1,5 @@
 name: Build Windows and Linux packages
-run-name: Deskbot ${{ inputs.release_tag }} native packages
+run-name: DroidFun App ${{ inputs.release_tag }} native packages
 
 # Builds run only when explicitly requested. Publishing is a separate reviewed step.
 on:
@@ -12,7 +12,7 @@ on:
       release_tag:
         description: Existing release version (used to validate package versions)
         required: true
-        default: v0.3.0
+        default: v0.3.1
       platform:
         description: Build all packages or retry one platform
         type: choice
@@ -129,7 +129,7 @@ jobs:
       - name: Upload checked packages and evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: Deskbot-${{ matrix.platform }}
+          name: DroidFun-App-${{ matrix.platform }}
           path: packages/
           if-no-files-found: error
           retention-days: 14

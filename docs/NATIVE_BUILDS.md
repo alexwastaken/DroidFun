@@ -6,7 +6,7 @@ The **Build Windows and Linux packages** workflow builds Windows x64, Windows AR
 
 1. Open [the manual build workflow](https://github.com/greensky5656/DroidFun/actions/workflows/build-desktop.yml).
 2. Choose the pipeline branch, normally `main`.
-3. Set `source_ref` to the exact application commit or release tag. Set `release_tag` to the matching release version, for example `v0.3.0`. Choose `all` or one platform to retry.
+3. Set `source_ref` to the exact application commit or release tag. Set `release_tag` to the matching release version, for example `v0.3.1`. Choose `all` or one platform to retry.
 4. Run the workflow. Download each successful job's artifact. Failed tests, installer failures, wrong binary architecture or a missing native window prevent upload of a successful package artifact.
 5. Review the verification JSON and checksums before attaching the installer packages to the release. The workflow does not publish releases or need write access to repository contents.
 
@@ -18,9 +18,9 @@ The pipeline is checked out separately from the application. This lets the origi
 
 | Target | Runner | Package |
 | --- | --- | --- |
-| Windows x64 | `windows-2025` | `Deskbot-VERSION-Windows-x64-setup.exe` |
-| Windows ARM64 | `windows-11-arm` | `Deskbot-VERSION-Windows-ARM64-setup.exe` |
-| Linux x86_64 | `ubuntu-24.04` | `Deskbot-VERSION-Linux-x86_64.deb`, `.rpm` |
+| Windows x64 | `windows-2025` | `DroidFun-App-VERSION-Windows-x64-setup.exe` |
+| Windows ARM64 | `windows-11-arm` | `DroidFun-App-VERSION-Windows-ARM64-setup.exe` |
+| Linux x86_64 | `ubuntu-24.04` | `DroidFun-App-VERSION-Linux-x86_64.deb`, `.rpm` |
 
 The Windows installers use the current-user NSIS installation mode. The Linux packages require GTK 3, WebKitGTK 4.1, AppIndicator and libudev. Use a current distribution with those libraries; RPM generation alone does not establish compatibility with every RPM distribution. Linux USB serial access may require the distribution's serial-device permissions. A desktop with a StatusNotifier/AppIndicator host can display the tray icon; the app keeps its regular window when no host is detected.
 

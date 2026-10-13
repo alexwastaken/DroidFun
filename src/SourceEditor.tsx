@@ -57,7 +57,7 @@ export default function SourceEditor({ widget, onClose, onApply, onRemove }: { w
       <label>Short break minutes<input type="number" required min={1} max={60} value={config.breakMinutes} onChange={e => patch({breakMinutes:Number(e.target.value)})}/></label>
       <label>Long break minutes<input type="number" required min={1} max={120} value={config.longBreakMinutes} onChange={e => patch({longBreakMinutes:Number(e.target.value)})}/></label>
       <label>Focus sessions before long break<input type="number" required min={2} max={12} value={config.focusSessions} onChange={e => patch({focusSessions:Number(e.target.value)})}/></label>
-      <p>Use Start, Pause, Reset and Skip phase beside this widget in the playlist. The timer keeps going while other screens show, the playlist is paused, or Deskbot is closed. Changing these lengths resets the timer to paused. Breaks switch automatically; reminders are visual.</p>
+      <p>Use Start, Pause, Reset and Skip phase beside this widget in the playlist. The timer keeps going while other screens show, the playlist is paused, or DroidFun App is closed. Changing these lengths resets the timer to paused. Breaks switch automatically; reminders are visual.</p>
     </>}
     {widget.kind === "meeting" && <>
       <label>Meeting date and time<input type="datetime-local" required value={meetingDate(config.meetingStartsAt)} onChange={e => patch({meetingStartsAt:Number.isFinite(new Date(e.target.value).getTime()) ? Math.floor(new Date(e.target.value).getTime()/1000):0})}/></label>

@@ -52,7 +52,7 @@ fn main() -> Result<(), String> {
         enabled: true,
         duration_sec: 8,
         headline: "HELLO".into(),
-        footer: "DESKBOT TEST".into(),
+        footer: "DROID FUN TEST".into(),
         config: core::SourceConfig::default(),
     };
     let test_frame = if checker {

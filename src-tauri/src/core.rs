@@ -1417,7 +1417,7 @@ fn render_card(
         "stock" => &widget.label,
         "codex" => "CODEX",
         "claude" => "CLAUDE",
-        _ => "DESKBOT",
+        _ => "DROID FUN",
     };
     frame.text(title, 4, 2, 1, if companion.is_some() { 10 } else { 15 });
     if let Some(pose) = companion {

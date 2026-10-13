@@ -127,7 +127,7 @@ pub fn uninstall(directory: &Path) -> Result<Value, String> {
         serde_json::from_slice(&fs::read(&settings).map_err(|_| "Could not read Claude settings")?)
             .map_err(|_| "Claude settings are invalid JSON")?;
     if v.get("statusLine") != Some(&managed(directory)?) {
-        return Err("Claude status line was changed outside Deskbot. It has been preserved; restore the saved original manually if needed.".into());
+        return Err("Claude status line was changed outside DroidFun App. It has been preserved; restore the saved original manually if needed.".into());
     }
     let backup: Value = serde_json::from_slice(
         &fs::read(directory.join("statusline-backup.json"))
@@ -270,7 +270,7 @@ pub fn run(config_path: &Path) -> Result<(), String> {
             std::thread::sleep(Duration::from_millis(5));
         }
     } else {
-        println!("Claude · Deskbot usage bridge");
+        println!("Claude · DroidFun App usage bridge");
     }
     Ok(())
 }

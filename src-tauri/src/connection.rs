@@ -135,7 +135,7 @@ fn exchange(
         decoder.reset();
     }
     Err(
-        "No Deskbot reply after two 500 ms attempts; existing sketch may need the Deskbot bridge"
+        "No DroidFun App reply after two 500 ms attempts; existing sketch may need the DroidFun App bridge"
             .into(),
     )
 }
@@ -190,7 +190,7 @@ impl Link {
         );
         let response = exchange(&mut *port, &mut decoder, &hello, protocol::HELLO_ACK)?;
         let ack: HelloAck = serde_json::from_slice(&response.payload)
-            .map_err(|_| "Robot returned an invalid Deskbot handshake".to_string())?;
+            .map_err(|_| "Robot returned an invalid DroidFun App handshake".to_string())?;
         if ack.board_id.is_empty()
             || ack.board_id.len() > 128
             || ack.firmware.len() > 64
@@ -227,7 +227,7 @@ impl Link {
                 }
                 .into(),
                 detail: if ack.display_health == "ready" {
-                    "Deskbot handshake succeeded"
+                    "DroidFun App handshake succeeded"
                 } else {
                     "USB responds, but the OLED reports a display fault"
                 }

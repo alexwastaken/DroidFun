@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exclusive, bounded real-board protocol checks with an independent codec.
 
-Requires pyserial 3.5. Quit Deskbot before use; this is never a soak reader.
+Requires pyserial 3.5. Quit DroidFun App before use; this is never a soak reader.
 Only opens the explicitly selected serial number and approved USB descriptor.
 """
 import argparse

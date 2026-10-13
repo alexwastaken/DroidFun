@@ -10,7 +10,7 @@ pub fn load(path: &Path) -> Result<Settings, String> {
             }
             if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
                 if value["version"].as_u64().is_some_and(|v| v > 1) {
-                    return Err("These settings belong to a newer Deskbot version. Install that version; your file has been preserved.".into());
+                    return Err("These settings belong to a newer DroidFun App version. Install that version; your file has been preserved.".into());
                 }
                 if let Ok(mut settings) = serde_json::from_value::<Settings>(value) {
                     if settings.validate().is_ok() {
@@ -49,7 +49,7 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
             serde_json::from_slice::<serde_json::Value>(&fs::read(path).map_err(|e| e.to_string())?)
         {
             if value["version"].as_u64().is_some_and(|v| v > 1) {
-                return Err("Newer settings preserved; update Deskbot before changing them".into());
+                return Err("Newer settings preserved; update DroidFun App before changing them".into());
             }
         }
     }
