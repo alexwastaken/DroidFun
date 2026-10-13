@@ -1,0 +1,62 @@
+name: Build DroidFun App for Mac
+run-name: DroidFun App macOS · ${{ inputs.source_ref }}
+
+# Manual only: publication and website downloads remain a separate step.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact application commit or branch to build
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: droidfun-macos-packages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 60
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - name: Check out requested application source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Set up Rust for Apple Silicon and Intel
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          rustup default 1.99.0
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - name: Install locked frontend dependencies
+        run: npm ci
+      - name: Check frontend
+        run: npm run check
+      - name: Run native behavior tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p packages
+          cargo test --release --locked --manifest-path src-tauri/Cargo.toml --lib 2>&1 | tee packages/native-tests-macOS.txt
+      - name: Build universal app and disk image
+        run: npm run release -- --target universal-apple-darwin
+      - name: Verify and collect Mac packages
+        run: node scripts/mac-package-evidence.cjs
+      - name: Upload packages for installation verification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: DroidFun-App-macOS-universal
+          path: packages/
+          if-no-files-found: error
+          retention-days: 14
