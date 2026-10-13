@@ -18,7 +18,7 @@ const binary = run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleExecutable',p
 const architectures = run('lipo',['-archs',path.join(app,'Contents/MacOS',binary)]).split(/\s+/);
 if (!architectures.includes('arm64') || !architectures.includes('x86_64')) throw new Error('Expected a universal Mac executable');
 run('codesign',['--verify','--deep','--strict',app]);
-const dmgs = fs.readdirSync(path.join(release,'dmg')).filter(f=>f.endsWith('.dmg'));
+const dmgs = fs.readdirSync(path.join(release,'dmg')).filter(f=>f.endsWith('.dmg') && f.includes(`_${version}_`));
 if (dmgs.length !== 1) throw new Error('Expected exactly one disk image');
 fs.mkdirSync('packages',{recursive:true});
 const prefix = `DroidFun-App-${version}-macOS-universal`;

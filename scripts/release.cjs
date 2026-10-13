@@ -11,6 +11,9 @@ if(args.includes('--signed')){
 }
 const bundles=platform==='darwin'?'app,dmg':platform==='win32'?'nsis':'deb,rpm';
 const cliArgs=[path.join(__dirname,'tauri.cjs'),'build','--target',target,'--bundles',bundles];
+// Sign before Tauri creates the disk image so both downloads contain the same
+// verified bundle. '-' is an ad-hoc signature, not Developer ID or notarization.
+if(platform==='darwin')cliArgs.push('--config',JSON.stringify({bundle:{macOS:{signingIdentity:process.env.APPLE_SIGNING_IDENTITY||'-'}}}));
 if(platform==='win32' && args.includes('--signed'))cliArgs.push('--config',JSON.stringify({bundle:{windows:{certificateThumbprint:process.env.WINDOWS_CERTIFICATE_THUMBPRINT,digestAlgorithm:'sha256',timestampUrl:'https://timestamp.digicert.com'}}}));
 const result=spawnSync(process.execPath,cliArgs,{cwd:path.join(__dirname,'..'),stdio:'inherit',env:process.env});
 if(result.status!==0)process.exit(result.status??1);
