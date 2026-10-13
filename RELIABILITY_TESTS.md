@@ -95,3 +95,27 @@ Cleanup must use the replacement run directory and replacement LaunchAgent label
 ### Release publication during observation
 
 Version 0.3.0 was published on October 12 with the same widget/animation production source and a package version bump. The exact measured internal executable, selected robot, saved preferences, collector and fault schedule were left unchanged. The release package was not launched during the run. [Native build evidence](docs/NATIVE_BUILDS.md#version-030-build-records) is separate from continuous observation and physical acceptance.
+
+### First-hour recovery review (October 12, 3:09 PM Pacific)
+
+The app and collector remain alive on the exact measured executable; measurements are fresh, with no sampling gaps or unexplained issues. All nine enabled widget kinds appear in the transition trace. The three nonhealthy snapshots fall inside the deliberate host-link interruption/return grace. HTTP access returned and weather, stocks and Claude became fresh again within their bounded retry schedules (first observed fresh approximately 484, 513 and 709 seconds after return). Codex and the local widgets remained fresh. Claude later had a short unavailable interval followed by fresh data; the redacted card expiry is an allowance-window boundary and does not establish natural credential expiration. That gate remains pending. No credentials, identity or allowance values were inspected.
+
+The deliberate host link reconnected with OLED ready in the same recorded second as marker removal. The next fresh telemetry snapshot has 12 validated frame ACKs and matching current/acknowledged CRC. Its enforced 200 ms minimum frame spacing gives a **derived first-frame upper bound below 3.8 seconds** after access returned; the first frame timestamp itself was not captured. Recovery grace alone was not used as evidence. This is host-link recovery, separate from the earlier physical unplug test.
+
+The controls were opened during the run. Early background versus recent open-panel memory totals have different scopes and are not treated as a growth failure; the startup WebKit peak subsequently decreased. The separate five-minute static resource test remains the static gate. Full-run memory review and the 24-hour result are still pending.
+
+### Second-hour observation (October 12, 4:13 PM Pacific)
+
+App, collector, LaunchAgent and scoped idle-sleep prevention remain active. The latest hour has no unexplained unhealthy observations or sampling gaps, at most one pending request, all enabled live sources fresh throughout, and all nine enabled kinds cycling in the transition trace. Controls remain open; memory trends must be compared with the same panel state. No additional faults occurred. Natural Claude credential expiration is not established from the redacted states; the complete 24-hour result remains pending.
+
+### Third-hour observation (October 12, 5:15 PM Pacific)
+
+The app/collector and scoped idle-sleep prevention remain active. The latest hour is connected throughout, with all enabled live sources fresh, all nine kinds cycling, no unexplained unhealthy observations or gaps, and at most one pending request. Controls remain open; summed app RSS has a latest-hour median of 189.72 MiB, comparable to the preceding open-panel hour (189.61 MiB). No new fault events or required changes occurred. Natural credential-expiration proof and full 24-hour acceptance remain pending.
+
+### Fourth-hour observation (October 12, 6:18 PM Pacific)
+
+The app, collector, LaunchAgent and scoped idle-sleep prevention remain active. Since the previous review, connection stayed ready, all enabled live sources stayed fresh and all nine widget kinds cycled, with no unexplained unhealthy measurements or gaps and at most one pending request. Controls remain open; summed app RSS median is 189.69 MiB, compared with 189.72 MiB in the preceding open-panel hour. No additional faults or required changes occurred. Natural credential-expiration proof and the complete 24-hour result remain pending.
+
+### Claude renewal acceptance requirement
+
+The user reaffirmed that the run should continue and notify only on completion/issues, with explicit verification of Claude after natural sign-in expiration. Require redacted evidence of expiration or the Deskbot-owned renewal helper, followed by a newly fetched fresh Claude card and return to cycling. A usage-window reset or fresh data alone is not credential-renewal proof. Inspect authentication failure persisting beyond the five-minute retry, 20-second helper and sampling margin. Do not manually renew credentials or invoke another client to conceal an app failure. If available redacted evidence cannot establish expiration, leave this check unverified and provide a follow-up verification plan at completion.

@@ -64,7 +64,186 @@
       "memory"
     ],
     "meeting": "Unset and disabled until user configuration",
-    "previousRun": "Interrupted after 80.8 minutes for the authorized feature update; evidence retained separately"
+    "previousRun": "Interrupted after 80.8 minutes for the authorized feature update; evidence retained separately",
+    "latestReview": {
+      "checkedUtc": "2026-10-12T22:12:14.810652+00:00",
+      "state": "running",
+      "elapsedSeconds": 4249.577878952026,
+      "samples": 725,
+      "healthySamples": 722,
+      "samplingGaps": 0,
+      "issues": [],
+      "maximumPendingRequests": 1,
+      "httpRecovery": {
+        "weather": {
+          "observedAt": 1791841766.693671,
+          "fetchedAt": 1791841757,
+          "secondsAfterClear": 483.54467582702637
+        },
+        "stock": {
+          "observedAt": 1791841796.483077,
+          "fetchedAt": 1791841791,
+          "secondsAfterClear": 513.3340818881989
+        },
+        "claude": {
+          "observedAt": 1791841992.6176288,
+          "fetchedAt": 1791841988,
+          "secondsAfterClear": 709.4686336517334
+        }
+      },
+      "usbRecovery": {
+        "observedAt": 1791842509.605074,
+        "telemetryAt": 1791842509,
+        "frameAcks": 12,
+        "lastAckAt": 1791842508,
+        "lastFrameCrcMatchesCurrent": true,
+        "secondsAfterClear": 6.600417137145996,
+        "firstFrameAckDerivedUpperBoundSeconds": 3.7953431606292725
+      },
+      "usbEvidenceBoundary": "Connected/ready event is recorded in the same Unix second as fault clear. First fresh collector snapshot is later than five seconds; its twelve validated frame ACKs and enforced minimum 200 ms frame spacing bound the first ACK to less than 3.8 seconds after clear, assuming stable wall time. This is a derived timing bound, not a direct first-frame timestamp or physical USB removal.",
+      "expectedNonHealthySamples": [
+        {
+          "at": 1791842491.084679,
+          "expectedInterruption": true,
+          "expectedRecoveryGrace": false
+        },
+        {
+          "at": 1791842497.0272,
+          "expectedInterruption": true,
+          "expectedRecoveryGrace": false
+        },
+        {
+          "at": 1791842503.0046568,
+          "expectedInterruption": true,
+          "expectedRecoveryGrace": true
+        }
+      ],
+      "controlsChanges": [
+        {
+          "at": 1791838879.034009,
+          "visible": false
+        },
+        {
+          "at": 1791840465.3763149,
+          "visible": true
+        }
+      ],
+      "transitionCounts": {
+        "face": 94,
+        "weather": 94,
+        "stock": 94,
+        "codex": 93,
+        "claude": 51,
+        "clock": 93,
+        "pomodoro": 93,
+        "cpu": 93,
+        "memory": 93
+      },
+      "memoryBoundary": "Controls opened during observation; early background and recent open-panel totals are not comparable as a leak test. Startup WebKit peak decreased; review full-run trends at completion. Separate static baseline remains the static gate.",
+      "claudeNaturalCredentialExpiration": "Not established from available redacted data states. A DataCard expiry can be an allowance-window reset; no credential contents, identities or allowance values were inspected. Fresh after both unavailable intervals.",
+      "appExecutableHashVerified": true,
+      "physicalNewWidgetsAndGestures": "User confirmed readable and visible",
+      "overallAcceptance": "Pending full 86400 seconds and completion review"
+    },
+    "latestObservation": {
+      "checkedUtc": "2026-10-13T01:18:10.519662+00:00",
+      "state": "running",
+      "elapsedSeconds": 15409.623412847519,
+      "samples": 2649,
+      "healthySamples": 2646,
+      "samplingGaps": 0,
+      "currentIssue": null,
+      "agentPresent": true,
+      "scopedCaffeinatePresent": true,
+      "progressAgeSeconds": 1.39,
+      "sincePreviousReview": {
+        "startedUtc": "2026-10-13T00:15:32.450933+00:00",
+        "unexplainedUnhealthy": 0,
+        "samplingGaps": 0,
+        "maximumPendingRequests": 1,
+        "maximumSampleIntervalSeconds": 7.892484903335571,
+        "connectionStates": {
+          "connected": 650
+        },
+        "sourceStateCounts": [
+          {
+            "kind": "claude",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "clock",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "codex",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "cpu",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "memory",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "pomodoro",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "stock",
+            "state": "fresh",
+            "samples": 650
+          },
+          {
+            "kind": "weather",
+            "state": "fresh",
+            "samples": 650
+          }
+        ],
+        "transitionCounts": {
+          "claude": 80,
+          "clock": 80,
+          "pomodoro": 80,
+          "cpu": 80,
+          "memory": 80,
+          "face": 79,
+          "weather": 79,
+          "stock": 79,
+          "codex": 79
+        },
+        "controlAndPlaylistStates": [
+          {
+            "at": 1791850535.602707,
+            "controlsVisible": true,
+            "enabled": [
+              "face",
+              "weather",
+              "stock",
+              "codex",
+              "claude",
+              "clock",
+              "pomodoro",
+              "cpu",
+              "memory"
+            ],
+            "playback": "running",
+            "displayOn": true,
+            "displayReason": "On"
+          }
+        ],
+        "appRssMiBMedian": 189.6875,
+        "appRssMiBPeak": 198.28125
+      },
+      "naturalClaudeCredentialExpiration": "Not established from redacted data; reviewed interval fresh throughout.",
+      "overallAcceptance": "Pending full 86400 seconds and completion review."
+    }
   },
   "publishedRelease": {
     "version": "0.3.0",
