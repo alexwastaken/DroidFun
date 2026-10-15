@@ -1,0 +1,106 @@
+from pathlib import Path
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
+
+OUT=Path(__file__).resolve().parent / 'Droid-Fun-Controller-Guide-0.3.4.pdf'
+BLUE=colors.HexColor('#3268dc'); INK=colors.HexColor('#17283d'); MUTED=colors.HexColor('#526174'); PALE=colors.HexColor('#edf2f8')
+styles=getSampleStyleSheet()
+styles.add(ParagraphStyle(name='TitleDF',fontName='Helvetica',fontSize=27,leading=30,textColor=INK,spaceAfter=12))
+styles.add(ParagraphStyle(name='SectionDF',fontName='Helvetica-Bold',fontSize=13,leading=17,textColor=INK,spaceBefore=11,spaceAfter=6))
+styles.add(ParagraphStyle(name='BodyDF',fontName='Helvetica',fontSize=10,leading=13.7,textColor=INK,spaceAfter=6))
+styles.add(ParagraphStyle(name='SmallDF',fontName='Helvetica',fontSize=8.8,leading=11.7,textColor=MUTED,spaceAfter=6))
+styles.add(ParagraphStyle(name='LabelDF',fontName='Helvetica-Bold',fontSize=9,leading=13,textColor=BLUE,spaceAfter=10))
+story=[]
+def p(s,style='BodyDF'):return Paragraph(s,styles[style])
+def text(s):story.append(p(s))
+def title(n,name,lead):story.extend([p('DROID FUN / '+n,'LabelDF'),p(name,'TitleDF'),p(lead)])
+def section(name):story.append(p(name,'SectionDF'))
+def steps(items):
+ for i,s in enumerate(items,1):story.append(p('<b>%d.</b> %s'%(i,s)))
+def box(s):
+ t=Table([[p(s)]],colWidths=[492]);t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),PALE),('BOX',(0,0),(-1,-1),0.5,colors.HexColor('#dce3ec')),('LEFTPADDING',(0,0),(-1,-1),14),('RIGHTPADDING',(0,0),(-1,-1),14),('TOPPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),5)]));story.extend([t,Spacer(1,10)])
+def table(rows,widths):
+ t=Table([[p(s,'SmallDF') for s in row] for row in rows],colWidths=widths,hAlign='LEFT');t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),PALE),('LINEBELOW',(0,0),(-1,0),0.6,colors.HexColor('#cbd6e3')),('LINEBELOW',(0,1),(-1,-1),0.35,colors.HexColor('#dce3ec')),('LEFTPADDING',(0,0),(-1,-1),9),('RIGHTPADDING',(0,0),(-1,-1),9),('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),5)]));story.append(t)
+def new():story.append(PageBreak())
+
+title('01 / GET STARTED','Your droid, your way.','A practical guide to the Droid Fun controller, <b>DroidFun App</b>. Mac and Windows 0.3.3 / Linux 0.3.4<br/>Guide version 1.3 / October 14, 2026.')
+box('<b>Development build</b><br/>The Mac package is not Developer ID signed or notarized; Windows installers are unsigned. These are early testing releases. Mac and Windows have native package checks; Linux 0.3.4 was checked in an Ubuntu VM using translated x86_64 execution. Physical Linux USB, native x86_64 Linux, Intel Mac, Fedora runtime and full installer lifecycle are not yet qualified.')
+section('Before you begin')
+text('You need a desktop computer, a USB <b>data</b> cable, and a compatible robot. The current software targets an <b>RP2040-Zero with a 128 x 64 SSD1306 OLED</b>, SDA GPIO 4, SCL GPIO 5, address 0x3C, and DroidFun App firmware 1.1.0. A product name or shell alone does not establish compatibility; confirm your bot uses this electronics/firmware profile.')
+text('You can try the on-screen preview without a robot. This desktop app controls the OLED display and its widget cycle; it does not implement motor or claw movement. Internet access is needed for live data, not for the face or sample previews.')
+section('Choose your download')
+table([['<b>Computer</b>','<b>File to choose</b>'],['Mac, macOS 13 or later','0.3.3 universal DMG (Apple Silicon and Intel)'],['Most Intel/AMD Windows PCs','0.3.3 Windows x64 installer'],['Windows on ARM / Snapdragon PC','0.3.3 Windows ARM64 installer'],['Ubuntu/Debian, 64-bit Intel/AMD','0.3.4 Linux x86_64 DEB; choose this for Ubuntu'],['RPM-based Linux, 64-bit Intel/AMD','0.3.4 Linux x86_64 RPM; Fedora runtime unverified']],[180,312])
+section('Download from Droid Fun')
+text('Open <link href="https://droidfun.io/downloads" color="#3268dc">the Droid Fun Downloads page</link>, choose your computer, and save the installer. Regular use does not require Node.js, Rust, Git, or access to the GitHub repository.')
+
+section('Choose your look')
+text('<b>Branding:</b> Choose <b>DroidFun - blue</b> (the default website colors) or <b>Classic - green</b> in the Branding dropdown. The choice is saved independently of light/dark appearance; widgets and account connections stay the same. The main dropdown applies immediately; in Settings &gt; App, choose Apply settings.')
+
+new();title('02 / INSTALL + CONNECT','Say hello over USB.','Install the app, try its preview, then select your robot.')
+section('Install the app')
+text('<b>Mac:</b> Before upgrading from Deskbot, turn off its Start at login setting and quit it. Open the DMG and copy DroidFun App.app to Applications. Open it from there. Use a stable installed location before enabling Start at login. This build may be blocked by macOS because it is not notarized; do not disable system security or remove quarantine as a routine fix. Ask the maker for a signed/notarized build if your system blocks it.')
+text('<b>Windows:</b> Run the installer matching your CPU architecture. It installs for the current user. If Windows or your organization blocks the unsigned package, request a signed build rather than disabling protection. WebView2 is required by the desktop UI; let the installer report any missing runtime.')
+text('<b>Linux:</b> On Ubuntu, open the <b>0.3.4 DEB</b> in a graphical package installer and approve its installation prompt. It installs the required libraries and configures robot USB access automatically. A standard active local Ubuntu desktop needs no Terminal command, group change, logout or reboot. For another distribution, use its package manager; RPM runtime is not yet verified. Keep the app running as your normal user.')
+text('<b>Linux access repair:</b> Under <b>Connection</b>, choose <b>Set up robot access</b> and approve the desktop administrator prompt. If needed, unplug and reconnect the robot. This requires a local desktop with systemd-logind, udev, polkit and its approval dialog; remote/headless or custom systems need separate setup.')
+section('First launch')
+steps(['Open <b>DroidFun App</b>. In the welcome panel, choose <b>Try preview</b> to explore without hardware, or <b>Connect robot</b> to go to the USB controls.','A fresh playlist starts with the face. Live data widgets are opt-in; no account integration is needed for the face.'])
+section('Connect a robot')
+steps(['Plug your robot into the computer using a USB data cable. A charge-only cable will not expose a serial port.','Under <b>Connection</b>, choose <b>Scan USB</b>. Find the intended RP2040-Zero and choose <b>Connect</b>.','Wait for <b>connected</b>. Check the firmware and OLED status in the app, then look at the physical screen. A connection handshake alone does not prove the display is readable.','Choose <b>Show face</b> or a configured widget. Confirm the OLED shows the expected screen.'])
+box('<b>No matching device?</b> Try another data cable or USB port. If the state is <b>setup_needed</b>, the board may have another sketch or diagnostic firmware. Use the matching firmware procedure on page 6 only after confirming the hardware profile.')
+
+new();title('03 / YOUR PLAYLIST','Pick what appears.','The Widgets list controls the screens your robot cycles through.')
+section('Build the cycle')
+steps(['Use the enable switch beside a widget to include or skip it.','Set <b>Show for</b> to choose how long the screen stays visible.','Drag a row or use its up/down arrows to change the order.','Choose <b>Add widget</b>, pick a type, then <b>Add</b> to configure another city, stock or allowance window.'])
+section('Understand the playback controls')
+table([['<b>Control</b>','<b>What it does</b>'],['Select / Preview a row','Changes only the app preview; the live robot cycle continues.'],['Show now','Displays the selected enabled widget for one dwell, then restores the cycle.'],['Pin','Holds the selected enabled widget until you resume.'],['Pause cycle / Resume cycle','Freezes or continues the saved playback state.'],['Next','Advances to the next usable enabled widget.'],['Back to live cycle','Returns the app preview to the robot\'s current screen.']],[170,322])
+section('Face, weather and stocks')
+text('<b>Face:</b> Choose <b>Edit</b> on the face row. Select Happy, Neutral, Sleepy or Surprised; choose Blink and the animation speed; choose <b>Apply</b>.')
+text('<b>Weather:</b> Edit a weather widget and change <b>Data source</b> to <b>Live data</b>. Enter a city, choose <b>Find city</b>, select the correct result, choose Fahrenheit/Celsius and a layout, then <b>Apply</b>. Repeat with another widget for another city. The current Open-Meteo free service is described in the app as personal, non-commercial use.')
+text('<b>Stocks:</b> Edit a stock widget, choose <b>Live data</b>, and enter its symbol, such as MSFT. Enable price change if wanted and choose <b>Apply</b>. Quotes need no API key, include a date/currency and may be delayed. They are not a real-time trading feed.')
+box('Demo/sample values are explicitly labeled. Live weather and stocks normally refresh every 15 minutes while enabled. Unavailable or expired live widgets are skipped; if none are ready, the built-in face remains available.')
+
+new();title('04 / LOCAL WIDGETS','Make room for your day.','Clock, focus timer, meeting countdown, CPU and memory run locally. No new wiring, firmware update or account is needed for these five widgets.')
+section('Add a local widget')
+steps(['Choose <b>Add widget</b> and select <b>Clock</b>, <b>Pomodoro</b>, <b>Meeting countdown</b>, <b>CPU</b> or <b>Memory</b>.','Choose <b>Edit</b> beside the new row, adjust its settings and apply. Enable it and set its playlist duration.','Preview the row, choose <b>Show now</b> for one dwell, or <b>Pin</b> to keep it visible. Add multiple copies if you want different clocks or timers.'])
+table([['<b>Widget</b>','<b>What you can change</b>'],['Clock','Computer or named time zone, 12/24-hour format, seconds and date.'],['Pomodoro','Focus, short-break and long-break lengths; sessions before a long break.'],['Meeting countdown','Meeting title, date/time in the computer’s time zone and duration. Enter meetings manually; this is not a calendar sync.'],['CPU','Whole-computer usage, sampling interval and a last-minute history graph. Allow an initial warm-up sample.'],['Memory','Used or available RAM, GB/GiB units and sampling interval.']],[140,352])
+section('Run a focus timer')
+text('Use <b>Start timer</b>, <b>Pause timer</b>, <b>Reset timer</b> or <b>Skip phase</b> beside its playlist row. These are separate from playlist Pause/Resume. A running timer continues while another screen is shown, through quiet hours and app closure. On reopening, it uses the saved start time. Changing phase lengths or session count resets it to paused. Break transitions are automatic; the bot does not sound an alarm.')
+section('Give the little face more life')
+text('In <b>Settings &gt; Display</b>, adjust <b>Animate the companion</b>, <b>Companion energy</b>, <b>Glance toward the information</b> and <b>Playful Ahh and Ooo mouth shapes</b>. The face stays in its reserved corner beside your data. Animation rests when the playlist is paused, during quiet/off periods or with system reduced motion. Turn animation off for a still smile.')
+box('The desktop app supplies these screens. CPU and memory describe the connected computer, not the robot. Meeting countdown shows NOW during the meeting and DONE afterward. Timers follow the computer’s clock, so changing its time can change a countdown.')
+
+new();title('05 / OPTIONAL ACCOUNTS','Allowance at a glance.','Codex and Claude widgets show account allowance percentages, not token counts. These integrations are optional.')
+section('Codex allowance')
+steps(['Install and sign in to the Codex CLI separately, using your own account. DroidFun App reads that existing sign-in.','Edit a Codex widget and choose <b>Live data</b>. Choose <b>Read account windows</b>.','Select a window actually returned by your account, then choose <b>Apply</b>. If automatic detection fails, expand <b>CLI location</b> and select the executable path.'])
+text('DroidFun App does not start a model turn to read allowance. It refreshes at most every five minutes. If your account returns no window, the widget is unavailable; it does not invent a zero value.')
+section('Shared Claude account')
+steps(['Edit a Claude widget and choose <b>Live data</b>. Choose a five-hour or seven-day allowance window.','For <b>Usage source</b>, select <b>Shared Claude account (desktop, web and Code)</b>.','Use your existing Claude Code sign-in, or choose <b>Connect Claude account</b> and complete the sign-in in your browser. Then choose <b>Apply</b>.'])
+text('The app reads the shared allowance without sending a prompt and normally refreshes every five minutes. It can recover refreshable sign-ins through the installed Claude client. Initial sign-in, a revoked sign-in, or interactive onboarding still needs your action. Use <b>Another Claude account profile</b> to select a separate profile.')
+text('<b>Windows recovery:</b> Requires native <b>claude.exe</b> and Windows 10 version 1809 or later (or Server 2019+). A WSL-only install is not supported by this recovery path. If recovery fails, follow the reconnect message; an unavailable allowance is never shown as a made-up zero.')
+section('Advanced: Claude Code status-line reports')
+text('Choose <b>Claude Code status-line report</b> only if you want the optional local report integration. Review <b>Proposed integration</b> before choosing <b>Enable Claude Code bridge</b>. It backs up and chains the existing status-line command. <b>Restore original status line</b> removes this integration.')
+text('A report appears after an eligible Claude Code session receives an API response. Reports become stale after 10 minutes; no report means waiting. Advanced folder/profile/session selectors are available, but they are not required for the shared account source.')
+box('<b>Your credentials stay out of the download.</b> Installers contain no local sign-ins or user settings. Use your own accounts. DroidFun App does not persist prompts or transcripts. Diagnostics are reviewed locally before you choose to save them.')
+
+new();title('06 / SETTINGS + HELP','Keep it comfortable.','Settings are saved locally. Close the controls to keep the cycle running, or Quit DroidFun App to stop the desktop app.')
+section('Everyday settings')
+text('Use <b>Display</b> for brightness, screen on/off and <b>Show face</b>. In <b>Settings - display, quiet hours and app</b>, choose 0/180-degree orientation, companion-face animation, quiet hours, appearance and window behavior, then <b>Apply settings</b>. Quiet hours use the computer\'s local time. <b>Wake for 15 minutes</b> temporarily overrides quiet hours; manual screen-off has priority.')
+text('Mac controls live in the menu bar; Windows uses the notification area. Linux needs a compatible tray host, or the normal app window remains available. Relaunching DroidFun App reopens the controls. Start at login is opt-in. Disable it and Quit DroidFun App before manually removing the app on Mac or Linux.')
+section('Firmware, only when needed')
+text('A compatible preconfigured bot should not need reflashing for normal widget changes. For the exact RP2040-Zero / SSD1306 GP4/GP5 profile, open <b>Settings &gt; Robot &gt; Install firmware manually</b> and choose <b>Save robot firmware</b>. The app exports firmware 1.1.0.')
+steps(['Preserve the original sketch/source or flash backup if needed: copying a UF2 replaces the board\'s current program.','Unplug the robot, hold BOOT, reconnect USB, then release BOOT when the <b>RPI-RP2</b> drive appears.','Copy the matching UF2 to that drive. The robot restarts. Return to Connection, choose Connect, and verify the OLED.'])
+section('Troubleshooting')
+table([['<b>Symptom</b>','<b>Try this</b>'],['No USB device / cannot connect','Data cable, different port, Scan USB, correct device. On Linux 0.3.4, use Connection > Set up robot access. Close another app holding the port.'],['Screen stays blank','Turn on the screen, increase brightness, check quiet hours, resume the cycle and verify OLED health.'],['Live widget skipped','Check its source settings and network/account status. Try a sample widget to separate data issues from display issues.'],['Controls seem to disappear','Use the tray/menu bar, or launch DroidFun App again. Choose minimized-window behavior if your Linux desktop lacks a tray.'],['Need to report a problem','Settings > App > Preview diagnostics. Review it, then Save reviewed report. Share it deliberately with the maker.']],[166,326])
+story.append(Spacer(1,8))
+story.append(p('No automatic updater is enabled. Return to the Droid Fun Downloads page for newer versions. Reset playlist and preferences creates a backup and preserves account sign-ins. This guide covers Mac/Windows 0.3.3 and Linux 0.3.4. Firmware 1.1.0 is unchanged; a working compatible robot needs no reflash for this update. Saved playlists are retained.','SmallDF'))
+
+def frame(c,doc):
+ c.setStrokeColor(colors.HexColor('#dce3ec'));c.line(54,752,558,752)
+ c.setFillColor(BLUE);c.setFont('Helvetica-Bold',9);c.drawString(54,766,'droid fun.')
+ c.setFillColor(MUTED);c.setFont('Helvetica',8);c.drawRightString(558,766,'MAC / WINDOWS 0.3.3  |  LINUX 0.3.4')
+ c.line(54,40,558,40);c.drawString(54,27,'Droid Fun  |  Guide 1.3  |  October 14, 2026');c.drawRightString(558,27,str(doc.page))
+doc=SimpleDocTemplate(str(OUT),pagesize=(612,792),leftMargin=54,rightMargin=54,topMargin=58,bottomMargin=53,title='Droid Fun Controller Guide - Mac/Windows 0.3.3 and Linux 0.3.4',author='Droid Fun',subject='Setup and use of the DroidFun App controller')
+doc.build(story,onFirstPage=frame,onLaterPages=frame)
+print(OUT)

@@ -4,7 +4,7 @@ The **Build Windows and Linux packages** workflow builds Windows x64, Windows AR
 
 ## Reproduce a release build
 
-1. Open [the manual build workflow](https://github.com/greensky5656/DroidFun/actions/workflows/build-desktop.yml).
+1. Open [the manual build workflow](https://github.com/alexwastaken/DroidFun/actions/workflows/build-desktop.yml).
 2. Choose the pipeline branch, normally `main`.
 3. Set `source_ref` to the exact application commit or release tag. Set `release_tag` to the matching release version, for example `v0.3.1`. Choose `all` or one platform to retry.
 4. Run the workflow. Download each successful job's artifact. Failed tests, installer failures, wrong binary architecture or a missing native window prevent upload of a successful package artifact.
@@ -112,7 +112,7 @@ These are development packages: Mac lacks Developer ID signing/notarization and 
 
 ## Version 0.3.4 — Linux USB installer and repair
 
-[Published Linux release](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.4). Application/package source `bfe2f8b2caf5ef2f16fa3bcda49336387a6a9830`. Mac/Windows downloads remain the previously verified 0.3.3 packages; no older binary is relabeled as 0.3.4.
+[Published Linux release](https://github.com/alexwastaken/DroidFun/releases/tag/v0.3.4). Application/package source `bfe2f8b2caf5ef2f16fa3bcda49336387a6a9830`. Mac/Windows downloads remain the previously verified 0.3.3 packages; no older binary is relabeled as 0.3.4.
 
 Built locally in an isolated **Ubuntu 24.04 ARM64 VM** with pinned Rust 1.99.0, a GNU x86_64 cross toolchain, locked dependencies and **Rosetta for Linux** to execute the x86_64 tests and installed app. This is not native x86_64 hardware acceptance. Initial hosted jobs were rejected before starting by GitHub's billing restriction; no further paid jobs were requested.
 

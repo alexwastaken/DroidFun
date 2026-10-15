@@ -1,0 +1,33 @@
+DROID FUN DOWNLOADS - MANUAL UPDATES
+
+Automatic GitHub-to-Cloudflare syncing was removed at the owner's request on
+October 12, 2026. The old automatic-release handoff PDF and text are historical
+and no longer describe the active process.
+
+The owner will ask for an update when ready. At that time:
+1. Get the intended software changes/version from alexwastaken/DroidFun (private).
+   This is Alex’s own canonical repository as of October 14, 2026.
+   Shared-repository history was copied; future work and releases go to the private
+   repository. Do not fetch new updates from greensky5656/DroidFun unless Alex asks.
+2. Prefer finished, verified release installers. If no installers exist, build and
+   test real installers for the platforms being updated. Pushing source
+   code alone does not create a new executable. Report any build/platform limits.
+   Check version per platform: the current release set uses Mac/Windows 0.3.3
+   and Linux 0.3.4. Never relabel an older binary as the newest release.
+3. Verify the files and upload/deploy them to the existing Droid Fun website.
+   Publish matching file records and version labels only after verifying uploads.
+4. Update the Controller setup PDF separately if the instructions have changed.
+5. Check every changed public download and report the released version to Alex.
+
+The current five installers and setup PDF remain available. Existing mirrored
+installers are still read from D1; the initial files are also bundled in Worker
+assets. Preserve files and database rows still referenced by published downloads.
+The owner dashboard supports manual uploads (10 MB using D1; 50 MB with R2).
+For larger installers on the present configuration, bundle assets in
+public/download-assets/ and point file records to asset:/download-assets/FILENAME.
+Serve files through /api/files/:id so publication/access checks remain in place.
+
+There is no scheduled GitHub polling, no automatic release publishing endpoint,
+and no permanent GitHub/Cloudflare automation credential to revoke. The website
+Worker remains necessary for the shop, owner dashboard and downloads.
+The separate Windows/Linux build workflow in the app repository remains available.
