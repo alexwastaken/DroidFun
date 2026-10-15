@@ -134,6 +134,12 @@ def ui():
         run(['sudo','tee',str(POLICY_RULE)],input=auth)
         run(['sudo','chmod','0644',str(POLICY_RULE)])
         time.sleep(2)
+        # The test grant must not authorize another command through the same
+        # interpreter. exec.argv1 is part of the real production policy.
+        wrong=subprocess.run(['/usr/bin/pkexec','--disable-internal-agent','/usr/bin/sh','-c','exit 0'],capture_output=True,timeout=10)
+        assert wrong.returncode == 127, 'Scoped robot action authorized a different shell command'
+        extra=subprocess.run(['/usr/bin/pkexec','--disable-internal-agent','/usr/bin/sh',HELPER,'unexpected'],capture_output=True,timeout=10)
+        assert extra.returncode == 2, 'Fixed helper must reject extra arguments after authorization'
         run(['sudo','rm',str(RULE)])
         driver.js('document.querySelector(".robot-access-setup button").click();')
         driver.wait('document.querySelector(".robot-access-setup [role=status]")',seconds=60)
@@ -148,7 +154,7 @@ def ui():
         driver.js('const s=document.querySelector(".branding-control select");s.value="green";s.dispatchEvent(new Event("change",{bubbles:true}));')
         driver.wait('document.documentElement.dataset.branding === "green"')
         driver.capture('linux-usb-green.png')
-        print(json.dumps({'nativeButton':'passed','installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        print(json.dumps({'nativeButton':'passed','installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()
