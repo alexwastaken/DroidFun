@@ -592,7 +592,7 @@ impl Providers {
             }
         }
         let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
-        let wait = if failed {
+        let mut wait = if failed {
             let n = cache.failures.entry(cache_key.clone()).or_default();
             *n = n.saturating_add(1);
             retry_seconds(&failure_state, *n, &cache_key).max(retry_after)
@@ -624,6 +624,11 @@ impl Providers {
                 _ => 300,
             }
         };
+        // A known account-window reset can precede the five-minute poll.
+        // Re-fetch at its expiry instead of caching an unusable percentage.
+        if !failed && widget.kind == "claude" && widget.config.claude_source == "account" {
+            wait = wait.min(card.expires_at.saturating_sub(now).max(1));
+        }
         if cache.cards.len() >= 128 {
             if let Some(key) = cache
                 .cards

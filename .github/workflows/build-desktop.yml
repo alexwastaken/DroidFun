@@ -12,7 +12,7 @@ on:
       release_tag:
         description: Existing release version (used to validate package versions)
         required: true
-        default: v0.3.1
+        default: v0.3.2
       platform:
         description: Build all packages or retry one platform
         type: choice

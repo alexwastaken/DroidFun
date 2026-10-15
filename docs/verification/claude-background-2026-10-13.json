@@ -1,0 +1,234 @@
+{
+  "checkedUtc": "2026-10-13T20:22:43.586790+00:00",
+  "result": "closed_panel_interval_verified",
+  "runDirectory": "/Users/hansparsons/.cache/deskbot/reliability/2026-10-13-claude-closed-final-15m",
+  "telemetryDirectory": "/Users/hansparsons/.cache/deskbot/reliability/2026-10-13-claude-final-telemetry",
+  "build": {
+    "appPath": "/Users/hansparsons/Applications/DroidFun App.app",
+    "appSha256": "48a2d0d5abe8ad1cebe803f58b5c8f19ef242527926c58476f545d83db483dc8",
+    "sourceSha256": {
+      "src-tauri/src/claude_account.rs": "3d68ec0a9524f588baa71f2520e2a16ff930854e3f3f9ca74b578981351749f8",
+      "src-tauri/src/lib.rs": "406917ba15e08f883460c0daf2116ff4dfb838ccc932409b0dbd945377dcf41a",
+      "src-tauri/src/providers.rs": "1494e1a1729520c1ae615065d76da67aa07e13c69a477c4a2d3d912c1534a009"
+    },
+    "rustTestsPassed": 39,
+    "ignoredLiveDiagnosticTests": 1,
+    "savedSettingsSha256": "1194b7ace864396eec639ffef65f5e44cab78f5fd1e51b4c5c3dc67d075de822"
+  },
+  "durationSeconds": 900.2010178565979,
+  "collectorElapsedSeconds": 900.20423412323,
+  "samples": 175,
+  "healthySamples": 175,
+  "controlsClosedAllSamples": true,
+  "samplingGaps": 0,
+  "missingProcessMeasurements": 0,
+  "maximumSampleIntervalSeconds": 5.2539520263671875,
+  "maximumCompletedTelemetryAgeSeconds": 6.039373159408569,
+  "maximumPendingRequests": 1,
+  "memoryMiB": {
+    "wholeApp": {
+      "min": 62.34375,
+      "median": 65.046875,
+      "p95": 69.640625,
+      "peak": 69.65625,
+      "final": 64.78125
+    },
+    "settledAfterTwoMinutes": {
+      "min": 62.34375,
+      "median": 65.046875,
+      "p95": 69.3828125,
+      "peak": 69.65625,
+      "final": 64.78125
+    },
+    "settledEarlyMedian": 65.40625,
+    "lastFiveMinuteMedian": 64.609375,
+    "allSampledOwnedProcessesIncludingCodex": {
+      "min": 62.34375,
+      "median": 65.046875,
+      "p95": 69.640625,
+      "peak": 183.234375,
+      "final": 64.78125
+    },
+    "excludedCodexObservations": [
+      {
+        "at": 1791922886.0694249,
+        "rssMiB": 118.734375
+      }
+    ],
+    "scope": "App plus attributed WebKit services/owned helpers, excluding only sampled Codex subtree; that subtree is also reported separately. RSS can double count shared pages. Very short helpers can fall between samples.",
+    "leakAssessment": "No upward resident-memory trend during this 15-minute background interval: settled early median 65.41 MiB, final five-minute median 64.61 MiB. This short observation cannot rule out slower leaks, compressed allocations or future growth."
+  },
+  "cpuPercentOfOneCore": {
+    "weighted": 0.4096413881884646,
+    "interval": {
+      "min": 0.2792947600364426,
+      "median": 0.4189684363182155,
+      "p95": 0.5045228579114901,
+      "peak": 0.8609148277522283,
+      "final": 0.39010201493518415
+    },
+    "collectorMean": 0.40953399804729484,
+    "scope": "App and included owned helpers; the temporary Codex account-reader subtree is excluded. Its complete CPU cost is not established by five-second sampling."
+  },
+  "widgetStateSampleCounts": {
+    "weather": {
+      "fresh": 175
+    },
+    "stock": {
+      "fresh": 175
+    },
+    "codex": {
+      "fresh": 175
+    },
+    "claude": {
+      "fresh": 175
+    },
+    "clock": {
+      "fresh": 175
+    },
+    "pomodoro": {
+      "fresh": 175
+    },
+    "cpu": {
+      "fresh": 175
+    },
+    "memory": {
+      "fresh": 175
+    }
+  },
+  "distinctFetchTimestamps": {
+    "weather": 2,
+    "stock": 2,
+    "codex": 4,
+    "claude": 4,
+    "clock": 174,
+    "pomodoro": 174,
+    "cpu": 174,
+    "memory": 174
+  },
+  "cycleVisits": {
+    "weather": 20,
+    "stock": 20,
+    "codex": 19,
+    "claude": 19,
+    "clock": 19,
+    "pomodoro": 19,
+    "cpu": 19,
+    "memory": 19,
+    "face": 19
+  },
+  "validatedFrameAcks": 1744,
+  "frameCounterResets": [],
+  "naturalRenewal": {
+    "state": "natural_renewal_verified",
+    "fixtureRecovery": "passed",
+    "eventsAtResourceTestEnd": [],
+    "automationId": "droidfun-claude-renewal-verification",
+    "deadlineUtc": "2026-10-14T20:06:23.212410+00:00",
+    "boundary": "Fixture flows and live fresh cards do not prove natural credential renewal. Dedicated monitor requires expiry/rejection, app-owned renewal, newly fetched valid card and Claude cycle.",
+    "monitoredAppSha256": "4bc458d0ec10e7299342f5dfab56fdc6a55c81f9c88f0c020812c5e87f108dbf",
+    "themeCorrectionBoundary": "Frontend green-theme rebuild; previous resource and renewal events remain separate. Current monitoring uses the updated exact manifest identity.",
+    "latestReview": {
+      "checkedUtc": "2026-10-14T03:17:21.317582+00:00",
+      "verdict": "natural_renewal_verified",
+      "identityAndHashVerified": true,
+      "appSha256": "4bc458d0ec10e7299342f5dfab56fdc6a55c81f9c88f0c020812c5e87f108dbf",
+      "privacy": "Only redacted state/events, source hashes and observation times; no credential contents, identity, allowance amounts or exact credential expiry inspected. No manual sign-in, forced expiry, model request or external client invoked."
+    },
+    "evidence": "/Users/hansparsons/.cache/deskbot/verification/2026-10-13-claude-recovery-final/natural-renewal-2026-10-13.json",
+    "expiryDetectionLocal": "October 13, 2026 07:20:12 PM PDT",
+    "credentialRenewedLocal": "October 13, 2026 07:20:14 PM PDT",
+    "renewalEventIntervalSeconds": 2,
+    "subsequentVerifiedCard": {
+      "index": 4,
+      "kind": "claude",
+      "dataState": "fresh",
+      "allowanceState": "active",
+      "fetchedAt": 1791947718,
+      "expiresAt": 1791951318
+    },
+    "subsequentClaudeCycle": {
+      "atMs": 1791947760027,
+      "displayOn": true,
+      "elapsedMs": 24269831,
+      "index": 4,
+      "kind": "claude",
+      "playback": "running",
+      "temporary": false
+    },
+    "correlationBoundary": "Explicit app instrumentation records expiry, owned-helper initiation and successful re-read. Source flow and unchanged source hashes support automatic renewal. Subsequent fresh active card and cycle verified. The first newly fetched card after renewal was not continuously logged, so its exact latency and uninterrupted availability are unverified; the first post-renewal cycle could have used the prior still-usable card. Integer event timestamps do not measure exact helper duration.",
+    "automationStatus": "PAUSED",
+    "cleanup": {
+      "checkedUtc": "2026-10-14T03:20:48.581595+00:00",
+      "oldAppPid": 1262,
+      "newAppPid": 36919,
+      "executable": "/Users/hansparsons/Applications/DroidFun App.app/Contents/MacOS/deskbot",
+      "appSha256": "4bc458d0ec10e7299342f5dfab56fdc6a55c81f9c88f0c020812c5e87f108dbf",
+      "gracefulTerminateRequested": true,
+      "oldKernelExecutableUnavailable": true,
+      "oldPidStillExiting": true,
+      "reliabilityEnvironmentRemoved": true,
+      "settingsSha256AtStop": "1194b7ace864396eec639ffef65f5e44cab78f5fd1e51b4c5c3dc67d075de822",
+      "preferencesHashPreservedImmediately": true,
+      "controlsVisibleRequested": false,
+      "previousTelemetryMtimeNs": 1791947871845834970,
+      "newAppIdentityVerified": true,
+      "robotSerialPortOwned": false,
+      "savedSettingsPreservedAfterRestart": true,
+      "loggingStoppedConfirmed": true,
+      "renewalHeartbeatStatusVerified": "PAUSED",
+      "oldFullDayHeartbeatRemainsPaused": true,
+      "rp2040UsbDeviceDetectedAfterRestart": false,
+      "robotUsbSerialNodesPresent": false,
+      "controlsClosedVerified": true,
+      "postRestartUsbRecovery": "Serial node absent; USB reconnect required, cause unestablished"
+    },
+    "postRestartUsbRecovery": "macOS currently detects no RP2040 or serial node; user asked to reconnect. Cause unestablished; natural-renewal evidence precedes this cleanup issue."
+  },
+  "measurementBoundary": "Normal nine-widget animated cycling, controls absent throughout. This fifteen-minute interval does not prove absence of every leak or a complete 24-hour run; comparison with prior open-panel run uses a different build/window state. No fault injection or model prompts. Physical pixel readability not requalified by ACKs. Sampling began after launch and excludes launch transients; logging remains active only for the bounded natural-renewal monitor. All sampled-owned memory peak includes the captured Codex helper; very brief helper peaks may be missed.",
+  "rawEvidenceSha256": {
+    "samples.jsonl": "e2cbc4fd05134c1317e4346c2507c6b1e9dc4377b27bb08efbbc2eed025cc783",
+    "report.json": "846573953db3d42ab110f01ff609e90daa4591caf6dc6b37c3e0cb998f3c9064",
+    "run.json": "5a012be6a146ab64c77039e46953342cff8e14975c3f38dbf3a8142a97f67e55",
+    "resource-transitions.jsonl": "df5c1dc79abe46ec9539b72962990f44b48f35e9d8520399d0682caa0f61a32e"
+  },
+  "frozenTransitionEvidence": "/Users/hansparsons/.cache/deskbot/verification/2026-10-13-claude-recovery-final/resource-transitions.jsonl",
+  "observedAppLaunchOffsetSeconds": 50.88526797294617,
+  "maximumObserverStageSeconds": {
+    "native_process_inventory": 0.03544458298711106,
+    "native_app_inventory": 0.1532304580323398,
+    "native_owned_resources": 0.0004017079481855035
+  },
+  "controlledRecoveryVerification": {
+    "result": "passed",
+    "expiredCredentialHelperHttpCard": "passed with isolated fixture credentials and local HTTP server",
+    "serverRejectsLocallyValidToken": "passed bounded renewal then one HTTP retry",
+    "concurrentTokenRotation": "passed one HTTP retry",
+    "missingCredentialsFailedRenewalPersistentRejection": "explicit errors, no invented token/allowance",
+    "ownedHelperSuccessFailureTimeoutCleanup": "passed",
+    "naturalLiveExpiration": "not observed in resource interval"
+  },
+  "liveClaude": {
+    "freshSampleCount": 175,
+    "validAllowanceSampleCount": 175,
+    "distinctFetchTimestamps": 4,
+    "cycleVisits": 19,
+    "initialEndpointRecoveryBeforeFix": "redacted live diagnostic already returned valid active windows; not attributed to patch"
+  },
+  "cleanup": {
+    "resourceCollectorStopped": true,
+    "resourceLaunchAgentUnloaded": true,
+    "resourcePlistRemoved": true,
+    "loggingRetainedForNaturalRenewalMonitor": true,
+    "preferencesUnchangedAfterTest": true,
+    "renewalAutomationId": "droidfun-claude-renewal-verification",
+    "renewalAutomationStatus": "ACTIVE"
+  },
+  "themeCorrection": {
+    "theme": "original_green",
+    "monitoredAppSha256": "4bc458d0ec10e7299342f5dfab56fdc6a55c81f9c88f0c020812c5e87f108dbf",
+    "backendSourceUnchanged": true,
+    "resourceNumbersApplyToEarlierBuild": true,
+    "renewalDeadlinePreserved": "2026-10-14T20:06:23.212410+00:00"
+  }
+}

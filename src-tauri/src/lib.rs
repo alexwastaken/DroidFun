@@ -623,12 +623,12 @@ fn diagnostics_preview(state: State<AppState>) -> Result<String, String> {
         .lock()
         .map_err(|_| "Connection unavailable")?;
     let widgets:Vec<_>=e.settings.widgets.iter().map(|w|serde_json::json!({"kind":w.kind,"enabled":w.enabled,"mode":w.config.mode,"durationSeconds":w.duration_sec})).collect();
-    let cards:Vec<_>=e.snapshot().data.values().map(|d|serde_json::json!({"source":d.source_id,"state":d.state,"fetchedAt":d.fetched_at,"observedAt":d.observed_at,"expiresAt":d.expires_at})).collect();
+    let cards:Vec<_>=e.snapshot().data.values().map(|d|serde_json::json!({"source":d.source_id,"state":d.state,"fetchedAt":d.fetched_at,"observedAt":d.observed_at,"expiresAt":d.expires_at,"allowanceState":d.values.get("allowanceState")})).collect();
     let events = state
         .events
         .lock()
         .map_err(|_| "Event history unavailable")?;
-    let report=serde_json::to_string_pretty(&serde_json::json!({"formatVersion":1,"appVersion":env!("CARGO_PKG_VERSION"),"os":std::env::consts::OS,"architecture":std::env::consts::ARCH,"uptimeSeconds":state.started.elapsed().as_secs(),"trayAvailable":state.platform.tray_available,"connection":{"state":c.state,"firmware":c.firmware,"displayHealth":c.display_health,"redactedBoard":c.board_id.as_ref().map(|id|format!("{:x}",Sha256::digest(id.as_bytes()))[..8].to_string())},"display":{"brightness":e.settings.brightness,"orientation":e.settings.preferences.orientation,"reason":e.snapshot().display_reason},"widgets":widgets,"providers":cards,"connectionEvents":*events,"excluded":"credentials, account identity, location, symbols, prompts, transcripts, local paths"})).map_err(|_|"Could not prepare diagnostics")?;
+    let report=serde_json::to_string_pretty(&serde_json::json!({"formatVersion":1,"appVersion":env!("CARGO_PKG_VERSION"),"os":std::env::consts::OS,"architecture":std::env::consts::ARCH,"uptimeSeconds":state.started.elapsed().as_secs(),"trayAvailable":state.platform.tray_available,"connection":{"state":c.state,"firmware":c.firmware,"displayHealth":c.display_health,"redactedBoard":c.board_id.as_ref().map(|id|format!("{:x}",Sha256::digest(id.as_bytes()))[..8].to_string())},"display":{"brightness":e.settings.brightness,"orientation":e.settings.preferences.orientation,"reason":e.snapshot().display_reason},"widgets":widgets,"providers":cards,"connectionEvents":*events,"claudeAccount":claude_account::diagnostics(),"excluded":"credentials, account identity, location, symbols, prompts, transcripts, local paths"})).map_err(|_|"Could not prepare diagnostics")?;
     *state
         .diagnostics
         .lock()
@@ -1048,13 +1048,13 @@ pub fn run() {
                     let snapshot = state.engine.lock().ok().map(|e| e.snapshot());
                     if let Some(s) = snapshot {
                         let now = core::unix_now();
-                        let widgets: Vec<_> = s.settings.widgets.iter().enumerate().map(|(index,w)| serde_json::json!({"index":index,"kind":w.kind,"enabled":w.enabled,"mode":w.config.mode,"durationSeconds":w.duration_sec,"current":w.id==s.current_id,"dataState":s.data.get(&w.id).map(|d|d.state_at(now)),"fetchedAt":s.data.get(&w.id).map(|d|d.fetched_at),"expiresAt":s.data.get(&w.id).map(|d|d.expires_at)})).collect();
+                        let widgets: Vec<_> = s.settings.widgets.iter().enumerate().map(|(index,w)| serde_json::json!({"index":index,"kind":w.kind,"enabled":w.enabled,"mode":w.config.mode,"durationSeconds":w.duration_sec,"current":w.id==s.current_id,"dataState":s.data.get(&w.id).map(|d|d.state_at(now)),"fetchedAt":s.data.get(&w.id).map(|d|d.fetched_at),"expiresAt":s.data.get(&w.id).map(|d|d.expires_at),"allowanceState":s.data.get(&w.id).and_then(|d|d.values.get("allowanceState")).and_then(|v|v.as_str())})).collect();
                         let connection = state.connection.lock().ok().map(|c|serde_json::json!({"state":c.state,"firmware":c.firmware,"displayHealth":c.display_health}));
                         let metrics = state.link_metrics.lock().ok().map(|m|serde_json::to_value(&*m).unwrap_or_default());
                         let pending = state.pending.lock().ok().map(|p|p.values().map(|v|v.iter().filter(|w|w.strong_count()>0).count()).sum::<usize>());
                         let events = state.events.lock().ok().map(|e|e.clone());
                         let visible = handle.get_webview_window("main").is_some_and(|w|w.is_visible().unwrap_or(false));
-                        let value = serde_json::json!({"formatVersion":1,"at":now,"pid":std::process::id(),"uptimeSeconds":state.started.elapsed().as_secs(),"controlsVisible":visible,"connection":connection,"link":metrics,"playback":s.playback,"displayOn":s.display_on,"displayReason":s.display_reason,"orientation":s.settings.preferences.orientation,"brightness":s.settings.brightness,"frameCrc":protocol::crc32(&s.frame),"widgets":widgets,"pendingRequests":pending,"connectionEvents":events,"faults":{"networkOffline":reliability::fault("network-offline"),"linkInterruption":reliability::fault("link-interruption")}});
+                        let value = serde_json::json!({"formatVersion":1,"at":now,"pid":std::process::id(),"uptimeSeconds":state.started.elapsed().as_secs(),"controlsVisible":visible,"connection":connection,"link":metrics,"playback":s.playback,"displayOn":s.display_on,"displayReason":s.display_reason,"orientation":s.settings.preferences.orientation,"brightness":s.settings.brightness,"frameCrc":protocol::crc32(&s.frame),"widgets":widgets,"pendingRequests":pending,"connectionEvents":events,"claudeAccount":claude_account::diagnostics(),"faults":{"networkOffline":reliability::fault("network-offline"),"linkInterruption":reliability::fault("link-interruption")}});
                         if let Err(error) = reliability::write(&value) { eprintln!("Reliability telemetry could not be written: {error}"); }
                     }
                     std::thread::sleep(Duration::from_secs(5));

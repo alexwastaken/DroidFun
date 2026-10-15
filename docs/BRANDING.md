@@ -1,6 +1,8 @@
 # DroidFun App branding and upgrades
 
-DroidFun App is the desktop controller for Droid Fun bots. Version 0.3.1 replaces the Deskbot name in the app, settings, tray menu, diagnostics export, window title and future installer names. The logo comes directly from droidfun.io; use the assets in public/brand rather than inventing another logo. The primary blue is #3268dc, text #17283d, background #f8fafc, and surface #edf2f8. Dark mode uses the same blue with navy surfaces.
+DroidFun App is the desktop controller for Droid Fun bots. Version 0.3.1 replaces the Deskbot name in the app, settings, tray menu, diagnostics export, window title and future installer names. The logo comes directly from droidfun.io; use the assets in public/brand rather than inventing another logo. The Branding dropdown offers **DroidFun · blue** (the website palette and default for existing/new settings without a saved selection) and **Classic · green** (the original green robot and controls). Both preserve the DroidFun name, supplied logo and native app/tray icons. The selection is saved with preferences and works independently of system/light/dark appearance. The main controls apply it immediately; Settings → App applies it with the other draft settings. Changing it does not affect widgets, account connections or OLED frames.
+
+The user approved the October 14 selector and Claude recovery changes for publication. Version 0.3.2 packages are being rebuilt from the approved source; upload verification will record the exact commit and asset hashes.
 
 ## Compatibility
 

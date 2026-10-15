@@ -83,6 +83,36 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn branding_upgrade_and_saved_selection_preserve_playlist() {
+        let dir = std::env::temp_dir().join(format!("deskbot-branding-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        let mut expected = Settings::default();
+        expected.brightness = 44;
+        expected.preferences.appearance = "dark".into();
+        let mut legacy = serde_json::to_value(&expected).unwrap();
+        legacy["preferences"].as_object_mut().unwrap().remove("branding");
+        fs::write(&path, serde_json::to_vec(&legacy).unwrap()).unwrap();
+        let mut loaded = load(&path).unwrap();
+        assert_eq!(loaded.preferences.branding, "droidfun");
+        assert_eq!(loaded.brightness, 44);
+        assert_eq!(loaded.preferences.appearance, "dark");
+        assert_eq!(serde_json::to_value(&loaded.widgets).unwrap(), legacy["widgets"]);
+        for branding in ["green", "droidfun"] {
+            loaded.preferences.branding = branding.into();
+            save(&path, &loaded).unwrap();
+            let reopened = load(&path).unwrap();
+            assert_eq!(reopened.preferences.branding, branding);
+            assert_eq!(serde_json::to_value(&reopened.widgets).unwrap(), legacy["widgets"]);
+            assert_eq!(reopened.brightness, 44);
+            assert_eq!(reopened.preferences.appearance, "dark");
+        }
+        loaded.preferences.branding = "unknown".into();
+        assert!(loaded.validate().is_err());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
     use super::*;
     #[test]
     fn future_schema_is_preserved_and_backup_recovers() {

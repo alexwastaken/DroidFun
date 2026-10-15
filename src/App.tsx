@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -83,6 +83,10 @@ export default function App() {
     return () => { disposed = true; unlisten?.(); unlistenConnection?.(); };
   }, []);
 
+  useLayoutEffect(() => {
+    document.documentElement.dataset.branding = state?.settings.preferences.branding ?? "droidfun";
+  }, [state?.settings.preferences.branding]);
+
   useEffect(() => {
     const dark = window.matchMedia("(prefers-color-scheme: dark)");
     const appearance = state?.settings.preferences.appearance ?? "system";
@@ -135,6 +139,7 @@ export default function App() {
   return <main className="app-shell">
     <div className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><span className="demo-pill">{connection?.state === "connected" ? "ROBOT CONNECTED" : "PREVIEW MODE"}</span></div>
     <section className="intro"><div><div className="eyebrow">YOUR DROID, YOUR WAY</div><h1>Your desk could use<br /><em>some company.</em></h1><p>Choose what your droid shows. Add your favorite widgets and connect with USB.</p></div></section>
+    <label className="branding-control">Branding<select value={state.settings.preferences.branding} disabled={busy} onChange={e => act("set_preferences", {preferences:{...state.settings.preferences,branding:e.target.value}})}><option value="droidfun">DroidFun · blue</option><option value="green">Classic · green</option></select></label>
     <section className="robot-wrap" aria-label="Robot screen preview">
       <div className="antenna"><span /></div>
       <div className="robot-head"><span className="head-highlight" /><div className="screen-bezel"><Oled frame={visibleFrame} brightness={state.displayOn || selected ? state.settings.brightness : 0} orientation={state.settings.preferences.orientation} description={`${selectedWidget?.label ?? current?.label ?? "Happy face"} OLED preview. ${liveCard?.headline ?? visibleWidget?.headline ?? ""}. ${liveCard?.footer ?? visibleWidget?.footer ?? ""}. ${liveCard?.detail ?? visibleWidget?.config.faceExpression ?? ""}`} /></div><div className="robot-cheek left" /><div className="robot-cheek right" /></div>

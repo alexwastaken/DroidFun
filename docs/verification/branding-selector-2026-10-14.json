@@ -1,0 +1,44 @@
+{
+  "reviewedAtUtc": "2026-10-14T07:13:25.237977+00:00",
+  "status": "user_approved_release_builds_authorized",
+  "choices": [
+    "droidfun",
+    "green"
+  ],
+  "default": "droidfun",
+  "keepsDroidFunNameAndLogo": true,
+  "checks": {
+    "rustPassed": 40,
+    "rustIgnored": 1,
+    "ignoredReason": "Live redacted account probe not needed for a branding change",
+    "frontendTypeCheck": "passed",
+    "frontendProductionBuild": "passed",
+    "nativeMacArm64BuildAndAdHocSignature": "passed",
+    "nativeVisualReview": [
+      "blue light",
+      "green light",
+      "blue dark",
+      "green dark"
+    ],
+    "nativeGreenRestartPersistence": "passed",
+    "settingsBrandingAndAppearanceControls": "passed",
+    "existingPlaylistAndOtherPreferencesPreserved": "passed",
+    "finalBranding": "droidfun",
+    "finalAppearance": "system",
+    "claudeSourcesUnchanged": true
+  },
+  "executableSha256": "12653d43480260659f88225904dc235a7e64636c9175efbaadc2f2b4ed7aca6d",
+  "sourceHashes": {
+    "claude_account.rs": "3d68ec0a9524f588baa71f2520e2a16ff930854e3f3f9ca74b578981351749f8",
+    "providers.rs": "1494e1a1729520c1ae615065d76da67aa07e13c69a477c4a2d3d912c1534a009"
+  },
+  "limits": [
+    "No new live credential expiry or resource soak performed for this presentation rebuild"
+  ],
+  "userApproval": {
+    "recordedAtUtc": "2026-10-15T02:06:44.468739+00:00",
+    "request": "approved",
+    "releaseVersion": "0.3.2"
+  },
+  "followUpHardware": "October 14: robot connected through hub on working phone cable/port; independent frame/health checks and user cycling/readability passed with unchanged firmware 1.1.0"
+}

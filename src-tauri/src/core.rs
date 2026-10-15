@@ -254,6 +254,7 @@ pub struct Preferences {
     pub orientation: u16,
     pub quiet_hours: QuietHours,
     pub appearance: String,
+    pub branding: String,
     pub launch_at_login: bool,
     pub window_mode: String,
     pub setup_complete: bool,
@@ -269,6 +270,7 @@ impl Default for Preferences {
             orientation: 0,
             quiet_hours: QuietHours::default(),
             appearance: "system".into(),
+            branding: "droidfun".into(),
             launch_at_login: false,
             window_mode: "auto".into(),
             setup_complete: false,
@@ -284,6 +286,7 @@ impl Preferences {
     pub fn validate(&self) -> Result<(), String> {
         if ![0, 180].contains(&self.orientation)
             || !["system", "light", "dark"].contains(&self.appearance.as_str())
+            || !["droidfun", "green"].contains(&self.branding.as_str())
             || !["auto", "window", "background"].contains(&self.window_mode.as_str())
             || !["slow", "normal", "quick"].contains(&self.companion_speed.as_str())
             || self.quiet_hours.start_minute >= 1440
@@ -292,7 +295,7 @@ impl Preferences {
                 && self.quiet_hours.start_minute == self.quiet_hours.end_minute)
         {
             return Err(
-                "Choose a valid orientation, appearance, and distinct quiet-hours times".into(),
+                "Choose a valid orientation, appearance, branding, and distinct quiet-hours times".into(),
             );
         }
         Ok(())
