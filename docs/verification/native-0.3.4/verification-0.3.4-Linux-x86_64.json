@@ -1,0 +1,127 @@
+{
+  "version": "0.3.4",
+  "platform": "Linux-x86_64",
+  "target": "x86_64-unknown-linux-gnu",
+  "applicationCommit": "bfe2f8b2caf5ef2f16fa3bcda49336387a6a9830",
+  "buildMethod": "local cross build in isolated Ubuntu 24.04 ARM64 VM; x86_64 tests and installed app executed with Rosetta for Linux; no paid hosted jobs",
+  "runner": {
+    "os": "Linux-6.8.0-142-generic-aarch64-with-glibc2.39",
+    "architecture": "aarch64",
+    "ubuntu": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+    "rust": "rustc 1.99.0 (b940084d7 2026-09-28)"
+  },
+  "architecture": "x86_64 ELF64",
+  "tests": {
+    "passed": 43,
+    "failed": 0,
+    "ignored": 1
+  },
+  "testBoundary": "Local x86_64 execution is translated, not a native x86_64 host. Earlier independent ARM64 behavior run passed 43 tests before final wording/packaging-only changes.",
+  "smoke": {
+    "result": "passed",
+    "debInstalled": true,
+    "automaticUsbRuleInstalled": true,
+    "repairButtonRealIpc": true,
+    "scopedUaccessFixture": true,
+    "removalAndReinstallPreserveUserFiles": true,
+    "noGroupChanges": true,
+    "installedBinaryMatchesPackage": true,
+    "rpmMetadataArchitecture": "x86_64",
+    "nativeWindowCreated": true,
+    "aliveSeconds": 15,
+    "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; no tray host, robot or account credentials"
+  },
+  "linuxUsbAccess": {
+    "ruleMatching": {
+      "ruleMatching": "passed",
+      "cases": [
+        {
+          "vid": "2e8a",
+          "pid": "0003",
+          "ttyKind": "ttyACM0",
+          "uaccess": true
+        },
+        {
+          "vid": "1234",
+          "pid": "0003",
+          "ttyKind": "ttyACM0",
+          "uaccess": false
+        },
+        {
+          "vid": "2e8a",
+          "pid": "000a",
+          "ttyKind": "ttyACM0",
+          "uaccess": false
+        },
+        {
+          "vid": "2e8a",
+          "pid": "0003",
+          "ttyKind": "ttyUSB0",
+          "uaccess": false
+        }
+      ]
+    },
+    "realKernelAclFixture": {
+      "aclMechanism": "passed",
+      "initialKernelDenial": true,
+      "activeSeatUserCanOpen": true,
+      "unrelatedUserDenied": true,
+      "seatSwitchRevokesOldUser": true,
+      "fixture": "real character node with harmless null-driver I/O; private mount namespace and synthetic seat metadata, not a serial transport or live desktop session"
+    },
+    "nativeAppButton": {
+      "nativeButton": "passed",
+      "installedPackage": "/usr/bin/deskbot",
+      "installedExecutableSha256": "874a1e70153fd23e3b516e4d297a7798927c55a636e116f4b47beabc7d043d27",
+      "realIpcPkexecAndFixedHelper": true,
+      "missingRuleRestored": true,
+      "alternateShellCommandDenied": true,
+      "extraHelperArgumentsRejected": true,
+      "deniedAuthorizationShowsError": true,
+      "blueAndGreenControls": "passed",
+      "authorizationFixture": "temporary action+caller-specific polkit YES rule; removed before real policy denial check",
+      "humanGraphicalPasswordDialog": "not_verified",
+      "physicalRobot": "not_available"
+    },
+    "policy": "auth_admin for active local sessions; no for inactive/other sessions",
+    "temporaryAuthorizationRemoved": true,
+    "appRemainsUnprivileged": true
+  },
+  "installedExecutableSha256": "874a1e70153fd23e3b516e4d297a7798927c55a636e116f4b47beabc7d043d27",
+  "sourceFilesSha256": {
+    "src-tauri/src/linux_usb.rs": "e3705613542e6e803ed6fc737ed199d663e005bcb850d5841defd8e9dd95cbe4",
+    "src-tauri/src/lib.rs": "ec8d63b464fb0cd2c0f21cd8dc626a841a4e207c06cd6f54c6532730d6ff38a5",
+    "src-tauri/src/connection.rs": "11384d35f4dc703f4b587bc4a3c32864139ee517f4803256327bf1e86993b3bc",
+    "src/LinuxRobotAccess.tsx": "0acd63b4aa04f46fd7dadc9ca54f1550df355b9be32773056102195dcf484c60",
+    "src/App.tsx": "befdc054cc607f4058c921a921154382227379fbe07de55da624372611919993",
+    "src-tauri/tauri.linux.conf.json": "1b529bf5da6a6ee1ce0a5399af69800886e93114d9c111c6766001daec18922f",
+    "src-tauri/linux/setup-robot-access": "c97e91560dc1aaa7239557cc81c55dea43c49d67ba643f2bab0eecc830c5a0a2",
+    "src-tauri/linux/70-droidfun.rules": "d856d335948437cbdfbee3d144529fe0ade55049766526abdaa0436234050d66",
+    "src-tauri/linux/io.droidfun.usb-access.policy": "3cafb73bd0c4ec4548502f883d8bc1e2dcdca68a94348de6e681d6f7af4c7bf8",
+    "src-tauri/linux/postinst": "6662e321d65fccd24baebd486cab2f9dd5181534bb5ee88efca209d27f302079",
+    "src-tauri/linux/postrm": "02d4437dab4cbf7c6d76e74517a604ec4c208ed6a7e15387c5efa6131fd6187b"
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.3.4-Linux-x86_64.deb",
+      "bytes": 7412920,
+      "sha256": "f1cbd85537712410ea58b53946683915373f4c67dd462bd27cd288f76ae6211e"
+    },
+    {
+      "name": "DroidFun-App-0.3.4-Linux-x86_64.rpm",
+      "bytes": 7415897,
+      "sha256": "3762ace1833b2e050565ec04ae92e0da2a93e9fe8aa014850f4203a3e910186a"
+    }
+  ],
+  "remaining": [
+    "Physical robot on an Ubuntu laptop",
+    "Human graphical administrator-password dialog",
+    "Native x86_64 host acceptance",
+    "Fedora/RPM runtime",
+    "Live account and tray acceptance on Linux",
+    "Signing and long-duration qualification"
+  ],
+  "otherPlatformPackages": "macOS and Windows remain at published 0.3.3; this release updates Linux only",
+  "githubActions": "Attempted jobs did not start because of account billing restriction; no further hosted jobs requested"
+}

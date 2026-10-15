@@ -1,0 +1,14 @@
+{
+  "result": "passed",
+  "debInstalled": true,
+  "automaticUsbRuleInstalled": true,
+  "repairButtonRealIpc": true,
+  "scopedUaccessFixture": true,
+  "removalAndReinstallPreserveUserFiles": true,
+  "noGroupChanges": true,
+  "installedBinaryMatchesPackage": true,
+  "rpmMetadataArchitecture": "x86_64",
+  "nativeWindowCreated": true,
+  "aliveSeconds": 15,
+  "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; no tray host, robot or account credentials"
+}

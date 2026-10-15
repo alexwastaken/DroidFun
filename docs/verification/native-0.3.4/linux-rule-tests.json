@@ -1,0 +1,1 @@
+{"ruleMatching": "passed", "cases": [{"vid": "2e8a", "pid": "0003", "ttyKind": "ttyACM0", "uaccess": true}, {"vid": "1234", "pid": "0003", "ttyKind": "ttyACM0", "uaccess": false}, {"vid": "2e8a", "pid": "000a", "ttyKind": "ttyACM0", "uaccess": false}, {"vid": "2e8a", "pid": "0003", "ttyKind": "ttyUSB0", "uaccess": false}]}

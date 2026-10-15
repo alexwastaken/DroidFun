@@ -1,0 +1,42 @@
+/usr/bin/deskbot 23908456 1792039851 65fba370f5c68a12edd5c2e32dfd68cb6501bbc78fbf37ece89c301b6ae069a0 0100755 root root 0 0 0 X
+/usr/lib/droidfun/setup-robot-access 1166 1792039192 c97e91560dc1aaa7239557cc81c55dea43c49d67ba643f2bab0eecc830c5a0a2 0100644 root root 0 0 0 X
+/usr/lib/udev/rules.d/70-droidfun.rules 372 1792037899 d856d335948437cbdfbee3d144529fe0ade55049766526abdaa0436234050d66 0100644 root root 0 0 0 X
+/usr/share/applications/DroidFun App.desktop 168 1792039851 3eeff5dbc2f522ee212510a6926388f83bc49493ce4177e5d35354b1d9ef9804 0100644 root root 0 0 0 X
+/usr/share/droidfun/70-droidfun.rules 372 1792037899 d856d335948437cbdfbee3d144529fe0ade55049766526abdaa0436234050d66 0100644 root root 0 0 0 X
+/usr/share/icons/hicolor/512x512/apps/deskbot.png 10735 1792037899 acc03456d8104a7bb9add3f5b62859fce2c1905b56f0adf656ae713723a3bfd0 0100644 root root 0 0 0 X
+/usr/share/polkit-1/actions/io.droidfun.usb-access.policy 820 1792039192 3cafb73bd0c4ec4548502f883d8bc1e2dcdca68a94348de6e681d6f7af4c7bf8 0100644 root root 0 0 0 X
+
+Requires:
+systemd-udev
+/usr/bin/pkexec
+coreutils
+grep
+libgtk-3.so.0()(64bit)
+libwebkit2gtk-4.1.so.0()(64bit)
+libayatana-appindicator3.so.1()(64bit)
+libudev.so.1()(64bit)
+/usr/bin/sh
+libayatana-appindicator3.so.1()(64bit)
+libwebkit2gtk-4.1.so.0()(64bit)
+libgtk-3.so.0()(64bit)
+rpmlib(CompressedFileNames) = 3.0.4-1
+rpmlib(FileDigests) = 4.6.0-1
+rpmlib(PayloadFilesHavePrefix) = 4.0-1
+Scripts:
+postinstall scriptlet:
+#!/bin/sh
+set -eu
+# Package managers already authorize this step. No account/group changes.
+if ! /usr/bin/sh /usr/lib/droidfun/setup-robot-access; then
+    echo 'DroidFun USB rule installed. Reconnect the robot after installation, or choose Set up robot access in DroidFun.' >&2
+fi
+exit 0
+
+postuninstall scriptlet:
+#!/bin/sh
+# Files are owned/removed by the package manager. Never touch user rules.
+if [ -S /run/udev/control ]; then
+    /usr/bin/timeout 10s /usr/bin/udevadm control --reload-rules || true
+fi
+exit 0
+

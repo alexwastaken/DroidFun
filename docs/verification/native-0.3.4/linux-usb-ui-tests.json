@@ -1,0 +1,14 @@
+{
+  "nativeButton": "passed",
+  "installedPackage": "/usr/bin/deskbot",
+  "installedExecutableSha256": "874a1e70153fd23e3b516e4d297a7798927c55a636e116f4b47beabc7d043d27",
+  "realIpcPkexecAndFixedHelper": true,
+  "missingRuleRestored": true,
+  "alternateShellCommandDenied": true,
+  "extraHelperArgumentsRejected": true,
+  "deniedAuthorizationShowsError": true,
+  "blueAndGreenControls": "passed",
+  "authorizationFixture": "temporary action+caller-specific polkit YES rule; removed before real policy denial check",
+  "humanGraphicalPasswordDialog": "not_verified",
+  "physicalRobot": "not_available"
+}

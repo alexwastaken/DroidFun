@@ -31,3 +31,7 @@ Release qualification records the actual native Ubuntu package, policy and helpe
 - [systemd uaccess implementation](https://github.com/systemd/systemd/blob/v255/src/udev/udev-builtin-uaccess.c)
 - [pkexec policy and exit statuses](https://polkit.pages.freedesktop.org/polkit/pkexec.1.html)
 - [umockdev hardware fixtures](https://github.com/martinpitt/umockdev)
+
+## Published verification: 0.3.4
+
+[Release](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.4), [receipt](verification/native-0.3.4/verification-0.3.4-Linux-x86_64.json), [build context and remaining gates](NATIVE_BUILDS.md#version-034--linux-usb-installer-and-repair). All 43 behavior tests and the described installer, actual button/privilege boundary, both-skin and preservation fixtures passed on a local Ubuntu 24.04 ARM64 VM with the x86_64 app executed through Rosetta. Physical hardware, the real desktop password-dialog interaction, native x86_64-host acceptance and Fedora runtime are not claimed. The source and published packages retain the Claude fixes and firmware 1.1.0.

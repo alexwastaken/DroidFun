@@ -1,0 +1,44 @@
+{
+  "version": "0.3.4",
+  "applicationCommit": "bfe2f8b2caf5ef2f16fa3bcda49336387a6a9830",
+  "releaseUrl": "https://github.com/greensky5656/DroidFun/releases/tag/v0.3.4",
+  "verifiedAtUtc": "2026-10-15T04:53:05.068622+00:00",
+  "platforms": [
+    "Linux-x86_64"
+  ],
+  "build": "local Ubuntu ARM64 VM with x86_64 translation",
+  "assets": [
+    {
+      "name": "DroidFun-App-0.3.4-Linux-x86_64.deb",
+      "bytes": 7412920,
+      "digest": "sha256:f1cbd85537712410ea58b53946683915373f4c67dd462bd27cd288f76ae6211e",
+      "verified": true
+    },
+    {
+      "name": "DroidFun-App-0.3.4-Linux-x86_64.rpm",
+      "bytes": 7415897,
+      "digest": "sha256:3762ace1833b2e050565ec04ae92e0da2a93e9fe8aa014850f4203a3e910186a",
+      "verified": true
+    },
+    {
+      "name": "SHA256SUMS-0.3.4-Linux-x86_64.txt",
+      "bytes": 204,
+      "digest": "sha256:68a27ff9f40d8e20999cd366f19d284ad316bbbdc3d14b25614e28a7a6c4922a",
+      "verified": true
+    },
+    {
+      "name": "Ubuntu-0.3.4-verification-evidence.zip",
+      "bytes": 134046,
+      "digest": "sha256:8caac253eecd2cf8ea6f349ea25a7c70d3190353d4d2b7965de3371b47fd7f7f",
+      "verified": true
+    },
+    {
+      "name": "verification-0.3.4-Linux-x86_64.json",
+      "bytes": 5746,
+      "digest": "sha256:16ae458ff10d2d4b1568351c41a17df8d34f56de5690c4eb0bd9d752134be03a",
+      "verified": true
+    }
+  ],
+  "allStoredDigestsMatch": true,
+  "hostedJobsUsed": false
+}

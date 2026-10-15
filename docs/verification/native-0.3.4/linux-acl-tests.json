@@ -1,0 +1,1 @@
+{"aclMechanism": "passed", "initialKernelDenial": true, "activeSeatUserCanOpen": true, "unrelatedUserDenied": true, "seatSwitchRevokesOldUser": true, "fixture": "real character node with harmless null-driver I/O; private mount namespace and synthetic seat metadata, not a serial transport or live desktop session"}
