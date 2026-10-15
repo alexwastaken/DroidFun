@@ -79,3 +79,18 @@ These development packages include the five local widgets and richer animations.
 The Mac bundle is signed before disk-image creation, so both downloads contain the verified app. [Independent RPM payload inspection](verification/native-0.3.1/linux-package-inspection.json) confirms ELF64 x86_64. All 15 release uploads match [GitHub's stored digests](verification/native-0.3.1/release-upload-verification.json). Frontend checks/build passed on every target. The test-count difference is the Unix-only credential-terminal test.
 
 This development release introduces the DroidFun App name, blue theme and icons while preserving compatibility identifiers and settings locations. The exact branded Mac app was not launched during the ongoing robot soak; its launch and upgrade acceptance remain open. Windows installers are unsigned, and Mac packages lack Developer ID signing and notarization. Windows/Linux physical USB, account authentication, human tray interaction, full upgrade/uninstall, Fedora RPM runtime and Intel Mac runtime remain open. The separate Mac/robot run continues unchanged and is not yet a 24-hour pass. Follow [upgrade instructions](BRANDING.md) when replacing Deskbot.
+
+## Version 0.3.2 build records
+
+The approved branding selector and Claude fixes were built from application and pipeline commit `5943daccc8b80eaf6a3129cc6df374813f6a387c`. [Windows/Linux native run](https://github.com/greensky5656/DroidFun/actions/runs/38669361152) and [universal Mac run](https://github.com/greensky5656/DroidFun/actions/runs/38669363368) passed.
+
+| Platform | Behavior tests | Package checks |
+| --- | --- | --- |
+| Linux-x86_64 | 40 passed | [Verification](verification/native-0.3.2/verification-0.3.2-Linux-x86_64.json), DEB installed/matching payload and native window alive 15 seconds under Xvfb/D-Bus; RPM metadata checked |
+| Windows-ARM64 | 38 passed | [Verification](verification/native-0.3.2/verification-0.3.2-Windows-ARM64.json), native installer, matching payload/architecture and native window alive 15 seconds |
+| Windows-x64 | 38 passed | [Verification](verification/native-0.3.2/verification-0.3.2-Windows-x64.json), native installer, matching payload/architecture and native window alive 15 seconds |
+| macOS | 40 passed | [Verification](verification/native-0.3.2/verification-0.3.2-macOS.json), universal architecture, ad-hoc signature, identical ZIP/read-only DMG payloads; exact app installed/launched on Apple Silicon with saved settings and hub connection |
+
+The two Unix-only credential-terminal/owned-renewal tests explain the platform count difference; the live account-shape diagnostic is intentionally ignored. All 15 release assets match [GitHub stored digests](verification/native-0.3.2/release-upload-verification.json). The installed Mac package showed both skins and a fresh live Claude card; this is not another natural-expiration event or resource soak. Prior natural renewal and 15-minute background results retain their recorded build/time boundaries. Firmware 1.1.0 is unchanged.
+
+These are development packages: Mac lacks Developer ID signing/notarization and Windows installers are unsigned. Windows/Linux physical robot/live-account behavior and human tray interaction, Fedora RPM runtime, Intel Mac runtime, full installation/upgrade/uninstall lifecycle and complete uninterrupted long-term qualification remain open. Windows automatic credential renewal is not claimed.

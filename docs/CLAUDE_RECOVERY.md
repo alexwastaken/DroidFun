@@ -71,3 +71,5 @@ Private redacted proof: `/Users/hansparsons/.cache/deskbot/verification/2026-10-
 ## Publication follow-up — October 14, 2026
 
 The user approved the blue/green branding selector with these Claude fixes for v0.3.2. The unchanged Claude/backend source hashes remain recorded in the verification manifest. Fresh native release builds and package evidence are separate from the October 13 resource interval and natural-renewal observation. The subsequent USB investigation restored normal firmware 1.1.0 and verified app connection, independent frame/health checks and user-confirmed readable cycling through the hub using the working phone cable/port; it did not modify the Claude code.
+
+The v0.3.2 release is now [published](https://github.com/greensky5656/DroidFun/releases/tag/v0.3.2). Native behavior tests, installer/window checks and package hashes are recorded in [native build evidence](NATIVE_BUILDS.md#version-032-build-records). The exact delivered Mac app retained settings, connected to the hub robot and showed a fresh live Claude card; the earlier natural renewal and resource evidence remain separate.

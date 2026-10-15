@@ -1,0 +1,31 @@
+{
+  "version": "0.3.2",
+  "applicationCommit": "5943daccc8b80eaf6a3129cc6df374813f6a387c",
+  "architecture": "universal arm64/x86_64",
+  "zipAndDmgPayloadMatch": true,
+  "adHocSignatureVerified": true,
+  "dmgIntegrityVerified": true,
+  "executableSha256": "c1adef43cde4401dfd44fef14a396afd443a733f6488e30f233bd80fa909d7ee",
+  "runtimeReview": "exact delivered app installed and launched on Apple Silicon Mac; native blue/green dropdown and both skins reviewed; saved blue restored",
+  "result": "passed",
+  "verifiedAtUtc": "2026-10-15T02:14:40.205882+00:00",
+  "settingsPreserved": true,
+  "nativeAppConnected": true,
+  "robotFirmware": "1.1.0",
+  "oledReady": true,
+  "robotRoute": "USB hub, /dev/cu.usbmodem11201",
+  "runningPid": 26471,
+  "limits": [
+    "Intel Mac runtime untested",
+    "Not a fresh resource soak or natural expiry event",
+    "Physical screen appearance of rebuilt package not re-observed by user; prior same source/firmware review remains separate"
+  ],
+  "liveClaudeCard": {
+    "freshSourceLabel": true,
+    "previewVisible": true,
+    "robotConnected": true,
+    "observedAtUtc": "2026-10-15T02:18:23.734236+00:00",
+    "allowanceAmountsOmitted": true,
+    "boundary": "Fresh card in rebuilt app; not a new expiry or renewal event"
+  }
+}

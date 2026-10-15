@@ -1,0 +1,114 @@
+{
+  "version": "0.3.2",
+  "verifiedAtUtc": "2026-10-15T02:27:21.342870+00:00",
+  "applicationCommit": "5943daccc8b80eaf6a3129cc6df374813f6a387c",
+  "releaseUrl": "https://github.com/greensky5656/DroidFun/releases/tag/v0.3.2",
+  "assets": [
+    {
+      "id": 642395282,
+      "name": "DroidFun-App-0.3.2-Linux-x86_64.deb",
+      "bytes": 7295404,
+      "digest": "sha256:b31b451a3af92293df29a4fb9672492aa50f1baff766e15d104bdb5680586ce1",
+      "verified": true
+    },
+    {
+      "id": 642395430,
+      "name": "DroidFun-App-0.3.2-Linux-x86_64.rpm",
+      "bytes": 7300234,
+      "digest": "sha256:78a3aeedc5817707850ce176411293704938f25e3837e8bd165862b218b5ad6a",
+      "verified": true
+    },
+    {
+      "id": 642395778,
+      "name": "DroidFun-App-0.3.2-macOS-universal.dmg",
+      "bytes": 11767137,
+      "digest": "sha256:27860012c8402d35595afbb96e41ad090b6a06dc8603e085eec0fb920918528b",
+      "verified": true
+    },
+    {
+      "id": 642396011,
+      "name": "DroidFun-App-0.3.2-macOS-universal.zip",
+      "bytes": 11744589,
+      "digest": "sha256:7adc62534eb2d7053f9c1bd01ef24d3637075560e1230c863ea67910cfadd92b",
+      "verified": true
+    },
+    {
+      "id": 642395547,
+      "name": "DroidFun-App-0.3.2-Windows-ARM64-setup.exe",
+      "bytes": 3717096,
+      "digest": "sha256:5f8f94850c83929f0c18bcab25438d013991400815037324626a351092e1177e",
+      "verified": true
+    },
+    {
+      "id": 642395660,
+      "name": "DroidFun-App-0.3.2-Windows-x64-setup.exe",
+      "bytes": 4099148,
+      "digest": "sha256:cfb98a8c603e69d9a1405b1665754c837ef6ad252658d0dc27760c05c829f4b3",
+      "verified": true
+    },
+    {
+      "id": 642396164,
+      "name": "DroidFun-RP2040-Zero-firmware-v1.1.0.uf2",
+      "bytes": 154624,
+      "digest": "sha256:82d53832d0ce8a7ec733a0276607ded3aa5d853477390aba5002ab5a3a1ab2a0",
+      "verified": true
+    },
+    {
+      "id": 642396191,
+      "name": "SHA256SUMS-0.3.2-Linux-x86_64.txt",
+      "bytes": 204,
+      "digest": "sha256:63be2bd9448cc621490658610ad7e5ff71378654cf80fd448327db6f3fd63198",
+      "verified": true
+    },
+    {
+      "id": 642396295,
+      "name": "SHA256SUMS-0.3.2-macOS.txt",
+      "bytes": 210,
+      "digest": "sha256:c134400c2f9e470cc5cc3f3e2c54b334a34d27285b02dbb753f1c71caddda1fc",
+      "verified": true
+    },
+    {
+      "id": 642396213,
+      "name": "SHA256SUMS-0.3.2-Windows-ARM64.txt",
+      "bytes": 109,
+      "digest": "sha256:f2135d55a39a4fe305f7c892797faf9f25769f11c66ff8c0aaa2466ea090ae40",
+      "verified": true
+    },
+    {
+      "id": 642396241,
+      "name": "SHA256SUMS-0.3.2-Windows-x64.txt",
+      "bytes": 107,
+      "digest": "sha256:cd41abecc4e0b813970618d04c903324e4322859c167534d6ba17197c041ca65",
+      "verified": true
+    },
+    {
+      "id": 642396336,
+      "name": "verification-0.3.2-Linux-x86_64.json",
+      "bytes": 1511,
+      "digest": "sha256:18884e948aadddbd7c4ce3c28455ae7bdcb389a7648cecc67df34ab58c13062f",
+      "verified": true
+    },
+    {
+      "id": 642396431,
+      "name": "verification-0.3.2-macOS.json",
+      "bytes": 2231,
+      "digest": "sha256:4ab8c099f656dffe5fca41aaee26283ddf49aff8047c222c879365a3ba59f404",
+      "verified": true
+    },
+    {
+      "id": 642396376,
+      "name": "verification-0.3.2-Windows-ARM64.json",
+      "bytes": 1307,
+      "digest": "sha256:327dfbecafd325b487bb43c1bbc772f7561df94089da11718aa436cdd43e6a9d",
+      "verified": true
+    },
+    {
+      "id": 642396402,
+      "name": "verification-0.3.2-Windows-x64.json",
+      "bytes": 1296,
+      "digest": "sha256:be29d7c05f3545619653c5df176ccf430152a7ee3358232664a1ac4b0e9db9d5",
+      "verified": true
+    }
+  ],
+  "allStoredDigestsMatch": true
+}

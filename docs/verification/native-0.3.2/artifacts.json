@@ -1,0 +1,26 @@
+[
+  {
+    "runId": 38669363368,
+    "name": "DroidFun-App-macOS-universal",
+    "archiveDigest": "sha256:a45b448b248d3f0007efa6da263660a4b14ecfb08fb94bd071d910544b535453",
+    "verified": true
+  },
+  {
+    "runId": 38669361152,
+    "name": "DroidFun-App-Windows-ARM64",
+    "archiveDigest": "sha256:9552ed7dd199057061c81a7ff0bc016a9f4f31ea4926fa2bc8fa3700786906c5",
+    "verified": true
+  },
+  {
+    "runId": 38669361152,
+    "name": "DroidFun-App-Linux-x86_64",
+    "archiveDigest": "sha256:09f604aba520580cf08e3210fdfaffd450abf2453da594f82b451226d12eabb5",
+    "verified": true
+  },
+  {
+    "runId": 38669361152,
+    "name": "DroidFun-App-Windows-x64",
+    "archiveDigest": "sha256:b3cb5b95979b7e253b7e6eeca1126b81441a779cfa7d4329718b9e718d99b5e4",
+    "verified": true
+  }
+]
