@@ -1,0 +1,6 @@
+#!/bin/sh
+# Files are owned/removed by the package manager. Never touch user rules.
+if [ -S /run/udev/control ]; then
+    /usr/bin/timeout 10s /usr/bin/udevadm control --reload-rules || true
+fi
+exit 0

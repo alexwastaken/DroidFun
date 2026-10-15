@@ -1,6 +1,6 @@
 [package]
 name = "deskbot"
-version = "0.3.3"
+version = "0.3.4"
 description = "The DroidFun App desktop companion"
 authors = ["Droid Fun"]
 edition = "2021"

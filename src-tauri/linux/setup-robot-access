@@ -1,0 +1,25 @@
+#!/bin/sh
+# Installed root-owned. No caller arguments, paths, usernames, or shell code.
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+umask 022
+[ "$#" -eq 0 ] || exit 2
+[ "$(id -u)" -eq 0 ] || exit 3
+cd /
+# Restore only our package-owned rule, including if it was accidentally deleted.
+install -m 0644 /usr/share/droidfun/70-droidfun.rules /usr/lib/udev/rules.d/70-droidfun.rules
+# A missing device manager is reported to the app; installation can still finish.
+timeout 10s udevadm control --reload-rules
+# Change events apply ACLs to already attached matching devices without resetting
+# USB or disturbing serial traffic. Both property filters must match (not OR).
+deadline=$(( $(date +%s) + 20 ))
+for device in /sys/class/tty/ttyACM*; do
+    [ -e "$device" ] || continue
+    [ "$(date +%s)" -lt "$deadline" ] || exit 4
+    properties=$(timeout 3s udevadm info --query=property --path="$device") || exit 4
+    printf '%s\n' "$properties" | grep -qx 'ID_VENDOR_ID=2e8a' || continue
+    printf '%s\n' "$properties" | grep -qx 'ID_MODEL_ID=0003' || continue
+    timeout 5s udevadm trigger --action=change "$device"
+done
+timeout 10s udevadm settle --timeout=8

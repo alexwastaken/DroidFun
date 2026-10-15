@@ -22,7 +22,7 @@ The pipeline is checked out separately from the application. This lets the origi
 | Windows ARM64 | `windows-11-arm` | `DroidFun-App-VERSION-Windows-ARM64-setup.exe` |
 | Linux x86_64 | `ubuntu-24.04` | `DroidFun-App-VERSION-Linux-x86_64.deb`, `.rpm` |
 
-The Windows installers use the current-user NSIS installation mode. The Linux packages require GTK 3, WebKitGTK 4.1, AppIndicator and libudev. Use a current distribution with those libraries; RPM generation alone does not establish compatibility with every RPM distribution. Linux USB serial access may require the distribution's serial-device permissions. A desktop with a StatusNotifier/AppIndicator host can display the tray icon; the app keeps its regular window when no host is detected.
+The Windows installers use the current-user NSIS installation mode. The Linux packages require GTK 3, WebKitGTK 4.1, AppIndicator and libudev. Use a current distribution with those libraries; RPM generation alone does not establish compatibility with every RPM distribution. From 0.3.4, the DEB/RPM installs a scoped robot access rule automatically; Connection → Set up robot access repairs it through the desktop authorization dialog. Standard active local logind sessions are supported; see [Linux USB setup](LINUX_USB_ACCESS.md). A desktop with a StatusNotifier/AppIndicator host can display the tray icon; the app keeps its regular window when no host is detected.
 
 ## Checks and limits
 

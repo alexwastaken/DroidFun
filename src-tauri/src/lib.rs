@@ -3,6 +3,7 @@ pub mod claude_bridge;
 mod connection;
 mod core;
 mod local_widgets;
+pub mod linux_usb;
 mod network;
 mod persistence;
 mod platform;
@@ -141,6 +142,17 @@ fn get_state(state: State<AppState>) -> Result<Snapshot, String> {
 #[tauri::command]
 fn get_connection(state: State<AppState>) -> Result<ConnectionSnapshot, String> {
     Ok(state.connection.lock().map_err(|e| e.to_string())?.clone())
+}
+
+#[tauri::command]
+fn linux_usb_status() -> linux_usb::AccessStatus {
+    linux_usb::status()
+}
+
+#[tauri::command]
+async fn setup_robot_access() -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(linux_usb::setup)
+        .await.map_err(|_| "USB setup stopped. Please try again.".to_string())?
 }
 
 #[tauri::command]
@@ -843,7 +855,9 @@ fn connection_worker(app: AppHandle) {
                 publish_connection(
                     &app,
                     ConnectionSnapshot {
-                        state: if setup {
+                        state: if error == linux_usb::PERMISSION_DETAIL {
+                            "permission_needed"
+                        } else if setup {
                             "setup_needed"
                         } else {
                             "reconnecting"
@@ -1104,6 +1118,8 @@ pub fn run() {
             get_state,
             get_connection,
             list_robot_ports,
+            linux_usb_status,
+            setup_robot_access,
             select_robot,
             preview_frame,
             set_enabled,

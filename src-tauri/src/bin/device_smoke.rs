@@ -1,3 +1,5 @@
+#[path = "../linux_usb.rs"]
+mod linux_usb;
 #[path = "../claude_account.rs"]
 mod claude_account;
 #[path = "../connection.rs"]

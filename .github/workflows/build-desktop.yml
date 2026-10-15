@@ -12,7 +12,7 @@ on:
       release_tag:
         description: Existing release version (used to validate package versions)
         required: true
-        default: v0.3.3
+        default: v0.3.4
       platform:
         description: Build all packages or retry one platform
         type: choice
@@ -92,7 +92,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev pkg-config rpm xvfb dbus-x11 xdotool
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev pkg-config rpm xvfb dbus-x11 xdotool acl umockdev gir1.2-umockdev-1.0 python3-gi webkit2gtk-driver libxml2-utils
       - name: Set up pinned Rust toolchain
         run: |
           rustup toolchain install 1.99.0 --profile minimal

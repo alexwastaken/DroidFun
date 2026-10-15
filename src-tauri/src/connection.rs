@@ -177,7 +177,11 @@ impl Link {
         let mut port = serialport::new(&candidate.path, 115_200)
             .timeout(Duration::from_millis(50))
             .open()
-            .map_err(|error| format!("Could not open robot port: {error}"))?;
+            .map_err(|error| {
+                if cfg!(target_os = "linux") && error.kind() == serialport::ErrorKind::Io(std::io::ErrorKind::PermissionDenied) {
+                    crate::linux_usb::PERMISSION_DETAIL.to_string()
+                } else { format!("Could not open robot port: {error}") }
+            })?;
         port.write_data_terminal_ready(true)
             .map_err(|error| format!("Could not enable USB serial replies: {error}"))?;
         let mut decoder = Decoder::new();

@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 
 import SettingsPanel, { type Preferences } from "./Settings";
 import Modal from "./Modal";
+import LinuxRobotAccess from "./LinuxRobotAccess";
 
 type Playback = "running" | "paused" | "pinned";
 import SourceEditor, { type Widget, type SourceConfig } from "./SourceEditor";
@@ -155,6 +156,7 @@ export default function App() {
       <p className="connection-detail">{connection?.detail ?? "Checking USB devices…"}</p>
       {connection?.boardId && <p className="connection-detail">Board {connection.boardId} · Firmware {connection.firmware} · OLED {connection.displayHealth}</p>}
       {ports.length === 0 ? <p className="connection-detail">No RP2040-Zero serial port found. A USB data cable is required.</p> : ports.map(port => <div className="port-row" key={port.serial}><div><strong>{port.product}</strong><small>{port.path} · {port.serial}</small></div><button disabled={busy} onClick={() => act("select_robot", { serial: port.serial })}>Connect</button></div>)}
+      <LinuxRobotAccess permissionNeeded={connection?.state === "permission_needed"} onSetup={scanPorts} />
       {connection?.state === "setup_needed" && <p className="connection-detail">This device has not answered the DroidFun App protocol. It may be running a diagnostic or another sketch; install the DroidFun App firmware to control it here.</p>}
     </section>
     <section className="playlist"><div className="section-heading"><div><div className="eyebrow">YOUR PLAYLIST</div><h2>Widgets</h2></div><span className="count-pill">{activeCount} enabled</span></div>

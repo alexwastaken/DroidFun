@@ -16,6 +16,10 @@ Choose **DroidFun · blue** (the palette from [droidfun.io](https://droidfun.io)
 
 ![The original happy bot stays beside live data](docs/images/companion-original-face-preview.png)
 
+## Linux robot setup
+
+From 0.3.4, install the DEB using Ubuntu’s graphical package installer and approve its normal password prompt, then plug in your robot. Serial access is configured automatically. **Connection → Set up robot access** repairs existing installations through the desktop’s password dialog, without Terminal or a reboot. [Setup details and supported desktops](docs/LINUX_USB_ACCESS.md).
+
 ## Controls
 
 - Add independent weather cities, stock symbols and usage windows. Enable/disable, reorder by dragging or arrow buttons, and choose each duration.

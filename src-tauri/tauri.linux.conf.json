@@ -1,8 +1,42 @@
 {
   "bundle": {
-    "targets": ["deb", "rpm"],
+    "targets": [
+      "deb",
+      "rpm"
+    ],
     "linux": {
-      "deb": { "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0", "libayatana-appindicator3-1", "libudev1"] }
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1",
+          "libudev1",
+          "udev",
+          "pkexec"
+        ],
+        "files": {
+          "/usr/lib/udev/rules.d/70-droidfun.rules": "linux/70-droidfun.rules",
+          "/usr/share/droidfun/70-droidfun.rules": "linux/70-droidfun.rules",
+          "/usr/lib/droidfun/setup-robot-access": "linux/setup-robot-access",
+          "/usr/share/polkit-1/actions/io.droidfun.usb-access.policy": "linux/io.droidfun.usb-access.policy"
+        },
+        "postInstallScript": "linux/postinst",
+        "postRemoveScript": "linux/postrm"
+      },
+      "rpm": {
+        "files": {
+          "/usr/lib/udev/rules.d/70-droidfun.rules": "linux/70-droidfun.rules",
+          "/usr/share/droidfun/70-droidfun.rules": "linux/70-droidfun.rules",
+          "/usr/lib/droidfun/setup-robot-access": "linux/setup-robot-access",
+          "/usr/share/polkit-1/actions/io.droidfun.usb-access.policy": "linux/io.droidfun.usb-access.policy"
+        },
+        "postInstallScript": "linux/postinst",
+        "postRemoveScript": "linux/postrm",
+        "depends": [
+          "systemd-udev",
+          "polkit"
+        ]
+      }
     }
   }
 }

@@ -1,0 +1,4 @@
+# DroidFun / Waveshare RP2040-Zero serial interface (Arduino-Pico descriptor).
+# Must run before 73-seat-late.rules; logind grants the active local user access.
+# The descriptor is shared by other boards; this does not identify genuine hardware.
+ACTION!="remove", SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", TAG+="uaccess"
