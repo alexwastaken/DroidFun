@@ -1,0 +1,28 @@
+{
+  "version": "0.3.3",
+  "applicationCommit": "c6be4fbf70a2989fced3bded7c6f6e1123880194",
+  "architecture": "universal arm64/x86_64",
+  "zipAndDmgPayloadMatch": true,
+  "adHocSignatureVerified": true,
+  "dmgIntegrityVerified": true,
+  "executableSha256": "931411771abbcc625ad0926e1518c3415be1aaba3b1ff0604d3f265919e12ff1",
+  "runtimeReview": "exact delivered app installed and launched on Apple Silicon Mac; saved branding dropdown and fresh live Claude source confirmed",
+  "result": "passed",
+  "verifiedAtUtc": "2026-10-15T03:13:07.323289+00:00",
+  "settingsPreserved": true,
+  "nativeAppLaunched": true,
+  "nativeAppConnected": false,
+  "robotBeforeUpdate": "absent on USB before update",
+  "robotAfterUpdate": "absent; no new hardware acceptance claimed",
+  "runningPid": 43162,
+  "liveClaudeCard": {
+    "freshSourceLabel": true,
+    "allowanceAmountsOmitted": true,
+    "boundary": "Fresh live card; not a new natural expiry/renewal observation"
+  },
+  "limits": [
+    "Intel Mac runtime untested",
+    "Robot connection not requalified because robot was already absent before update",
+    "Not a resource soak or natural expiry event"
+  ]
+}

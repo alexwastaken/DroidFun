@@ -94,3 +94,18 @@ The approved branding selector and Claude fixes were built from application and 
 The two Unix-only credential-terminal/owned-renewal tests explain the platform count difference; the live account-shape diagnostic is intentionally ignored. All 15 release assets match [GitHub stored digests](verification/native-0.3.2/release-upload-verification.json). The installed Mac package showed both skins and a fresh live Claude card; this is not another natural-expiration event or resource soak. Prior natural renewal and 15-minute background results retain their recorded build/time boundaries. Firmware 1.1.0 is unchanged.
 
 These are development packages: Mac lacks Developer ID signing/notarization and Windows installers are unsigned. Windows/Linux physical robot/live-account behavior and human tray interaction, Fedora RPM runtime, Intel Mac runtime, full installation/upgrade/uninstall lifecycle and complete uninterrupted long-term qualification remain open. Windows automatic credential renewal is not claimed.
+
+## Version 0.3.3 build records
+
+The Windows automatic Claude recovery update was built from application and pipeline commit `c6be4fbf70a2989fced3bded7c6f6e1123880194`. [Windows/Linux native run](https://github.com/greensky5656/DroidFun/actions/runs/38674557752) and [universal Mac run](https://github.com/greensky5656/DroidFun/actions/runs/38674559918) passed.
+
+| Platform | Behavior tests | Package checks |
+| --- | --- | --- |
+| Linux-x86_64 | 40 passed | [Verification](verification/native-0.3.3/verification-0.3.3-Linux-x86_64.json), DEB installed/matching payload and native window alive 15 seconds under Xvfb/D-Bus; RPM metadata checked |
+| Windows-ARM64 | 44 passed | [Verification](verification/native-0.3.3/verification-0.3.3-Windows-ARM64.json), native installer, matching payload/architecture and native window alive 15 seconds |
+| Windows-x64 | 44 passed | [Verification](verification/native-0.3.3/verification-0.3.3-Windows-x64.json), native installer, matching payload/architecture and native window alive 15 seconds |
+| macOS | 40 passed | [Verification](verification/native-0.3.3/verification-0.3.3-macOS.json), universal architecture, ad-hoc signature, identical ZIP/read-only DMG payloads; exact app installed/launched on Apple Silicon with saved settings and fresh Claude status; robot was absent before this update |
+
+Six additional Windows-only ConPTY recovery tests and two Unix-only credential-terminal/owned-renewal tests explain the platform count difference; the live account-shape diagnostic is intentionally ignored. All 15 release assets match [GitHub stored digests](verification/native-0.3.3/release-upload-verification.json). The installed Mac package retained the branding dropdown and showed a fresh live Claude card; this is not another natural-expiration event or resource soak. Prior natural renewal and 15-minute background results retain their recorded build/time boundaries. Firmware 1.1.0 is unchanged.
+
+These are development packages: Mac lacks Developer ID signing/notarization and Windows installers are unsigned. Windows/Linux physical robot/live-account behavior and human tray interaction, Fedora RPM runtime, Intel Mac runtime, full installation/upgrade/uninstall lifecycle and complete uninterrupted long-term qualification remain open. Windows automatic recovery is verified with isolated native fixtures; natural live Windows account expiration remains unverified.

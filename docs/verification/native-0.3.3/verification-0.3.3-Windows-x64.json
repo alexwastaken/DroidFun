@@ -1,0 +1,57 @@
+{
+  "version": "0.3.3",
+  "platform": "Windows-x64",
+  "target": "x86_64-pc-windows-msvc",
+  "applicationCommit": "c6be4fbf70a2989fced3bded7c6f6e1123880194",
+  "pipelineCommit": "c6be4fbf70a2989fced3bded7c6f6e1123880194",
+  "runUrl": "https://github.com/greensky5656/DroidFun/actions/runs/38674557752",
+  "runner": {
+    "os": "Windows",
+    "architecture": "X64",
+    "image": "20260925.250.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 44,
+    "failed": 0
+  },
+  "architecture": "x64",
+  "smoke": {
+    "installedBinaryMatchesPackage": true,
+    "nativeWindowCreated": true,
+    "installerExitCode": 0,
+    "aliveSeconds": 15,
+    "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+    "installedBinaryArchitecture": "x64",
+    "result": "passed"
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.3.3-Windows-x64-setup.exe",
+      "bytes": 4108883,
+      "sha256": "04ba5326d69e6bae8dda99aab9697e49644d5bb3a5f84f38d816f515b14dda37"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ],
+  "claudeWindowsRecovery": {
+    "realConptyAndPrivateJobFixture": "passed",
+    "passedCases": [
+      "windows_expired_sign_in_conpty_owner_http_card_and_cycle_with_scoped_cleanup",
+      "windows_401_conpty_owner_rotates_then_retries_once_and_cycles",
+      "windows_conpty_timeout_under_output_flood_reaps_owned_tree",
+      "windows_conpty_client_exit_reaps_descendant_without_fabricating_sign_in",
+      "windows_conpty_source_cancellation_reaps_owned_tree",
+      "windows_conpty_missing_executable_is_an_explicit_bounded_error"
+    ],
+    "credentialsAndHttp": "isolated fixtures and localhost; no real account or model endpoint",
+    "naturalLiveAccountExpiration": "not_verified"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "version": "0.3.3",
+  "platform": "Linux-x86_64",
+  "target": "x86_64-unknown-linux-gnu",
+  "applicationCommit": "c6be4fbf70a2989fced3bded7c6f6e1123880194",
+  "pipelineCommit": "c6be4fbf70a2989fced3bded7c6f6e1123880194",
+  "runUrl": "https://github.com/greensky5656/DroidFun/actions/runs/38674557752",
+  "runner": {
+    "os": "Linux",
+    "architecture": "X64",
+    "image": "20261012.334.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 40,
+    "failed": 0
+  },
+  "architecture": "x86_64",
+  "smoke": {
+    "result": "passed",
+    "debInstalled": true,
+    "installedBinaryMatchesPackage": true,
+    "rpmMetadataArchitecture": "x86_64",
+    "nativeWindowCreated": true,
+    "aliveSeconds": 15,
+    "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; no tray host, robot or account credentials"
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.3.3-Linux-x86_64.deb",
+      "bytes": 7294976,
+      "sha256": "fa32241fdcd87df85ce1291c92ff7b913c69500aa80ddbf1bdc459c0de22a936"
+    },
+    {
+      "name": "DroidFun-App-0.3.3-Linux-x86_64.rpm",
+      "bytes": 7299395,
+      "sha256": "979132e791e3e7559d1c606c508741f763838b64058482396c206ca6fee8880e"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}
