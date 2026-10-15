@@ -27,7 +27,7 @@ export default function LinuxRobotAccess({ permissionNeeded, onSetup }: { permis
   return <div className="robot-access-setup">
     <p className="connection-detail">{permissionNeeded || !status.ruleInstalled ? "Set up USB access so your desktop can connect to the robot." : "USB access is installed automatically. If access stops working, you can repair it here."}</p>
     <button type="button" disabled={pending || !status.repairAvailable} onClick={setup}>{pending ? "Waiting for approval…" : "Set up robot access"}</button>
-    <p className="connection-detail">{status.repairAvailable ? "Your desktop may ask for an administrator password. You won’t need Terminal or a restart." : "Install the latest DroidFun DEB/RPM using your software installer to enable this setup button."}</p>
+    <p className="connection-detail">{status.repairAvailable ? "Your desktop may ask for an administrator password. You won’t need Terminal or a restart." : "Reinstall DroidFun using your software installer to enable this setup button."}</p>
     {notice && <p className="connection-detail" role="status">{notice}</p>}
     {error && <p className="connection-detail" role="alert">{error}</p>}
   </div>;

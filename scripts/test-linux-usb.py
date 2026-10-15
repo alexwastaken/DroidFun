@@ -2,17 +2,20 @@
 """Ubuntu-only native permission fixtures. Never runs on a user's desktop.
 
 Rules are evaluated against umockdev USB parents. ACL checks use an isolated
-mount namespace, a real PTY and synthetic seat metadata, not a real login.
+mount namespace, an ACL-capable character node and synthetic seat metadata, not a real login.
 The UI test drives the installed app through WebKit's native automation API.
 """
-import base64, errno, json, os, pathlib, pty, pwd, re, socket, subprocess, sys, tempfile, time, urllib.request
+import base64, errno, hashlib, json, os, pathlib, pwd, re, signal, socket, stat, subprocess, sys, tempfile, time, urllib.request
 P = pathlib.Path
 HELPER = '/usr/lib/droidfun/setup-robot-access'
 RULE = P('/usr/lib/udev/rules.d/70-droidfun.rules')
 POLICY_RULE = P('/etc/polkit-1/rules.d/00-droidfun-ci-only.rules')
 
 def run(args, **kw):
-    return subprocess.run(args, text=True, capture_output=True, check=True, timeout=40, **kw).stdout
+    result = subprocess.run(args, text=True, capture_output=True, timeout=40, **kw)
+    if result.returncode != 0:
+        raise RuntimeError(f'{args[0]} exited {result.returncode}: {result.stdout} {result.stderr}')
+    return result.stdout
 
 def rules():
     import gi
@@ -35,14 +38,15 @@ def rules():
 def acl():
     assert os.getuid() == 0
     user = pwd.getpwnam('nobody'); uid, gid = user.pw_uid, user.pw_gid
-    master, slave = pty.openpty(); node = os.ttyname(slave)
-    os.chown(node,0,0);os.chmod(node,0o660)
-    # Bind only within this private namespace. The original /dev/tty is restored
-    # by namespace exit; no physical robot, session file or host ACL is touched.
-    run(['mount','--bind',node,'/dev/tty'])
+    # devpts does not support ACLs. Use a real character node on ext4/tmpfs,
+    # like a normal /dev serial node; the null driver supplies harmless I/O.
+    # No serial protocol or actual logind session is simulated by this check.
     with tempfile.TemporaryDirectory() as tmp:
-        seat = P(tmp)/'seat0'; seat.write_text(f'ACTIVE=droidfun-fixture\nACTIVE_UID={uid}\n')
-        run(['mount','--bind',tmp,'/run/systemd/seats'])
+        node=P(tmp)/'char-node';os.mknod(node,stat.S_IFCHR|0o660,os.makedev(1,3));os.chmod(node,0o660)
+        run(['mount','--bind',str(node),'/dev/tty'])
+        seats=P(tmp)/'seats';seats.mkdir()
+        seat=seats/'seat0';seat.write_text(f'ACTIVE=droidfun-fixture\nACTIVE_UID={uid}\n')
+        run(['mount','--bind',str(seats),'/run/systemd/seats'])
         def opens(who):
             code='import os; f=os.open("/dev/tty",os.O_RDWR|os.O_NOCTTY);os.close(f)'
             r = subprocess.run(['setpriv',f'--reuid={who}',f'--regid={gid}','--clear-groups','python3','-c',code],capture_output=True)
@@ -54,11 +58,20 @@ def acl():
         seat.write_text('ACTIVE=droidfun-other\nACTIVE_UID=1\n')
         run(['udevadm','test-builtin','uaccess','/sys/devices/virtual/tty/tty'])
         assert not opens(uid) and opens(1), 'Seat switch must revoke the old user ACL'
-        print(json.dumps({'aclMechanism':'passed','initialKernelDenial':True,'activeSeatUserCanOpen':True,'unrelatedUserDenied':True,'seatSwitchRevokesOldUser':True,'fixture':'real PTY; private mount namespace and synthetic seat metadata, not a live desktop session'}))
-    os.close(slave);os.close(master)
+        print(json.dumps({'aclMechanism':'passed','initialKernelDenial':True,'activeSeatUserCanOpen':True,'unrelatedUserDenied':True,'seatSwitchRevokesOldUser':True,'fixture':'real character node with harmless null-driver I/O; private mount namespace and synthetic seat metadata, not a serial transport or live desktop session'}))
 
 class Driver:
+    @staticmethod
+    def app_pids():
+        result=set()
+        for item in P('/proc').iterdir():
+            if not item.name.isdigit(): continue
+            try:
+                if item.stat().st_uid == os.getuid() and os.readlink(item/'exe') == '/usr/bin/deskbot': result.add(int(item.name))
+            except (FileNotFoundError, PermissionError, ProcessLookupError): pass
+        return result
     def __init__(self):
+        self.before=self.app_pids()
         s=socket.socket();s.bind(('127.0.0.1',0));self.port=s.getsockname()[1];s.close()
         self.log=open(P(os.environ['DESKBOT_ARTIFACT_DIR'])/'linux-webdriver.txt','w')
         self.child=subprocess.Popen(['WebKitWebDriver',f'--port={self.port}'],env={**os.environ,'TAURI_WEBVIEW_AUTOMATION':'true'},stdout=self.log,stderr=self.log)
@@ -67,7 +80,12 @@ class Driver:
             try:
                 self.request('GET','/status');break
             except Exception:time.sleep(.1)
-        self.session=self.request('POST','/session',{'capabilities':{'alwaysMatch':{'webkitgtk:browserOptions':{'binary':'/usr/bin/deskbot','args':[]}}}})['sessionId']
+        try:
+            self.session=self.request('POST','/session',{'capabilities':{'alwaysMatch':{'webkitgtk:browserOptions':{'binary':'/usr/bin/deskbot','args':[]}}}})['sessionId']
+            assert len(self.app_pids()-self.before) == 1, 'Expected exactly one newly launched installed app'
+        except Exception:
+            self.close()
+            raise
     def request(self, method, path, data=None):
         req=urllib.request.Request(f'http://127.0.0.1:{self.port}'+path,data=None if data is None else json.dumps(data).encode(),headers={'Content-Type':'application/json'},method=method)
         with urllib.request.urlopen(req,timeout=140) as r:value=json.load(r)['value']
@@ -88,6 +106,10 @@ class Driver:
             try:self.request('DELETE',f'/session/{self.session}')
             except Exception:pass
         self.child.terminate();self.child.wait(timeout=10);self.log.close()
+        # Only the exact installed executable, newly started by this test.
+        for pid in self.app_pids()-self.before:
+            try: os.kill(pid,signal.SIGTERM)
+            except ProcessLookupError: pass
 
 def ui():
     driver=Driver()
@@ -121,7 +143,7 @@ def ui():
         driver.js('const s=document.querySelector(".branding-control select");s.value="green";s.dispatchEvent(new Event("change",{bubbles:true}));')
         driver.wait('document.documentElement.dataset.branding === "green"')
         driver.capture('linux-usb-green.png')
-        print(json.dumps({'nativeButton':'passed','installedPackage':'/usr/bin/deskbot','realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        print(json.dumps({'nativeButton':'passed','installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()

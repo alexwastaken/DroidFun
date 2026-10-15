@@ -3,7 +3,7 @@
 use serde::Serialize;
 
 pub const PERMISSION_DETAIL: &str =
-    "Ubuntu/Linux needs permission to use this robot. Choose Set up robot access.";
+    "Permission is needed to connect to this robot. Choose Set up robot access.";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -94,7 +94,7 @@ mod native {
             Some(0) => Ok(()),
             Some(126) => Err("Setup was cancelled. Robot access was not changed by this request.".into()),
             Some(127) => Err("Administrator approval was not granted. Try again from your desktop session.".into()),
-            _ => Err("USB setup could not finish. Reconnect the robot and try again. Your desktop must provide udev and an administrator approval dialog.".into()),
+            _ => Err("USB setup could not finish. Reconnect the robot and try again. If this continues, reinstall DroidFun using your software installer.".into()),
         }
     }
     fn run(mut command: Command, budget: Duration) -> Result<(), String> {
@@ -132,7 +132,7 @@ mod native {
         }
         let _guard = Guard;
         if !status().repair_available {
-            return Err("Install or reinstall the latest DroidFun DEB/RPM using your software installer to enable robot access setup.".into());
+            return Err("Install or reinstall the latest DroidFun using your software installer to enable robot access setup.".into());
         }
         let mut command = Command::new(PKEXEC);
         // No terminal/password capture, shell, user-supplied command, or args.

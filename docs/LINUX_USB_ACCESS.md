@@ -20,7 +20,7 @@ The supported flow is an active local desktop session with systemd-logind, udev,
 
 ## Verification boundaries
 
-Release qualification records the actual native Ubuntu package, policy and helper installation; rule matching for correct and incorrect USB descriptors; real kernel denial/read/write ACL behavior using a PTY and private synthetic seat; active-user change/revocation; installed app button → real IPC → pkexec → helper; approval denial; both skins; and package removal/reinstall preserving a local rule and saved data. Synthetic devices/seats and a test-only authorization grant are fixtures, not a physical robot or a human password-dialog test. The physical plug-in flow and the graphical password dialog still require a real Ubuntu desktop check.
+Release qualification records the actual native Ubuntu package, policy and helper installation; rule matching for correct and incorrect USB descriptors; real kernel denial/read/write ACL behavior using an ACL-capable character node with harmless null-driver I/O and private synthetic seat; active-user change/revocation; installed app button → real IPC → pkexec → helper; approval denial; both skins; and package removal/reinstall preserving a local rule and saved data. Synthetic devices/seats and a test-only authorization grant are fixtures, not a physical robot or a human password-dialog test. The physical plug-in flow and the graphical password dialog still require a real Ubuntu desktop check.
 
 ## References
 
