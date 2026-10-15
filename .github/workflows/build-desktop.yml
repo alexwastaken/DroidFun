@@ -118,7 +118,9 @@ jobs:
       - name: Run native behavior tests
         run: node ../pipeline/scripts/native-package-evidence.cjs test
       - name: Build native installer packages
-        run: npm run release -- --target ${{ matrix.target }}
+        run: |
+          node ../pipeline/scripts/native-package-evidence.cjs prepare
+          npm run release -- --target ${{ matrix.target }}
       - name: Install and launch Windows package
         if: runner.os == 'Windows'
         shell: pwsh

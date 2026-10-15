@@ -24,7 +24,7 @@ use windows_sys::Win32::{
             CreateProcessW, DeleteProcThreadAttributeList, InitializeProcThreadAttributeList,
             UpdateProcThreadAttribute, WaitForSingleObject, CREATE_UNICODE_ENVIRONMENT,
             EXTENDED_STARTUPINFO_PRESENT, PROCESS_INFORMATION, PROC_THREAD_ATTRIBUTE_JOB_LIST,
-            PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, STARTUPINFOEXW,
+            PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, STARTF_USESTDHANDLES, STARTUPINFOEXW,
         },
     },
 };
@@ -277,6 +277,11 @@ pub(crate) fn refresh(
     }
     let mut startup: STARTUPINFOEXW = unsafe { zeroed() };
     startup.StartupInfo.cb = size_of::<STARTUPINFOEXW>() as u32;
+    // Explicit NULL standard handles select the attached console's handles.
+    // Without this flag, a console parent can leak redirected stdio into the
+    // client instead (also relevant when DroidFun is launched from a terminal).
+    // This matches Microsoft Terminal's ConptyConnection client launcher.
+    startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
     startup.lpAttributeList = attrs.ptr();
     let mut process: PROCESS_INFORMATION = unsafe { zeroed() };
     // Atomic job assignment happens before the first thread runs. Handles

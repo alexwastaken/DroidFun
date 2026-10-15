@@ -1,3 +1,4 @@
+use std::os::windows::process::CommandExt;
 // Native Windows test fixture, compiled only by the renewal tests. Never shipped.
 // No account credentials, external HTTP requests or model service are used.
 use std::{
@@ -43,6 +44,7 @@ fn main() {
     assert!(!cwd.join(".claude.json").exists());
     let child = Command::new(env::current_exe().unwrap())
         .arg("--owned-child")
+        .creation_flags(0x00000008) // DETACHED_PROCESS: job cleanup must cover non-console descendants.
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

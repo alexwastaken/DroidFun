@@ -11,7 +11,16 @@ const run = (cmd, args) => {
   if (r.error || r.status !== 0) throw new Error(`${cmd} failed: ${r.error || r.stderr}`);
   return r.stdout.trim();
 };
-if (process.argv[2] === 'test') {
+if (process.argv[2] === 'prepare') {
+  const target = process.env.DESKBOT_TARGET;
+  const root = process.env.CARGO_TARGET_DIR;
+  if (!root || !['x86_64-pc-windows-msvc', 'aarch64-pc-windows-msvc', 'x86_64-unknown-linux-gnu'].includes(target)) throw new Error('Explicit native build target required');
+  // Caches can retain installers from another version. Remove only generated
+  // bundles, retaining compiled dependencies and every source/evidence file.
+  const bundle = path.resolve(root, target, 'release', 'bundle');
+  fs.rmSync(bundle, { recursive: true, force: true });
+  console.log(`Prepared empty native bundle output for ${target}`);
+} else if (process.argv[2] === 'test') {
   const r = spawnSync('cargo', ['test', '--release', '--locked', '--manifest-path', 'src-tauri/Cargo.toml', '--lib', '--target', process.env.DESKBOT_TARGET], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
   fs.writeFileSync(path.join(out, 'native-tests.txt'), (r.stdout || '') + (r.stderr || ''));
   process.stdout.write(r.stdout || '');
@@ -56,4 +65,4 @@ if (process.argv[2] === 'test') {
   fs.renameSync(path.join(out, 'native-smoke.json'), path.join(out, `native-smoke-${platform}.json`));
   fs.writeFileSync(path.join(out, `SHA256SUMS-${version}-${platform}.txt`), assets.map(a => `${a.sha256}  ${a.name}`).join('\n') + '\n');
   console.log(JSON.stringify(evidence, null, 2));
-} else throw new Error('Use test or collect');
+} else throw new Error('Use prepare, test or collect');

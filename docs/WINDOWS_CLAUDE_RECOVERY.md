@@ -34,3 +34,7 @@ Windows x64 and ARM64 execute these alongside the existing native suite, followe
 - [Microsoft job assignment at process creation](https://devblogs.microsoft.com/oldnewthing/20230209-00/?p=107812/) describes atomic job assignment with `PROC_THREAD_ATTRIBUTE_JOB_LIST`.
 - [Microsoft job objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects) documents job ownership and kill-on-close.
 - [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) documents native authentication commands and safe mode. Automatic local credential renewal during startup remains client compatibility behavior, not a documented public refresh API.
+
+## Candidate failures retained
+
+The first native attempt caught redirected standard handles inherited from the test runner: the real-console assertions failed, so renewal was not accepted. The launcher now explicitly requests pseudoconsole standard handles, following [Microsoft Terminal’s client launcher](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalConnection/ConptyConnection.cpp). Separately, the Linux installer gate rejected multiple bundle files restored from a prior-version cache. Packaging now clears only the selected target’s generated bundle directory before building; a scoped synthetic check confirmed old bundles removed, dependencies retained and an invalid target rejected. Failed native attempts remain separate from final acceptance; no failing package is published.
