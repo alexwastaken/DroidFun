@@ -67,7 +67,12 @@ class Driver:
         for item in P('/proc').iterdir():
             if not item.name.isdigit(): continue
             try:
-                if item.stat().st_uid == os.getuid() and os.readlink(item/'exe') == '/usr/bin/deskbot': result.add(int(item.name))
+                if item.stat().st_uid != os.getuid(): continue
+                executable=os.readlink(item/'exe')
+                args=(item/'cmdline').read_bytes().split(b'\0')
+                native=executable == '/usr/bin/deskbot'
+                translated=executable == '/mnt/lima-rosetta/rosetta' and b'/usr/bin/deskbot' in args
+                if native or translated: result.add(int(item.name))
             except (FileNotFoundError, PermissionError, ProcessLookupError): pass
         return result
     def __init__(self):
