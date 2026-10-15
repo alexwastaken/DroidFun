@@ -21,6 +21,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(all(test, windows))]
+#[path = "claude_windows_tests.rs"]
+mod windows_tests;
+
 #[derive(Default)]
 struct Diagnostics {
     events: VecDeque<Value>,
@@ -176,34 +180,43 @@ fn token_with_refresh(
 }
 
 // Let the credential owner renew its own token. Never implement another
-// refresh-token writer or send an inference prompt. Only a previously trusted,
-// DroidFun App-owned scratch folder is eligible; no trust prompt is answered here.
-#[cfg(unix)]
+// refresh-token writer or send an inference prompt. No trust prompt is answered
+// here; Unix retains its existing pretrusted-folder prerequisite.
 fn refresh_with_installed_client(profile: &str, rejected: Option<&str>) -> Result<(), String> {
     static REFRESH: Mutex<()> = Mutex::new(());
     let _lock = crate::network::lock_cancellable(&REFRESH)?;
     if stored_token(profile).is_ok_and(|token| rejected != Some(token.as_str())) {
         return Ok(());
     }
-    let home = std::env::var_os("HOME")
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from)
         .ok_or("Home unavailable")?;
     let scratch = home.join(".cache/deskbot/claude-usage-check");
-    let metadata = if profile.is_empty() && std::env::var_os("CLAUDE_CONFIG_DIR").is_none() {
-        home.join(".claude.json")
-    } else {
-        config_dir(profile)?.join(".claude.json")
-    };
-    let trusted = fs::metadata(&metadata).is_ok_and(|m| m.len() <= 4 * 1024 * 1024)
-        && fs::read(&metadata)
-            .ok()
-            .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
-            .is_some_and(|v| {
-                v["projects"][scratch.to_string_lossy().as_ref()]["hasTrustDialogAccepted"] == true
-            });
-    if !trusted || !scratch.is_dir() {
-        return Err("Your local Claude sign-in expired. Open Claude Code to refresh it, or use Connect Claude account in Edit.".into());
+    #[cfg(unix)]
+    {
+        let metadata = if profile.is_empty() && std::env::var_os("CLAUDE_CONFIG_DIR").is_none() {
+            home.join(".claude.json")
+        } else {
+            config_dir(profile)?.join(".claude.json")
+        };
+        let trusted = fs::metadata(&metadata).is_ok_and(|m| m.len() <= 4 * 1024 * 1024)
+            && fs::read(&metadata)
+                .ok()
+                .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+                .is_some_and(|v| {
+                    v["projects"][scratch.to_string_lossy().as_ref()]["hasTrustDialogAccepted"]
+                        == true
+                });
+        if !trusted || !scratch.is_dir() {
+            return Err("Your local Claude sign-in expired. Open Claude Code to refresh it, or use Connect Claude account in Edit.".into());
+        }
     }
+    // Windows starts the credential owner in an empty app-owned folder. It
+    // sends no input and never accepts or persists a workspace-trust decision.
+    // Authentication can refresh during client startup; if that client needs
+    // interactive setup instead, the bounded attempt reports reconnecting.
+    #[cfg(windows)]
+    fs::create_dir_all(&scratch).map_err(|_| "Could not prepare Claude sign-in recovery")?;
     let executable = executable()?;
     event("renewal_started");
     refresh_client_terminal(
@@ -340,9 +353,26 @@ fn refresh_client_terminal(
     Err("Your local Claude sign-in needs reconnecting. Open Claude Code or use Connect Claude account in Edit.".into())
 }
 
-#[cfg(not(unix))]
-fn refresh_with_installed_client(_profile: &str, _rejected: Option<&str>) -> Result<(), String> {
-    Err("Your local Claude sign-in expired. Open Claude Code to refresh it, or use Connect Claude account in Edit.".into())
+#[cfg(windows)]
+fn refresh_client_terminal(
+    profile: &str,
+    scratch: &std::path::Path,
+    executable: &std::path::Path,
+    refreshed: impl Fn(Duration) -> bool,
+    timeout: Duration,
+) -> Result<(), String> {
+    let directory = if profile.is_empty() {
+        None
+    } else {
+        Some(config_dir(profile)?)
+    };
+    crate::windows_claude_terminal::refresh(
+        directory.as_deref(),
+        scratch,
+        executable,
+        refreshed,
+        timeout,
+    )
 }
 static CONNECTING: AtomicBool = AtomicBool::new(false);
 struct LoginGuard;

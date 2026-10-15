@@ -9,6 +9,8 @@ mod platform;
 mod protocol;
 mod providers;
 mod reliability;
+#[cfg(windows)]
+mod windows_claude_terminal;
 
 use connection::{ConnectionSnapshot, Link, RobotPort};
 use core::{Engine, Location, Preferences, Settings, Snapshot, SourceConfig};

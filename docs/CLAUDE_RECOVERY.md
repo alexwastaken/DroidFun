@@ -24,7 +24,7 @@ On macOS/Linux, an expired stored access token invokes the installed credential 
 
 If HTTP returns 401, the reader rechecks the shared local sign-in. A token rotated by another client is used immediately. If the same token remains, the app tries its bounded installed-client renewal path, requires a changed token, and retries the usage request once. Persistent rejection, missing client/trust or a failed renewal is an explicit authentication state with a five-minute automatic retry. HTTP 403 and quota failures do not cause an unbounded refresh loop.
 
-This can renew refreshable access tokens. A revoked sign-in or a login that the credential owner cannot refresh requires the user to sign in again. The current Windows implementation retains its explicit reconnect path; automatic Windows renewal is not claimed by the Mac tests.
+This can renew refreshable access tokens. A revoked sign-in or a login that the credential owner cannot refresh requires the user to sign in again. Versions through 0.3.2 retain explicit Windows reconnect. The 0.3.3 candidate adds Windows automatic recovery using a hidden ConPTY session and a private process job; its native acceptance is documented in [Windows recovery](WINDOWS_CLAUDE_RECOVERY.md). Mac observations alone do not qualify Windows.
 
 Only fixed authentication/window state labels and observation times are added to diagnostics. Credentials, identity, allowance amounts, profile paths and exact credential expiry times are excluded. The bounded event history records `credential_expired`, `credential_rejected`, `renewal_started`, successful renewal and failed/unavailable renewal states.
 

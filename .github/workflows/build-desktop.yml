@@ -12,7 +12,7 @@ on:
       release_tag:
         description: Existing release version (used to validate package versions)
         required: true
-        default: v0.3.2
+        default: v0.3.3
       platform:
         description: Build all packages or retry one platform
         type: choice
@@ -108,7 +108,9 @@ jobs:
             ~/.cargo/git
             target
           key: deskbot-${{ matrix.platform }}-rust1.99-${{ hashFiles('app/src-tauri/Cargo.lock') }}-${{ github.run_id }}
-          restore-keys: deskbot-${{ matrix.platform }}-rust1.99-${{ hashFiles('app/src-tauri/Cargo.lock') }}-
+          restore-keys: |
+            deskbot-${{ matrix.platform }}-rust1.99-${{ hashFiles('app/src-tauri/Cargo.lock') }}-
+            deskbot-${{ matrix.platform }}-rust1.99-
       - name: Install locked frontend dependencies
         run: npm ci
       - name: Check frontend

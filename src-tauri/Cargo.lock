@@ -777,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "deskbot"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -795,6 +795,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-single-instance",
  "tokio",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
