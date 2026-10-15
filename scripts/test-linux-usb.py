@@ -124,6 +124,10 @@ def ui():
         driver.js('window.__TAURI_INTERNALS__.invoke("get_state").then(s => window.__TAURI_INTERNALS__.invoke("set_preferences",{preferences:{...s.settings.preferences,setupComplete:true}}));')
         driver.wait('!document.querySelector("[role=dialog]")')
         driver.wait('!document.querySelector(".robot-access-setup button").disabled')
+        # Previous lifecycle runs intentionally preserve settings. Select and
+        # verify blue explicitly instead of mistaking a saved green theme for it.
+        driver.js('const s=document.querySelector(".branding-control select");s.value="droidfun";s.dispatchEvent(new Event("change",{bubbles:true}));')
+        driver.wait('document.documentElement.dataset.branding === "droidfun"')
         driver.js('document.querySelector(".robot-access-setup").scrollIntoView({block:"center"});')
         driver.capture('linux-usb-blue.png')
         # Headless CI has no active physical desktop. Explicit test-only polkit
