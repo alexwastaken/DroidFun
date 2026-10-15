@@ -10,6 +10,7 @@
       <allow_inactive>no</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/droidfun/setup-robot-access</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/sh</annotate>
+    <annotate key="org.freedesktop.policykit.exec.argv1">/usr/lib/droidfun/setup-robot-access</annotate>
   </action>
 </policyconfig>

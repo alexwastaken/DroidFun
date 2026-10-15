@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 # Package managers already authorize this step. No account/group changes.
-if ! /usr/lib/droidfun/setup-robot-access; then
+if ! /usr/bin/sh /usr/lib/droidfun/setup-robot-access; then
     echo 'DroidFun USB rule installed. Reconnect the robot after installation, or choose Set up robot access in DroidFun.' >&2
 fi
 exit 0

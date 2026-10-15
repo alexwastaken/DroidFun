@@ -18,14 +18,14 @@ policy=/usr/share/polkit-1/actions/io.droidfun.usb-access.policy
 cmp src-tauri/linux/70-droidfun.rules "$rule"
 cmp src-tauri/linux/70-droidfun.rules /usr/share/droidfun/70-droidfun.rules
 cmp src-tauri/linux/setup-robot-access "$helper"
-test "$(stat -c '%U:%G:%a' "$helper")" = root:root:755
+test "$(stat -c '%U:%G:%a' "$helper")" = root:root:644
 xmllint --noout --nonet "$policy"
 pkaction --action-id io.droidfun.setup-robot-access --verbose > "$DESKBOT_ARTIFACT_DIR/linux-polkit-policy.txt"
 grep -q 'auth_admin' "$DESKBOT_ARTIFACT_DIR/linux-polkit-policy.txt"
-if "$helper"; then echo 'Unprivileged helper must fail'; exit 1; fi
-if sudo "$helper" unexpected; then echo 'Helper must reject arguments'; exit 1; fi
-sudo "$helper"
-sudo "$helper" # idempotence
+if /usr/bin/sh "$helper"; then echo 'Unprivileged helper must fail'; exit 1; fi
+if sudo /usr/bin/sh "$helper" unexpected; then echo 'Helper must reject arguments'; exit 1; fi
+sudo /usr/bin/sh "$helper"
+sudo /usr/bin/sh "$helper" # idempotence
 sudo umockdev-wrapper /usr/bin/python3 scripts/test-linux-usb.py --rules | tee "$DESKBOT_ARTIFACT_DIR/linux-rule-tests.json"
 sudo mkdir -p /run/systemd/seats
 sudo unshare --mount --propagation private /usr/bin/python3 scripts/test-linux-usb.py --acl | tee "$DESKBOT_ARTIFACT_DIR/linux-acl-tests.json"

@@ -47,6 +47,7 @@ mod native {
     const RULE: &str = "/usr/lib/udev/rules.d/70-droidfun.rules";
     const SOURCE: &str = "/usr/share/droidfun/70-droidfun.rules";
     const PKEXEC: &str = "/usr/bin/pkexec";
+    const SHELL: &str = "/usr/bin/sh";
     static BUSY: AtomicBool = AtomicBool::new(false);
     struct Guard;
     impl Drop for Guard {
@@ -81,7 +82,8 @@ mod native {
     pub fn status() -> AccessStatus {
         AccessStatus {
             supported: true,
-            repair_available: trusted(Path::new(HELPER), true)
+            repair_available: trusted(Path::new(HELPER), false)
+                && trusted(Path::new(SHELL), true)
                 && trusted(Path::new(PKEXEC), true)
                 && trusted(Path::new(POLICY), false)
                 && trusted(Path::new(SOURCE), false),
@@ -135,8 +137,9 @@ mod native {
             return Err("Install or reinstall the latest DroidFun using your software installer to enable robot access setup.".into());
         }
         let mut command = Command::new(PKEXEC);
-        // No terminal/password capture, shell, user-supplied command, or args.
-        command.arg("--disable-internal-agent").arg(HELPER);
+        // Fixed interpreter + fixed script only. The policy also binds argv1;
+        // no user-supplied command, argument, path, or password input.
+        command.arg("--disable-internal-agent").arg(SHELL).arg(HELPER);
         run(command, Duration::from_secs(120))
     }
     #[cfg(test)]
