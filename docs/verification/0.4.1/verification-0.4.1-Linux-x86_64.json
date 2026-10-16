@@ -1,0 +1,63 @@
+{
+  "version": "0.4.1",
+  "platform": "Linux-x86_64",
+  "target": "x86_64-unknown-linux-gnu",
+  "applicationCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "pipelineCommit": "3fd3b916430e5784d41740e3f0b6fbe8a15a1e42",
+  "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38887301699",
+  "runner": {
+    "os": "Linux",
+    "architecture": "X64",
+    "image": "20261012.334.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 64,
+    "failed": 0
+  },
+  "architecture": "x86_64",
+  "smoke": {
+    "result": "passed",
+    "debInstalled": true,
+    "automaticUsbRuleInstalled": true,
+    "repairButtonRealIpc": true,
+    "mandatoryBotChooser": true,
+    "botSelectionRealIpc": true,
+    "automaticBotThemes": [
+      "boo",
+      "claw",
+      "meep"
+    ],
+    "botSpecificWidgetOptions": true,
+    "scopedUaccessFixture": true,
+    "removalAndReinstallPreserveUserFiles": true,
+    "noGroupChanges": true,
+    "installedBinaryMatchesPackage": true,
+    "rpmMetadataArchitecture": "x86_64",
+    "nativeWindowCreated": true,
+    "aliveSeconds": 15,
+    "runnerPolicyDirectoryFixture": true,
+    "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; hosted runner policy ancestors normalized to ordinary root:root 0755; no tray host, robot or account credentials"
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.4.1-Linux-x86_64.deb",
+      "bytes": 7407908,
+      "sha256": "42b6b3bf3dea29a39f528e878890df2d4047e2b4226c5960d744223f2482a518"
+    },
+    {
+      "name": "DroidFun-App-0.4.1-Linux-x86_64.rpm",
+      "bytes": 7412737,
+      "sha256": "8d72cf0e3c7e0779cf120b6472c3dbd3b2b45dacf45141f8e6bcd5f70cb13680"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

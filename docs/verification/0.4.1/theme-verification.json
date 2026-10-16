@@ -1,0 +1,511 @@
+{
+  "scope": "DroidFun App 0.4.1 automatic Boo, Claw and Meep palettes",
+  "generatedAt": "2026-10-16T10:14:11.890Z",
+  "sourceDirectory": "/Users/Second/Documents/ChatGPT/Droidfun/work/private-app/DroidFun",
+  "nodeVersion": "v24.19.0",
+  "lightningcssVersion": "1.33.0",
+  "reproduceFrom": "/Users/Second/Documents/ChatGPT/Droidfun/work/private-app/DroidFun",
+  "command": "/Users/Second/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node /Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/audit-bot-themes.mjs",
+  "stylesheetValidation": {
+    "method": "LightningCSS transform with minify=false and errorRecovery=false; parser throws on invalid CSS.",
+    "checks": [
+      {
+        "path": "src/themes/bots.css",
+        "sha256": "5196190eea9804dd63225d053b4f9d8e69478766729e7c190408ae29042d2ef9",
+        "parser": "lightningcss",
+        "warnings": [],
+        "result": "passed"
+      },
+      {
+        "path": "src/themes/shared.css",
+        "sha256": "4d78bbc3d204c78a31e67b555d25a7b34e0b89e015a817e6274a757b6b45633e",
+        "parser": "lightningcss",
+        "warnings": [],
+        "result": "passed"
+      },
+      {
+        "path": "src/styles.css",
+        "sha256": "13e3b6a9c06e8217c44650cffaac77101abfb3ffd6cad64be9b389a40233b212",
+        "parser": "lightningcss",
+        "warnings": [],
+        "result": "passed"
+      }
+    ]
+  },
+  "contrast": {
+    "method": "WCAG relative sRGB luminance ratio: (lighter + 0.05) / (darker + 0.05). Ratios compare opaque source palette tokens, not screenshot pixels.",
+    "thresholds": {
+      "normalText": 4.5,
+      "fieldBoundary": 3
+    },
+    "themes": [
+      {
+        "bot": "boo",
+        "mode": "light",
+        "checks": [
+          {
+            "label": "body text",
+            "foregroundToken": "--bot-ink",
+            "foreground": "#2b2635",
+            "backgroundToken": "--bot-page",
+            "background": "#f8f7fb",
+            "ratio": 13.7551,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on page",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#655b74",
+            "backgroundToken": "--bot-page",
+            "background": "#f8f7fb",
+            "ratio": 5.9627,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on panel",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#655b74",
+            "backgroundToken": "--bot-panel",
+            "background": "#ffffff",
+            "ratio": 6.3598,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary button text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#70529b",
+            "backgroundToken": "--bot-tint",
+            "background": "#eee9f7",
+            "ratio": 5.2339,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary hover text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#70529b",
+            "backgroundToken": "--bot-tint-hover",
+            "background": "#e4dcf1",
+            "ratio": 4.6914,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "primary button text",
+            "foregroundToken": "--bot-on-accent",
+            "foreground": "#ffffff",
+            "backgroundToken": "--bot-accent",
+            "background": "#70529b",
+            "ratio": 6.233,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "field boundary",
+            "foregroundToken": "--bot-control-border",
+            "foreground": "#9785b0",
+            "backgroundToken": "--bot-panel",
+            "background": "#ffffff",
+            "ratio": 3.3345,
+            "minimum": 3,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "bot": "claw",
+        "mode": "light",
+        "checks": [
+          {
+            "label": "body text",
+            "foregroundToken": "--bot-ink",
+            "foreground": "#35271f",
+            "backgroundToken": "--bot-page",
+            "background": "#fff8f2",
+            "ratio": 13.6592,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on page",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#795a45",
+            "backgroundToken": "--bot-page",
+            "background": "#fff8f2",
+            "ratio": 5.9384,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on panel",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#795a45",
+            "backgroundToken": "--bot-panel",
+            "background": "#fffdfb",
+            "ratio": 6.1567,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary button text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#9c480d",
+            "backgroundToken": "--bot-tint",
+            "background": "#f8e8da",
+            "ratio": 5.2434,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary hover text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#9c480d",
+            "backgroundToken": "--bot-tint-hover",
+            "background": "#efd8c5",
+            "ratio": 4.5718,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "primary button text",
+            "foregroundToken": "--bot-on-accent",
+            "foreground": "#ffffff",
+            "backgroundToken": "--bot-accent",
+            "background": "#9c480d",
+            "ratio": 6.2755,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "field boundary",
+            "foregroundToken": "--bot-control-border",
+            "foreground": "#b17b52",
+            "backgroundToken": "--bot-panel",
+            "background": "#fffdfb",
+            "ratio": 3.5531,
+            "minimum": 3,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "bot": "meep",
+        "mode": "light",
+        "checks": [
+          {
+            "label": "body text",
+            "foregroundToken": "--bot-ink",
+            "foreground": "#19392f",
+            "backgroundToken": "--bot-page",
+            "background": "#f3faf7",
+            "ratio": 11.8901,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on page",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#4e6c60",
+            "backgroundToken": "--bot-page",
+            "background": "#f3faf7",
+            "ratio": 5.4505,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on panel",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#4e6c60",
+            "backgroundToken": "--bot-panel",
+            "background": "#fcfffd",
+            "ratio": 5.7345,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary button text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#186956",
+            "backgroundToken": "--bot-tint",
+            "background": "#e1f1e9",
+            "ratio": 5.6234,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary hover text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#186956",
+            "backgroundToken": "--bot-tint-hover",
+            "background": "#cde6da",
+            "ratio": 4.9868,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "primary button text",
+            "foregroundToken": "--bot-on-accent",
+            "foreground": "#ffffff",
+            "backgroundToken": "--bot-accent",
+            "background": "#186956",
+            "ratio": 6.5751,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "field boundary",
+            "foregroundToken": "--bot-control-border",
+            "foreground": "#689581",
+            "backgroundToken": "--bot-panel",
+            "background": "#fcfffd",
+            "ratio": 3.3623,
+            "minimum": 3,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "bot": "boo",
+        "mode": "dark",
+        "checks": [
+          {
+            "label": "body text",
+            "foregroundToken": "--bot-ink",
+            "foreground": "#f4eefb",
+            "backgroundToken": "--bot-page",
+            "background": "#19161f",
+            "ratio": 15.7069,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on page",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#c3b7d2",
+            "backgroundToken": "--bot-page",
+            "background": "#19161f",
+            "ratio": 9.3755,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on panel",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#c3b7d2",
+            "backgroundToken": "--bot-panel",
+            "background": "#24202e",
+            "ratio": 8.3451,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary button text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#cdb4f5",
+            "backgroundToken": "--bot-tint",
+            "background": "#332b40",
+            "ratio": 7.3335,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary hover text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#cdb4f5",
+            "backgroundToken": "--bot-tint-hover",
+            "background": "#423552",
+            "ratio": 6.143,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "primary button text",
+            "foregroundToken": "--bot-on-accent",
+            "foreground": "#291a3d",
+            "backgroundToken": "--bot-accent",
+            "background": "#cdb4f5",
+            "ratio": 8.7388,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "field boundary",
+            "foregroundToken": "--bot-control-border",
+            "foreground": "#837094",
+            "backgroundToken": "--bot-panel",
+            "background": "#24202e",
+            "ratio": 3.5656,
+            "minimum": 3,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "bot": "claw",
+        "mode": "dark",
+        "checks": [
+          {
+            "label": "body text",
+            "foregroundToken": "--bot-ink",
+            "foreground": "#fff1e7",
+            "backgroundToken": "--bot-page",
+            "background": "#211813",
+            "ratio": 15.7613,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on page",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#d8bca8",
+            "backgroundToken": "--bot-page",
+            "background": "#211813",
+            "ratio": 9.6939,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on panel",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#d8bca8",
+            "backgroundToken": "--bot-panel",
+            "background": "#2e2119",
+            "ratio": 8.6652,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary button text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#ffb77f",
+            "backgroundToken": "--bot-tint",
+            "background": "#443024",
+            "ratio": 7.2795,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary hover text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#ffb77f",
+            "backgroundToken": "--bot-tint-hover",
+            "background": "#563b2b",
+            "ratio": 5.9975,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "primary button text",
+            "foregroundToken": "--bot-on-accent",
+            "foreground": "#38200f",
+            "backgroundToken": "--bot-accent",
+            "background": "#ffb77f",
+            "ratio": 8.9254,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "field boundary",
+            "foregroundToken": "--bot-control-border",
+            "foreground": "#a17a60",
+            "backgroundToken": "--bot-panel",
+            "background": "#2e2119",
+            "ratio": 4.0572,
+            "minimum": 3,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "bot": "meep",
+        "mode": "dark",
+        "checks": [
+          {
+            "label": "body text",
+            "foregroundToken": "--bot-ink",
+            "foreground": "#eaf9f1",
+            "backgroundToken": "--bot-page",
+            "background": "#10231d",
+            "ratio": 15.0907,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on page",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#abcdbb",
+            "backgroundToken": "--bot-page",
+            "background": "#10231d",
+            "ratio": 9.5156,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "muted text on panel",
+            "foregroundToken": "--bot-muted",
+            "foreground": "#abcdbb",
+            "backgroundToken": "--bot-panel",
+            "background": "#193128",
+            "ratio": 8.0604,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary button text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#84d9b5",
+            "backgroundToken": "--bot-tint",
+            "background": "#24483a",
+            "ratio": 6.0946,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "secondary hover text",
+            "foregroundToken": "--bot-accent",
+            "foreground": "#84d9b5",
+            "backgroundToken": "--bot-tint-hover",
+            "background": "#305a49",
+            "ratio": 4.684,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "primary button text",
+            "foregroundToken": "--bot-on-accent",
+            "foreground": "#103426",
+            "backgroundToken": "--bot-accent",
+            "background": "#84d9b5",
+            "ratio": 8.1582,
+            "minimum": 4.5,
+            "passed": true
+          },
+          {
+            "label": "field boundary",
+            "foregroundToken": "--bot-control-border",
+            "foreground": "#6c9c83",
+            "backgroundToken": "--bot-panel",
+            "background": "#193128",
+            "ratio": 4.447,
+            "minimum": 3,
+            "passed": true
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "themes": 6,
+      "comparisons": 42,
+      "passed": true
+    }
+  },
+  "limits": [
+    "This is source stylesheet parsing and palette contrast verification; it is not a comprehensive accessibility audit.",
+    "No native UI, hardware, screenshot, keyboard-navigation or screen-reader test was performed by this audit script.",
+    "Audited comparisons exclude disabled controls, logos, OLED pixels, robot illustrations, semantic warning/error colors and chooser-card-specific colors.",
+    "Native visual checks are separate evidence maintained by the root agent under work/preview-0.4.1."
+  ]
+}

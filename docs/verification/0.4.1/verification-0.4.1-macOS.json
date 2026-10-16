@@ -1,0 +1,34 @@
+{
+  "version": "0.4.1",
+  "productName": "DroidFun App",
+  "identifier": "com.deskbot.companion",
+  "applicationCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "tests": {
+    "passed": 61,
+    "failed": 0
+  },
+  "adHocSignatureVerified": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.4.1-macOS-universal.dmg",
+      "bytes": 12006772,
+      "sha256": "851c93be57498f949fdadb6a1bae95c07596705a783dc241451fc5f6ea965220"
+    },
+    {
+      "name": "DroidFun-App-0.4.1-macOS-universal.zip",
+      "bytes": 11990053,
+      "sha256": "8845556bcad27382c2239bbc0bbeb47adbe79691babe3a9cb9d766d17286c7ad"
+    }
+  ],
+  "remaining": [
+    "Local launch and upgrade verification",
+    "USB robot connection verification",
+    "Intel Mac runtime"
+  ]
+}

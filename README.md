@@ -14,11 +14,11 @@ Choose Boo, Claw or Meep on first launch. Boo and Meep support custom text, face
 
 Choosing a bot automatically matches its preview, settings and screen controls: pearl/violet for Boo, orange/copper for Claw, and mint/teal for Meep. The Droid Fun logo stays blue. Light/dark/system appearance remains available in Settings → App. See [branding and upgrade notes](docs/BRANDING.md).
 
-## Downloads: 0.4.0
+## Downloads: 0.4.1
 
-Customers can get the app and **Controller setup PDF** from [droidfun.io/downloads](https://droidfun.io/downloads). Private release assets and platform verification records are kept in [v0.4.0](https://github.com/alexwastaken/DroidFun/releases/tag/v0.4.0).
+Customers can get the app and **Controller setup PDF** from [droidfun.io/downloads](https://droidfun.io/downloads). Private release assets and platform verification records are kept in [v0.4.1](https://github.com/alexwastaken/DroidFun/releases/tag/v0.4.1).
 
-- **Mac:** universal DMG and ZIP for Apple Silicon and Intel. Architecture, archive checksums and ad-hoc signature are verified. The bot chooser, custom-text editor and profile switching were checked in an isolated Apple Silicon preview. Intel runtime and upgrading the user's installed app were not tested for this release.
+- **Mac:** universal DMG and ZIP for Apple Silicon and Intel. Architecture, archive checksums and ad-hoc signature are verified. The bot chooser, all three light/dark themes, settings and screen editors were checked in an isolated Apple Silicon preview. Intel runtime and upgrading the user's installed app were not tested for this release.
 - **Windows:** x64 and ARM64 installers. Native behavior tests, real installation, payload comparison and window startup passed on each architecture.
 - **Linux:** x86_64 DEB and RPM. The DEB configures robot permissions; **Connection → Set up robot access** repairs access through the desktop password dialog. See the release's native verification record for installation and repair checks. RPM payloads are checked; Fedora runtime is untested.
 - **Firmware:** included 1.2.0 for RP2040-Zero, SSD1306 128×64, SDA GPIO 4 / SCL GPIO 5, address 0x3C. Export it from **Settings → Robot**. Firmware storage and lifecycle tests passed, but physical Save to bot, unplug and wall-power reboot acceptance remains outstanding. No connected bot was flashed during this release.

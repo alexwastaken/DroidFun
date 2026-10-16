@@ -1,0 +1,32 @@
+{
+  "version": "0.4.1",
+  "applicationCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "checkedAt": "2026-10-16T10:14:22.742586+00:00",
+  "previewBundle": "io.droidfun.preview041",
+  "previewMode": "Native Apple Silicon macOS WebView; isolated preferences",
+  "checks": [
+    "Boo, Claw and Meep each selected through actual bot chooser",
+    "All three light and dark page themes visually inspected",
+    "Boo dark Settings and Claw light Settings inspected",
+    "Claw light Codex editor and Meep dark face editor inspected",
+    "Matching bot avatars, housings, controls, panels, focus rings and text inspected",
+    "Shared blue Droid Fun wordmark retained",
+    "Existing feature separation observed: Claw usage widgets; Boo/Meep general widgets"
+  ],
+  "screenshots": {
+    "claw-editor-light.png": "762f1fe521ce93691a182a2afb43e715e4a7a141e1a4981c1115d159f71f04ce",
+    "boo-dark.png": "012223d871cce36c0e7384f541a60c42e9f4fa4b84a771b8f78bb59a6862beff",
+    "meep-dark.png": "5da8c4cff6b0bd204de1e6a50893977738c87aa2e349636ffb704d2c34a6bd9d",
+    "meep-editor-dark.png": "2dbb63f08916c1c27c426ee8219f9718fcb14ede1e15a524e554fcd6f3002afc",
+    "meep-light.png": "cec7467f8be30d570c931ae4ef1034d886428a9442c27d330db4992e36496dbc",
+    "boo-settings-dark.png": "2fb2f0bf8339a73c5d30c8a5d050d9b088cdabb92185cb353c389ad694287f36",
+    "claw-light.png": "7777a827709486b6055e8411a2137bc4cd0da7ab299c54ba828b9cbd3b9f8c46",
+    "claw-dark.png": "e59df35afc24d72986b8199f8183aeb661724f5f9113003137d0e91d41380eaa",
+    "boo-light.png": "cfd52b1c56c6fe0bdabeb7bd59e13bc906985b48b79ef8b1d7785ac368ceccd2"
+  },
+  "limits": [
+    "Caption fix was added after Mac preview build; exact caption will be verified by native Linux CI",
+    "No physical robot connected, flashed, or tested",
+    "This isolated preview did not replace the installed app"
+  ]
+}

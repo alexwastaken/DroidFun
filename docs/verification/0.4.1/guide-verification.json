@@ -1,0 +1,9 @@
+{
+  "appVersion": "0.4.1",
+  "guideVersion": "1.5",
+  "pages": 7,
+  "bytes": 20723,
+  "sha256": "a957dfd1631d76e4154be803962a242ca5e7d90c32d6dbb61b45aeb69241b570",
+  "visualReview": "All seven rendered pages inspected; updated pages 1 and 7 fit with clean margins.",
+  "changes": "Automatic bot themes replace blue/green Branding selectors; firmware1.2.0 unchanged."
+}

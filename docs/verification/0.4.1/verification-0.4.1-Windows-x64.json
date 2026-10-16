@@ -1,0 +1,44 @@
+{
+  "version": "0.4.1",
+  "platform": "Windows-x64",
+  "target": "x86_64-pc-windows-msvc",
+  "applicationCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "pipelineCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38885957648",
+  "runner": {
+    "os": "Windows",
+    "architecture": "X64",
+    "image": "20261007.264.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 64,
+    "failed": 0
+  },
+  "architecture": "x64",
+  "smoke": {
+    "aliveSeconds": 15,
+    "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+    "installerExitCode": 0,
+    "installedBinaryArchitecture": "x64",
+    "result": "passed",
+    "nativeWindowCreated": true,
+    "installedBinaryMatchesPackage": true
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.4.1-Windows-x64-setup.exe",
+      "bytes": 4194062,
+      "sha256": "536408df12092324e471216f7c2b852f5621981332910255d1812cc2e7e634bf"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

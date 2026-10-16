@@ -1,0 +1,10 @@
+{
+  "featureCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "releaseCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "platforms": {
+    "macOS": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+    "Windows-x64": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+    "Windows-ARM64": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+    "Linux-x86_64": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94"
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "version": "0.4.1",
+  "commit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+  "platforms": [
+    {
+      "platform": "macOS",
+      "version": "0.4.1",
+      "commit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "pipelineCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38885954795",
+      "tests": {
+        "passed": 61,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.1-macOS-universal.dmg",
+          "bytes": 12006772,
+          "sha256": "851c93be57498f949fdadb6a1bae95c07596705a783dc241451fc5f6ea965220",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/artifacts/macOS/DroidFun-App-0.4.1-macOS-universal.dmg"
+        },
+        {
+          "name": "DroidFun-App-0.4.1-macOS-universal.zip",
+          "bytes": 11990053,
+          "sha256": "8845556bcad27382c2239bbc0bbeb47adbe79691babe3a9cb9d766d17286c7ad",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/artifacts/macOS/DroidFun-App-0.4.1-macOS-universal.zip"
+        }
+      ],
+      "remaining": [
+        "Local launch and upgrade verification",
+        "USB robot connection verification",
+        "Intel Mac runtime"
+      ]
+    },
+    {
+      "platform": "Windows-x64",
+      "version": "0.4.1",
+      "commit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "pipelineCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38885957648",
+      "tests": {
+        "passed": 64,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.1-Windows-x64-setup.exe",
+          "bytes": 4194062,
+          "sha256": "536408df12092324e471216f7c2b852f5621981332910255d1812cc2e7e634bf",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/artifacts/Windows-x64/DroidFun-App-0.4.1-Windows-x64-setup.exe"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ]
+    },
+    {
+      "platform": "Windows-ARM64",
+      "version": "0.4.1",
+      "commit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "pipelineCommit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38885957648",
+      "tests": {
+        "passed": 64,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.1-Windows-ARM64-setup.exe",
+          "bytes": 3800164,
+          "sha256": "3493ddc137dc598745ef4bb30e73be8254a012875478bd6e09a4df1a7b5016f7",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/artifacts/Windows-ARM64/DroidFun-App-0.4.1-Windows-ARM64-setup.exe"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ]
+    },
+    {
+      "platform": "Linux-x86_64",
+      "version": "0.4.1",
+      "commit": "27745cda4dbaa8bc54e79a54773b064ccf8b4d94",
+      "pipelineCommit": "3fd3b916430e5784d41740e3f0b6fbe8a15a1e42",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38887301699",
+      "tests": {
+        "passed": 64,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.1-Linux-x86_64.deb",
+          "bytes": 7407908,
+          "sha256": "42b6b3bf3dea29a39f528e878890df2d4047e2b4226c5960d744223f2482a518",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/artifacts/Linux-x86_64/DroidFun-App-0.4.1-Linux-x86_64.deb"
+        },
+        {
+          "name": "DroidFun-App-0.4.1-Linux-x86_64.rpm",
+          "bytes": 7412737,
+          "sha256": "8d72cf0e3c7e0779cf120b6472c3dbd3b2b45dacf45141f8e6bcd5f70cb13680",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.1/artifacts/Linux-x86_64/DroidFun-App-0.4.1-Linux-x86_64.rpm"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ]
+    }
+  ],
+  "allVerified": true
+}
