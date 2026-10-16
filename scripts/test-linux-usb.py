@@ -124,7 +124,7 @@ def ui():
         driver.wait('window.__TAURI_INTERNALS__ && (document.querySelector(".bot-picker") || document.querySelector(".bot-controls"))')
         if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
             driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => b.textContent.trim() === "Change bot").click();')
-        driver.wait('document.querySelectorAll(".bot-choice").length === 3 && document.documentElement.dataset.bot === ""')
+        driver.wait('document.querySelectorAll(".bot-choice").length === 3 && !document.documentElement.hasAttribute("data-bot")')
         if capture_chooser: driver.capture('linux-bot-chooser.png')
         selector = '.bot-choice[data-bot="'+model+'"]'
         driver.js('document.querySelector('+json.dumps(selector)+').click();')
