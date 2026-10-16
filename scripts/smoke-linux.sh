@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Use the fixture from this checked-out build pipeline while testing the exact
+# requested application source and its installed native binary.
+usb_fixture="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test-linux-usb.py"
 release="$CARGO_TARGET_DIR/$DESKBOT_TARGET/release"
 shopt -s nullglob
 debs=("$release"/bundle/deb/*.deb)
@@ -77,9 +80,9 @@ if /usr/bin/sh "$helper"; then echo 'Unprivileged helper must fail'; exit 1; fi
 if sudo /usr/bin/sh "$helper" unexpected; then echo 'Helper must reject arguments'; exit 1; fi
 sudo /usr/bin/sh "$helper"
 sudo /usr/bin/sh "$helper" # idempotence
-sudo umockdev-wrapper /usr/bin/python3 scripts/test-linux-usb.py --rules | tee "$DESKBOT_ARTIFACT_DIR/linux-rule-tests.json"
+sudo umockdev-wrapper /usr/bin/python3 "$usb_fixture" --rules | tee "$DESKBOT_ARTIFACT_DIR/linux-rule-tests.json"
 sudo mkdir -p /run/systemd/seats
-sudo unshare --mount --propagation private /usr/bin/python3 scripts/test-linux-usb.py --acl | tee "$DESKBOT_ARTIFACT_DIR/linux-acl-tests.json"
+sudo unshare --mount --propagation private /usr/bin/python3 "$usb_fixture" --acl | tee "$DESKBOT_ARTIFACT_DIR/linux-acl-tests.json"
 test "$(id -nG)" = "$groups_before"
 # Tauri embeds bundle-type metadata and restores the original binary after each bundle.
 # Compare the installation against its own packaged payload, not the restored build.
@@ -99,7 +102,7 @@ dbus-run-session -- xvfb-run -a bash -eu -c '
   xdotool search --pid "$app_pid" --name "DroidFun App"
 '
 # Drive the exact installed app, bot themes, actual IPC, pkexec and helper.
-dbus-run-session -- xvfb-run -a /usr/bin/python3 scripts/test-linux-usb.py --ui | tee "$DESKBOT_ARTIFACT_DIR/linux-usb-ui-tests.json"
+dbus-run-session -- xvfb-run -a /usr/bin/python3 "$usb_fixture" --ui | tee "$DESKBOT_ARTIFACT_DIR/linux-usb-ui-tests.json"
 # Removal must remove only packaged files and preserve a local administrator rule
 # and saved app settings. Reinstallation restores installer-managed USB access.
 sentinel=/etc/udev/rules.d/69-droidfun-ci-preserve.rules
