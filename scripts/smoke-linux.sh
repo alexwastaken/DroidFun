@@ -7,10 +7,14 @@ rpms=("$release"/bundle/rpm/*.rpm)
 test "${#debs[@]}" -eq 1
 test "${#rpms[@]}" -eq 1
 dpkg-deb --info "${debs[0]}"
+dpkg-deb --contents "${debs[0]}"
 test "$(dpkg-deb -f "${debs[0]}" Architecture)" = amd64
 rpm -qp --queryformat '%{NAME} %{VERSION} %{ARCH}\n' "${rpms[0]}"
 test "$(rpm -qp --queryformat '%{ARCH}' "${rpms[0]}")" = x86_64
 groups_before="$(id -nG)"
+# Record pre-existing shared directories separately from the archive metadata;
+# the package must never make a system policy directory writable by users.
+stat -c 'Before install: %U:%G:%a %n' /usr/share /usr/share/polkit-1 /usr/share/polkit-1/actions
 sudo apt-get install -y "${debs[0]}"
 helper=/usr/lib/droidfun/setup-robot-access
 rule=/usr/lib/udev/rules.d/70-droidfun.rules
