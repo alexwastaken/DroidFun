@@ -9,12 +9,36 @@ test "${#rpms[@]}" -eq 1
 dpkg-deb --info "${debs[0]}"
 dpkg-deb --contents "${debs[0]}"
 test "$(dpkg-deb -f "${debs[0]}" Architecture)" = amd64
+/usr/bin/python3 - "${debs[0]}" <<'PY' | tee "$DESKBOT_ARTIFACT_DIR/linux-package-directory-modes.json"
+import io, json, subprocess, sys, tarfile
+data = subprocess.run(['dpkg-deb', '--fsys-tarfile', sys.argv[1]], check=True, capture_output=True).stdout
+with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+    directories = [{"path": p.name, "uid": p.uid, "gid": p.gid, "mode": oct(p.mode)} for p in archive if p.isdir()]
+print(json.dumps(directories, indent=2))
+assert directories and all(p['uid'] == 0 and p['gid'] == 0 and int(p['mode'], 8) & 0o022 == 0 for p in directories), 'Package contains an untrusted directory mode or owner'
+PY
 rpm -qp --queryformat '%{NAME} %{VERSION} %{ARCH}\n' "${rpms[0]}"
 test "$(rpm -qp --queryformat '%{ARCH}' "${rpms[0]}")" = x86_64
 groups_before="$(id -nG)"
 # Record pre-existing shared directories separately from the archive metadata;
 # the package must never make a system policy directory writable by users.
 stat -c 'Before install: %U:%G:%a %n' /usr/share /usr/share/polkit-1 /usr/share/polkit-1/actions
+# GitHub's Ubuntu image deliberately chmods /usr/share recursively to 0777:
+# https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-system.sh
+# Restore ordinary OS permissions only for these three policy ancestors in the
+# ephemeral hosted runner. Never weaken the app's trust gate or modify a package.
+export DESKBOT_CI_POLICY_DIR_FIXTURE=false
+if [[ "${GITHUB_ACTIONS:-}" == true && "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
+  /usr/bin/python3 - <<'PY'
+import pathlib, stat
+for name in ['/usr/share', '/usr/share/polkit-1', '/usr/share/polkit-1/actions']:
+    meta = pathlib.Path(name).lstat()
+    assert stat.S_ISDIR(meta.st_mode) and meta.st_uid == 0 and meta.st_gid == 0, f'Unexpected runner policy directory owner/type: {name}'
+    assert stat.S_IMODE(meta.st_mode) in (0o755, 0o777), f'Unexpected runner policy directory mode: {name}'
+PY
+  sudo chmod 0755 /usr/share /usr/share/polkit-1 /usr/share/polkit-1/actions
+  export DESKBOT_CI_POLICY_DIR_FIXTURE=true
+fi
 sudo apt-get install -y "${debs[0]}"
 helper=/usr/lib/droidfun/setup-robot-access
 rule=/usr/lib/udev/rules.d/70-droidfun.rules
@@ -95,4 +119,4 @@ sudo apt-get install -y "${debs[0]}"
 cmp src-tauri/linux/70-droidfun.rules "$rule"
 test "$(id -nG)" = "$groups_before"
 sudo rm "$sentinel"
-node -e 'require("node:fs").writeFileSync(require("node:path").join(process.env.DESKBOT_ARTIFACT_DIR,"native-smoke.json"),JSON.stringify({result:"passed",debInstalled:true,automaticUsbRuleInstalled:true,repairButtonRealIpc:true,mandatoryBotChooser:true,botSelectionRealIpc:true,scopedUaccessFixture:true,removalAndReinstallPreserveUserFiles:true,noGroupChanges:true,installedBinaryMatchesPackage:true,rpmMetadataArchitecture:"x86_64",nativeWindowCreated:true,aliveSeconds:15,environment:"Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; no tray host, robot or account credentials"},null,2))'
+node -e 'require("node:fs").writeFileSync(require("node:path").join(process.env.DESKBOT_ARTIFACT_DIR,"native-smoke.json"),JSON.stringify({result:"passed",debInstalled:true,automaticUsbRuleInstalled:true,repairButtonRealIpc:true,mandatoryBotChooser:true,botSelectionRealIpc:true,scopedUaccessFixture:true,removalAndReinstallPreserveUserFiles:true,noGroupChanges:true,installedBinaryMatchesPackage:true,rpmMetadataArchitecture:"x86_64",nativeWindowCreated:true,aliveSeconds:15,runnerPolicyDirectoryFixture:process.env.DESKBOT_CI_POLICY_DIR_FIXTURE==="true",environment:"Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; hosted runner policy ancestors normalized to ordinary root:root 0755; no tray host, robot or account credentials"},null,2))'
