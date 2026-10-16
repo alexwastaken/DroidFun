@@ -9,6 +9,10 @@ on:
         description: Application commit, branch or release tag to build
         required: true
         default: main
+      upload_to_draft:
+        description: Upload verified packages to an existing private draft instead of Actions artifacts
+        type: boolean
+        default: false
       release_tag:
         description: Existing release version (used to validate package versions)
         required: true
@@ -52,6 +56,8 @@ jobs:
           require('node:fs').appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({include})}\n`);
           JS
   package:
+    permissions:
+      contents: write
     needs: prepare
     name: ${{ matrix.label }}
     timeout-minutes: 60
@@ -131,12 +137,19 @@ jobs:
       - name: Verify architectures and collect packages
         run: node ../pipeline/scripts/native-package-evidence.cjs collect
       - name: Upload checked packages and evidence
+        if: ${{ !inputs.upload_to_draft }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: DroidFun-App-${{ matrix.platform }}
           path: packages/
           if-no-files-found: error
           retention-days: 14
+      - name: Upload verified packages to existing private draft
+        if: ${{ inputs.upload_to_draft }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DESKBOT_SOURCE_SHA: ${{ inputs.source_ref }}
+        run: node ../pipeline/scripts/upload-draft-packages.cjs
       - name: Preserve native build cache for retries
         if: always() && steps.rust-cache.outputs.cache-primary-key != ''
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4

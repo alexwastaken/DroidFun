@@ -9,6 +9,10 @@ on:
         description: Exact application commit or branch to build
         required: true
         default: main
+      upload_to_draft:
+        description: Upload verified packages to an existing private draft instead of Actions artifacts
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -19,6 +23,8 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: macos-14
     timeout-minutes: 60
     env:
@@ -54,9 +60,25 @@ jobs:
       - name: Verify and collect Mac packages
         run: node scripts/mac-package-evidence.cjs
       - name: Upload packages for installation verification
+        if: ${{ !inputs.upload_to_draft }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: DroidFun-App-macOS-universal
           path: packages/
           if-no-files-found: error
           retention-days: 14
+      - name: Check out draft upload tooling
+        if: ${{ inputs.upload_to_draft }}
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-pipeline
+          persist-credentials: false
+          sparse-checkout: scripts/upload-draft-packages.cjs
+          sparse-checkout-cone-mode: false
+      - name: Upload verified packages to existing private draft
+        if: ${{ inputs.upload_to_draft }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DESKBOT_SOURCE_SHA: ${{ inputs.source_ref }}
+        run: node .release-pipeline/scripts/upload-draft-packages.cjs
