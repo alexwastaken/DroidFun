@@ -25,7 +25,8 @@
     "Boo hides Claude/Codex",
     "custom text created, multiline preview with border rendered and saved",
     "Claw displays only Claude/Codex widgets",
-    "Save to bot disabled without connected hardware"
+    "Save to bot disabled without connected hardware",
+    "Meep restores previously saved general screens after switching from Claw"
   ],
   "remaining": [
     "Physical USB upload, unplug and wall-charger power-cycle test",

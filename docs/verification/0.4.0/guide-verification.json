@@ -1,0 +1,20 @@
+{
+  "guideVersion": "1.4",
+  "appVersion": "0.4.0",
+  "firmwareVersion": "1.2.0",
+  "pages": 7,
+  "bytes": 20605,
+  "sha256": "45d06462974b90aa3fc2a395e56a2ae9de84f329919e55d9f7fd178e40d6e757",
+  "renderedPages": [
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-1.png",
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-2.png",
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-3.png",
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-4.png",
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-5.png",
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-6.png",
+    "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/guide-page-7.png"
+  ],
+  "visualReview": "All seven pages inspected; no clipping, spill pages or overlap.",
+  "publicationStatus": "Prepared only; website unchanged.",
+  "physicalHardwareEvidence": "USB upload and wall-charger power-cycle testing remain outstanding."
+}
