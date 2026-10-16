@@ -2,8 +2,8 @@ pub mod claude_account;
 pub mod claude_bridge;
 mod connection;
 mod core;
-mod local_widgets;
 pub mod linux_usb;
+mod local_widgets;
 mod network;
 mod persistence;
 mod platform;
@@ -14,7 +14,7 @@ mod reliability;
 mod windows_claude_terminal;
 
 use connection::{ConnectionSnapshot, Link, RobotPort};
-use core::{Engine, Location, Preferences, Settings, Snapshot, SourceConfig};
+use core::{Engine, Location, Preferences, Settings, Snapshot, SourceConfig, Widget};
 use providers::{Providers, UsageWindow};
 use std::{
     fs,
@@ -43,6 +43,16 @@ struct AppState {
     >,
     providers: Arc<Providers>,
     link_metrics: Mutex<connection::LinkMetrics>,
+    standalone: Mutex<Option<StandaloneRequest>>,
+    save_generation: std::sync::atomic::AtomicU64,
+}
+struct StandaloneRequest {
+    generation: u64,
+    settings: Vec<u8>,
+    serial: String,
+    playlist: protocol::StandalonePlaylist,
+    cancel: Arc<std::sync::atomic::AtomicBool>,
+    response: std::sync::mpsc::SyncSender<Result<usize, String>>,
 }
 
 fn publish(app: &AppHandle, snapshot: &Snapshot) {
@@ -56,6 +66,15 @@ fn publish(app: &AppHandle, snapshot: &Snapshot) {
 
 fn publish_connection(app: &AppHandle, next: ConnectionSnapshot) {
     let state = app.state::<AppState>();
+    if next.state != "connected" {
+        if let Ok(mut pending) = state.standalone.lock() {
+            if let Some(request) = pending.take() {
+                let _ = request.response.send(Err(
+                    "The bot disconnected before saving. Reconnect it and try again.".into(),
+                ));
+            }
+        }
+    }
     if let Ok(mut current) = state.connection.lock() {
         if *current != next {
             *current = next.clone();
@@ -92,7 +111,27 @@ where
             return Err(format!("Could not save settings: {error}"));
         }
     }
+    if save {
+        state
+            .save_generation
+            .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+    }
+    // Update while holding the engine lock: request registration and result
+    // application use the same lock, so no previous generation slips through.
+    let policy_changed = previous.settings.preferences.bot_model
+        != engine.settings.preferences.bot_model
+        || previous.settings.preferences.offline_mode != engine.settings.preferences.offline_mode;
+    state.providers.set_policy(
+        &engine.settings.preferences.bot_model,
+        engine.settings.preferences.offline_mode,
+    );
     if let Ok(mut pending) = state.pending.lock() {
+        if policy_changed {
+            for flag in pending.values().flatten().filter_map(|w| w.upgrade()) {
+                flag.store(true, std::sync::atomic::Ordering::Release);
+            }
+            pending.clear();
+        }
         for widget in &previous.settings.widgets {
             if !engine.settings.widgets.iter().any(|w| {
                 w.id == widget.id && w.enabled == widget.enabled && w.config == widget.config
@@ -152,7 +191,8 @@ fn linux_usb_status() -> linux_usb::AccessStatus {
 #[tauri::command]
 async fn setup_robot_access() -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(linux_usb::setup)
-        .await.map_err(|_| "USB setup stopped. Please try again.".to_string())?
+        .await
+        .map_err(|_| "USB setup stopped. Please try again.".to_string())?
 }
 
 #[tauri::command]
@@ -192,6 +232,172 @@ fn preview_frame(id: String, state: State<AppState>) -> Result<Vec<u8>, String> 
     Ok(engine.render_widget(&widget.id))
 }
 
+fn standalone_playlist(engine: &Engine) -> Result<protocol::StandalonePlaylist, String> {
+    if !["boo", "meep"].contains(&engine.settings.preferences.bot_model.as_str()) {
+        return Err("Saving screens to the bot is available for Boo Bot and Meep Bot. Claw Bot needs a computer for live account usage.".into());
+    }
+    let widgets: Vec<_> = engine
+        .settings
+        .widgets
+        .iter()
+        .filter(|w| {
+            w.enabled
+                && ["face", "text"].contains(&w.kind.as_str())
+                && core::kind_allowed(&engine.settings.preferences.bot_model, &w.kind)
+        })
+        .collect();
+    if widgets.is_empty() {
+        return Err(
+            "Enable at least one face or custom text screen before saving to your bot.".into(),
+        );
+    }
+    if widgets.len() > 30 {
+        return Err("A bot can save up to 30 face or custom text screens.".into());
+    }
+    // Save the intended expression, never an incidental blink or motion pose.
+    let mut static_engine = engine.clone();
+    static_engine.set_reduced_motion(true);
+    let frames = widgets
+        .into_iter()
+        .map(|widget| {
+            Ok(protocol::StandaloneFrame {
+                frame: static_engine.preview_draft(widget)?,
+                duration_sec: widget.duration_sec,
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    Ok(protocol::StandalonePlaylist {
+        frames,
+        brightness: engine.settings.brightness,
+        orientation: engine.settings.preferences.orientation,
+    })
+}
+#[tauri::command]
+async fn save_to_bot(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    {
+        let engine = state.engine.lock().map_err(|_| "State unavailable")?;
+        let playlist = standalone_playlist(&engine)?;
+        let serial = engine
+            .settings
+            .selected_device_serial
+            .clone()
+            .ok_or("Connect your bot over USB before saving screens.")?;
+        let connection = state
+            .connection
+            .lock()
+            .map_err(|_| "Connection state unavailable")?;
+        if connection.state != "connected" {
+            return Err("Connect your bot over USB before saving screens.".into());
+        }
+        if !connection.standalone_supported {
+            return Err("Update your bot to firmware 1.2.0 or newer to save screens for use with a USB wall charger.".into());
+        }
+        let mut pending = state
+            .standalone
+            .lock()
+            .map_err(|_| "Save queue unavailable")?;
+        if pending
+            .as_ref()
+            .is_some_and(|r| r.cancel.load(std::sync::atomic::Ordering::Acquire))
+        {
+            pending.take();
+        }
+        if pending.is_some() {
+            return Err("A save is already waiting. Please wait for it to finish.".into());
+        }
+        *pending = Some(StandaloneRequest {
+            generation: state
+                .save_generation
+                .load(std::sync::atomic::Ordering::Acquire),
+            settings: serde_json::to_vec(&engine.settings)
+                .map_err(|_| "Could not capture screens")?,
+            serial,
+            playlist,
+            cancel: cancel.clone(),
+            response: tx,
+        });
+    }
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        rx.recv_timeout(Duration::from_secs(60)).map_err(|_| {
+            cancel.store(true, std::sync::atomic::Ordering::Release);
+            "The bot has not confirmed this save. Keep it connected, check its status, then try again.".to_string()
+        })?
+    }).await.map_err(|_| "Save stopped before confirmation".to_string())??;
+    Ok(serde_json::json!({"saved":true,"count":result,
+        "message":"Saved to your bot. It can now show these screens using a USB wall charger. Faces are saved as still images; live data and clocks still need the app."}))
+}
+fn process_standalone_request(app: &AppHandle, link: &mut Link, serial: &str) {
+    let state = app.state::<AppState>();
+    let request = state
+        .standalone
+        .lock()
+        .ok()
+        .and_then(|mut pending| pending.take());
+    let Some(request) = request else {
+        return;
+    };
+    let result = (|| {
+        let engine = state.engine.lock().map_err(|_| "State unavailable")?;
+        if request.cancel.load(std::sync::atomic::Ordering::Acquire) {
+            return Err("Save canceled before it started".into());
+        }
+        if request.generation
+            != state
+                .save_generation
+                .load(std::sync::atomic::Ordering::Acquire)
+            || request.serial != serial
+            || engine.settings.selected_device_serial.as_deref() != Some(serial)
+            || serde_json::to_vec(&engine.settings).map_err(|_| "Could not check screens")?
+                != request.settings
+        {
+            return Err(
+                "Your selected bot or screens changed before saving. Please save again.".into(),
+            );
+        }
+        // Keep the selected device/profile stable throughout this bounded USB
+        // transaction. No additional serial connection is opened.
+        link.save_standalone(&request.playlist)?;
+        Ok(request.playlist.frames.len())
+    })();
+    publish_connection(app, link.status.clone());
+    let _ = request.response.send(result);
+}
+
+#[tauri::command]
+fn preview_draft(widget: Widget, state: State<AppState>) -> Result<Vec<u8>, String> {
+    state
+        .engine
+        .lock()
+        .map_err(|e| e.to_string())?
+        .preview_draft(&widget)
+}
+#[tauri::command]
+fn set_bot_model(
+    bot_model: String,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<Snapshot, String> {
+    mutate(&app, state, true, |e| e.set_bot_model(&bot_model))
+}
+#[tauri::command]
+fn set_offline_mode(
+    offline: bool,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<Snapshot, String> {
+    mutate(&app, state, true, |e| {
+        let mut preferences = e.settings.preferences.clone();
+        preferences.offline_mode = offline;
+        e.set_preferences(preferences)
+    })
+}
+fn source_ticket(state: &AppState, kind: &str) -> Result<network::Ticket, String> {
+    let _engine = state.engine.lock().map_err(|_| "State unavailable")?;
+    state.providers.request_ticket(kind)
+}
+
 #[tauri::command]
 fn configure_source(
     id: String,
@@ -217,41 +423,64 @@ fn remove_widget(id: String, app: AppHandle, state: State<AppState>) -> Result<S
 }
 #[tauri::command]
 async fn search_weather(name: String, state: State<'_, AppState>) -> Result<Vec<Location>, String> {
+    let ticket = source_ticket(&state, "weather")?;
     let providers = state.providers.clone();
-    tauri::async_runtime::spawn_blocking(move || providers.search_locations(&name))
-        .await
-        .map_err(|_| "Location search stopped".to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = ticket.enter();
+        let result = providers.search_locations(&name);
+        network::ensure_allowed()?;
+        result
+    })
+    .await
+    .map_err(|_| "Location search stopped".to_string())?
 }
 #[tauri::command]
 async fn codex_windows(
     path: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<UsageWindow>, String> {
+    let ticket = source_ticket(&state, "codex")?;
     let providers = state.providers.clone();
-    tauri::async_runtime::spawn_blocking(move || providers.codex_windows(&path))
-        .await
-        .map_err(|_| "Account read stopped".to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = ticket.enter();
+        let result = providers.codex_windows(&path);
+        network::ensure_allowed()?;
+        result
+    })
+    .await
+    .map_err(|_| "Account read stopped".to_string())?
 }
 #[tauri::command]
 async fn source_info(
     profile: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
+    let ticket = source_ticket(&state, "claude")?;
     let bridge = state
         .settings_path
         .parent()
         .ok_or("Settings directory unavailable")?
         .join("claude-bridge");
-    tauri::async_runtime::spawn_blocking(move || Ok(serde_json::json!({"claudeBridge":claude_bridge::status(&bridge)?,"claudeAccount":claude_account::status(profile.as_deref().unwrap_or(""))}))).await.map_err(|_| "Source setup stopped".to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = ticket.enter();
+        network::ensure_allowed()?;
+        let result = serde_json::json!({"claudeBridge":claude_bridge::status(&bridge)?,"claudeAccount":claude_account::status(profile.as_deref().unwrap_or(""))});
+        network::ensure_allowed()?;
+        Ok(result)
+    }).await.map_err(|_| "Source setup stopped".to_string())?
 }
 #[tauri::command]
 async fn connect_claude_account(
     profile: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    let ticket = source_ticket(&state, "claude")?;
     let providers = state.providers.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        let _guard = ticket.enter();
+        network::ensure_allowed()?;
         claude_account::login(profile.as_deref().unwrap_or(""))?;
+        network::ensure_allowed()?;
         providers.invalidate_claude();
         Ok(())
     })
@@ -263,6 +492,11 @@ async fn set_claude_bridge(
     enabled: bool,
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
+    let ticket = if enabled {
+        Some(source_ticket(&state, "claude")?)
+    } else {
+        None
+    };
     let bridge = state
         .settings_path
         .parent()
@@ -274,8 +508,9 @@ async fn set_claude_bridge(
         .unwrap()
         .join("providers/claude/default");
     tauri::async_runtime::spawn_blocking(move || {
+        let _guard = ticket.as_ref().map(network::Ticket::enter);
         if enabled {
-            claude_bridge::install(&bridge, &report_dir)
+            network::authorized(|| claude_bridge::install(&bridge, &report_dir))
         } else {
             claude_bridge::uninstall(&bridge)
         }
@@ -289,31 +524,42 @@ async fn refresh_widget(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<Snapshot, String> {
-    let widget = state
-        .engine
-        .lock()
-        .map_err(|e| e.to_string())?
-        .settings
-        .widgets
-        .iter()
-        .find(|w| w.id == id)
-        .cloned()
-        .ok_or("Widget not found")?;
-    if widget.config.mode != "live" {
-        return Err("Choose Live data in Edit first".into());
-    }
+    let (widget, ticket, cancel) = {
+        let engine = state.engine.lock().map_err(|e| e.to_string())?;
+        let widget = engine
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == id)
+            .cloned()
+            .ok_or("Widget not found")?;
+        if widget.config.mode != "live" {
+            return Err("Choose Live data in Edit first".into());
+        }
+        if !["weather", "stock", "codex", "claude"].contains(&widget.kind.as_str()) {
+            return Err("This screen works locally and does not need an online refresh.".into());
+        }
+        let ticket = state.providers.request_ticket(&widget.kind)?;
+        let cancel = register_request(&state, &id)?;
+        (widget, ticket, cancel)
+    };
     let providers = state.providers.clone();
     let requested_config = widget.config.clone();
+    let requested_kind = widget.kind.clone();
     providers.retry_authentication(&widget);
-    let cancel = register_request(&state, &id)?;
     let request_flag = cancel.clone();
+    let request_ticket = ticket.clone();
     let card = tauri::async_runtime::spawn_blocking(move || {
+        let _guard = request_ticket.enter();
         providers.fetch_cancelable(&widget, request_flag)
     })
     .await
     .map_err(|_| "Refresh stopped".to_string())?;
     mutate(&app, state, false, |e| {
-        if !cancel.load(std::sync::atomic::Ordering::Acquire)
+        if ticket.current()
+            && !e.settings.preferences.offline_mode
+            && core::kind_allowed(&e.settings.preferences.bot_model, &requested_kind)
+            && !cancel.load(std::sync::atomic::Ordering::Acquire)
             && e.settings
                 .widgets
                 .iter()
@@ -445,7 +691,11 @@ fn monitor_worker(app: AppHandle) {
                 e.settings
                     .widgets
                     .iter()
-                    .filter(|w| w.enabled && matches!(w.kind.as_str(), "cpu" | "memory"))
+                    .filter(|w| {
+                        w.enabled
+                            && matches!(w.kind.as_str(), "cpu" | "memory")
+                            && core::kind_allowed(&e.settings.preferences.bot_model, &w.kind)
+                    })
                     .cloned()
                     .collect::<Vec<_>>()
             })
@@ -523,7 +773,10 @@ fn monitor_worker(app: AppHandle) {
             last.insert(w.id.clone(), (Instant::now(), w.config.clone()));
             let snapshot = if let Ok(mut e) = state.engine.lock() {
                 if e.settings.widgets.iter().any(|current| {
-                    current.id == w.id && current.enabled && current.config == w.config
+                    current.id == w.id
+                        && current.enabled
+                        && current.config == w.config
+                        && core::kind_allowed(&e.settings.preferences.bot_model, &current.kind)
                 }) {
                     e.set_data(&w.id, card);
                     Some(e.snapshot())
@@ -655,7 +908,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         let path = app
             .dialog()
             .file()
-            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.1.0.uf2")
+            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.0.uf2")
             .add_filter("RP2040 firmware", &["uf2"])
             .blocking_save_file();
         let Some(path) = path else {
@@ -663,7 +916,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         };
         fs::write(
             path.into_path().map_err(|_| "Choose a local file")?,
-            include_bytes!("../../firmware/releases/deskbot-rp2040-zero-gp4-gp5-v1.1.0.uf2"),
+            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.0.uf2"),
         )
         .map_err(|_| "Could not save firmware")?;
         Ok(true)
@@ -812,6 +1065,7 @@ fn connection_worker(app: AppHandle) {
                     if selected_now.as_deref() != Some(serial.as_str()) {
                         break;
                     }
+                    process_standalone_request(&app, &mut link, &serial);
                     match link.update(
                         &snapshot.frame,
                         snapshot.display_on,
@@ -838,6 +1092,7 @@ fn connection_worker(app: AppHandle) {
                                     board_id: link.status.board_id.clone(),
                                     firmware: link.status.firmware.clone(),
                                     display_health: link.status.display_health.clone(),
+                                    ..link.status.clone()
                                 },
                             );
                             break;
@@ -851,6 +1106,7 @@ fn connection_worker(app: AppHandle) {
             }
             Err(error) => {
                 let setup = error.contains("No DroidFun App reply")
+                    || error.contains("No reply from the bot after two attempts")
                     || error.contains("invalid DroidFun App handshake");
                 publish_connection(
                     &app,
@@ -896,29 +1152,39 @@ fn provider_worker(app: AppHandle, kind: &str) {
             last_active = Instant::now();
         }
         if last_active.elapsed() < Duration::from_secs(30) {
-            let widgets = state
+            let requests = state
                 .engine
                 .lock()
-                .map(|e| e.settings.widgets.clone())
-                .unwrap_or_default();
-            for widget in widgets
-                .into_iter()
-                .filter(|w| w.enabled && w.config.mode == "live" && w.kind == kind)
-            {
-                let Ok(cancel) = register_request(&state, &widget.id) else {
-                    continue;
-                };
-                let card = state.providers.fetch_cancelable(&widget, cancel.clone());
-                if cancel.load(std::sync::atomic::Ordering::Acquire) {
-                    continue;
-                }
-                let snapshot = if let Ok(mut engine) = state.engine.lock() {
-                    // Ignore a response if the user changed configuration during its request.
-                    if engine
-                        .settings
+                .map(|e| {
+                    e.settings
                         .widgets
                         .iter()
-                        .any(|w| w.id == widget.id && w.enabled && w.config == widget.config)
+                        .filter(|w| w.enabled && w.config.mode == "live" && w.kind == kind)
+                        .filter_map(|w| {
+                            let ticket = state.providers.request_ticket(&w.kind).ok()?;
+                            let cancel = register_request(&state, &w.id).ok()?;
+                            Some((w.clone(), ticket, cancel))
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            for (widget, ticket, cancel) in requests {
+                let _guard = ticket.enter();
+                if network::canceled() {
+                    continue;
+                }
+                let card = state.providers.fetch_cancelable(&widget, cancel.clone());
+                let snapshot = if let Ok(mut engine) = state.engine.lock() {
+                    // Ignore a response if the user changed configuration during its request.
+                    if ticket.current()
+                        && !cancel.load(std::sync::atomic::Ordering::Acquire)
+                        && !engine.settings.preferences.offline_mode
+                        && core::kind_allowed(&engine.settings.preferences.bot_model, &widget.kind)
+                        && engine
+                            .settings
+                            .widgets
+                            .iter()
+                            .any(|w| w.id == widget.id && w.enabled && w.config == widget.config)
                     {
                         engine.set_data(&widget.id, card);
                         Some(engine.snapshot())
@@ -962,6 +1228,7 @@ pub fn run() {
                 Providers::new(app.path().app_config_dir()?.join("providers"))
                     .map_err(std::io::Error::other)?,
             );
+            providers.set_policy(&engine.settings.preferences.bot_model, engine.settings.preferences.offline_mode);
             engine.restore_data(providers.startup_cards(&engine.settings.widgets));
             if reliability::fault("static-face") {
                 if let Some(id) = engine.settings.widgets.iter().find(|w|w.kind=="face").map(|w|w.id.clone()) {
@@ -979,6 +1246,8 @@ pub fn run() {
                 diagnostics: Mutex::new(None),
                 events: Mutex::new(std::collections::VecDeque::new()),
                 pending: Mutex::new(std::collections::HashMap::new()),
+                standalone: Mutex::new(None),
+                save_generation: std::sync::atomic::AtomicU64::new(0),
             });
             if let Some(window) = app.get_webview_window("main") {
                 window.set_size(tauri::LogicalSize::new(440.0, 760.0))?;
@@ -1098,6 +1367,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             set_preferences,
+            set_bot_model,
+            set_offline_mode,
+            save_to_bot,
+            preview_draft,
             platform_info,
             override_quiet,
             set_reduced_motion,
@@ -1146,4 +1419,104 @@ pub fn run() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod offline_tests {
+    use super::*;
+
+    #[test]
+    fn wall_power_playlist_contains_only_enabled_local_face_and_text_screens() {
+        let mut settings = Settings::default();
+        settings.preferences.bot_model = "boo".into();
+        settings.preferences.offline_mode = true;
+        settings.preferences.orientation = 180;
+        settings.brightness = 47;
+        // Even enabled demo/live clocks and data cards must never become stale
+        // wall-power snapshots. Only intentionally static screens are saved.
+        for widget in &mut settings.widgets {
+            widget.enabled = true;
+        }
+        let mut engine = Engine::new(settings, Instant::now());
+        engine.add_widget("text").unwrap();
+        let text = engine
+            .settings
+            .widgets
+            .iter_mut()
+            .find(|w| w.kind == "text")
+            .unwrap();
+        text.enabled = true;
+        text.config.custom_text = "HELLO".into();
+        text.duration_sec = 17;
+        let playlist = standalone_playlist(&engine).unwrap();
+        assert_eq!(playlist.frames.len(), 2);
+        assert_eq!(playlist.brightness, 47);
+        assert_eq!(playlist.orientation, 180);
+        assert_eq!(playlist.frames[1].duration_sec, 17);
+        assert!(playlist.frames.iter().all(|f| f.frame.len() == 1024));
+        assert!(playlist.encode().is_ok());
+        engine
+            .settings
+            .widgets
+            .iter_mut()
+            .find(|w| w.kind == "text")
+            .unwrap()
+            .enabled = false;
+        assert_eq!(standalone_playlist(&engine).unwrap().frames.len(), 1);
+    }
+
+    #[test]
+    fn offline_mode_keeps_local_computer_stats_usable_for_general_bots() {
+        let mut settings = Settings::default();
+        settings.preferences.bot_model = "boo".into();
+        settings.preferences.offline_mode = true;
+        let mut engine = Engine::new(settings, Instant::now());
+        engine.add_widget("cpu").unwrap();
+        let widget = engine
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.kind == "cpu")
+            .unwrap()
+            .clone();
+        engine.set_enabled(&widget.id, true).unwrap();
+        let card = local_widgets::cpu_card(&widget, core::unix_now(), 25.0, &[25.0]);
+        engine.set_data(&widget.id, card);
+        assert!(engine.show_now(&widget.id).is_ok());
+        assert_eq!(engine.snapshot().current_id, widget.id);
+        assert!(engine.render_widget(&widget.id).iter().any(|b| *b != 0));
+    }
+
+    #[test]
+    fn saved_face_is_stable_across_animation_and_blink_phases() {
+        let mut settings = Settings::default();
+        settings.preferences.bot_model = "boo".into();
+        let start = Instant::now();
+        let mut engine = Engine::new(settings, start);
+        let original = standalone_playlist(&engine).unwrap().frames[0]
+            .frame
+            .clone();
+        for millis in [200, 4200, 4900, 5000, 6200, 10_000] {
+            engine.tick(start + Duration::from_millis(millis));
+            assert_eq!(
+                standalone_playlist(&engine).unwrap().frames[0].frame,
+                original
+            );
+        }
+    }
+
+    #[test]
+    fn wall_power_save_requires_a_supported_bot_and_at_least_one_static_screen() {
+        let mut engine = Engine::new(Settings::default(), Instant::now());
+        assert!(standalone_playlist(&engine).unwrap_err().contains("Boo"));
+        engine.set_bot_model("claw").unwrap();
+        assert!(standalone_playlist(&engine).unwrap_err().contains("Claw"));
+        engine.set_bot_model("meep").unwrap();
+        for widget in &mut engine.settings.widgets {
+            widget.enabled = false;
+        }
+        assert!(standalone_playlist(&engine)
+            .unwrap_err()
+            .contains("at least one"));
+    }
 }

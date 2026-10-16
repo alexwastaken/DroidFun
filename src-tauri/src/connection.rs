@@ -61,6 +61,9 @@ pub struct ConnectionSnapshot {
     pub board_id: Option<String>,
     pub firmware: Option<String>,
     pub display_health: Option<String>,
+    pub standalone_supported: bool,
+    pub standalone_saved: bool,
+    pub standalone_count: u8,
 }
 
 impl Default for ConnectionSnapshot {
@@ -72,6 +75,9 @@ impl Default for ConnectionSnapshot {
             board_id: None,
             firmware: None,
             display_health: None,
+            standalone_supported: false,
+            standalone_saved: false,
+            standalone_count: 0,
         }
     }
 }
@@ -86,6 +92,12 @@ struct HelloAck {
     display_health: String,
     #[serde(default)]
     max_fps: u16,
+    #[serde(default)]
+    standalone_supported: bool,
+    #[serde(default)]
+    standalone_saved: bool,
+    #[serde(default)]
+    standalone_count: u8,
 }
 
 fn session_id() -> u32 {
@@ -106,7 +118,12 @@ fn exchange(
     for _ in 0..2 {
         port.write_all(&wire)
             .map_err(|e| format!("USB write failed: {e}"))?;
-        let deadline = Instant::now() + Duration::from_millis(500);
+        let deadline = Instant::now()
+            + Duration::from_millis(if request.kind == protocol::SAVED_COMMIT {
+                3000
+            } else {
+                500
+            });
         while Instant::now() < deadline {
             let mut input = [0u8; 128];
             match port.read(&mut input) {
@@ -134,10 +151,7 @@ fn exchange(
         }
         decoder.reset();
     }
-    Err(
-        "No DroidFun App reply after two 500 ms attempts; existing sketch may need the DroidFun App bridge"
-            .into(),
-    )
+    Err("No reply from the bot after two attempts. Reconnect it and check its firmware.".into())
 }
 
 #[derive(Clone, Default, Serialize)]
@@ -155,6 +169,16 @@ fn validate_frame_ack(payload: &[u8], health: &serde_json::Value) -> Result<u32,
         return Err("Robot did not confirm the expected frame CRC and display health".into());
     }
     Ok(expected)
+}
+
+fn validate_saved_ack(ack: &serde_json::Value, crc: u32, count: usize) -> Result<(), String> {
+    if ack["saved"] != true
+        || ack["count"].as_u64() != Some(count as u64)
+        || ack["playlistCrc"].as_u64() != Some(crc as u64)
+    {
+        return Err("The bot did not confirm that the complete playlist was saved. Reconnect and try again.".into());
+    }
+    Ok(())
 }
 
 pub struct Link {
@@ -178,9 +202,14 @@ impl Link {
             .timeout(Duration::from_millis(50))
             .open()
             .map_err(|error| {
-                if cfg!(target_os = "linux") && error.kind() == serialport::ErrorKind::Io(std::io::ErrorKind::PermissionDenied) {
+                if cfg!(target_os = "linux")
+                    && error.kind()
+                        == serialport::ErrorKind::Io(std::io::ErrorKind::PermissionDenied)
+                {
                     crate::linux_usb::PERMISSION_DETAIL.to_string()
-                } else { format!("Could not open robot port: {error}") }
+                } else {
+                    format!("Could not open robot port: {error}")
+                }
             })?;
         port.write_data_terminal_ready(true)
             .map_err(|error| format!("Could not enable USB serial replies: {error}"))?;
@@ -240,12 +269,21 @@ impl Link {
                 board_id: Some(ack.board_id),
                 firmware: Some(ack.firmware),
                 display_health: Some(ack.display_health),
+                standalone_supported: ack.standalone_supported,
+                standalone_saved: ack.standalone_saved,
+                standalone_count: ack.standalone_count,
             },
         })
     }
 
-    fn command(&mut self, kind: u8, payload: Vec<u8>) -> Result<(), String> {
+    fn command(&mut self, kind: u8, payload: Vec<u8>) -> Result<serde_json::Value, String> {
         let packet = Packet::new(kind, self.session, self.sequence, payload);
+        // Reserve the next sequence even on a rejection or lost response. Reusing
+        // it for different bytes would collide with the firmware's retry cache.
+        self.sequence = self
+            .sequence
+            .checked_add(1)
+            .ok_or("Sequence limit reached; reconnect required")?;
         let reply = exchange(&mut *self.port, &mut self.decoder, &packet, protocol::ACK)?;
         let health: serde_json::Value = serde_json::from_slice(&reply.payload)
             .map_err(|_| "Robot returned invalid ACK health")?;
@@ -255,11 +293,11 @@ impl Link {
         }
         self.metrics.command_acks += 1;
         self.metrics.last_ack_at = crate::core::unix_now();
-        self.sequence = self
-            .sequence
-            .checked_add(1)
-            .ok_or("Sequence limit reached; reconnect required")?;
         self.last_command = Instant::now();
+        if health["hostFrameNeeded"] == true {
+            self.last_frame.clear();
+            self.last_display = None;
+        }
         // Firmware ACKs carry bounded JSON health, so a display fault stays visible.
         {
             #[cfg(feature = "device-smoke")]
@@ -277,6 +315,39 @@ impl Link {
                 }
             }
         }
+        Ok(health)
+    }
+
+    pub fn save_standalone(
+        &mut self,
+        playlist: &protocol::StandalonePlaylist,
+    ) -> Result<(), String> {
+        if !self.status.standalone_supported {
+            return Err(
+                "Install bot firmware 1.2.0 or newer from Settings → Robot before saving screens"
+                    .into(),
+            );
+        }
+        let bytes = playlist.encode()?;
+        let checksum = protocol::crc32(&bytes);
+        let mut begin = (bytes.len() as u16).to_le_bytes().to_vec();
+        begin.extend_from_slice(&checksum.to_le_bytes());
+        self.command(protocol::SAVED_BEGIN, begin)?;
+        for (index, chunk) in bytes.chunks(protocol::MAX_PAYLOAD - 2).enumerate() {
+            let mut payload = ((index * (protocol::MAX_PAYLOAD - 2)) as u16)
+                .to_le_bytes()
+                .to_vec();
+            payload.extend_from_slice(chunk);
+            self.command(protocol::SAVED_CHUNK, payload)?;
+        }
+        let ack = self.command(protocol::SAVED_COMMIT, Vec::new())?;
+        validate_saved_ack(&ack, checksum, playlist.frames.len())?;
+        self.status.standalone_saved = true;
+        self.status.standalone_count = playlist.frames.len() as u8;
+        self.status.detail = "Screens saved and verified on the bot".into();
+        // Restore the desktop display after an upload, even if the frame hasn't changed.
+        self.last_frame.clear();
+        self.last_display = None;
         Ok(())
     }
 
@@ -290,7 +361,7 @@ impl Link {
         // The firmware may have replaced our cached frame with its fallback
         // after a stalled host. Restore display policy and pixels even if the
         // current static widget has not changed since the last ACK.
-        if self.last_command.elapsed() >= Duration::from_secs(8) {
+        if self.last_command.elapsed() >= Duration::from_secs(4) {
             self.last_frame.clear();
             self.last_display = None;
         }
@@ -328,6 +399,23 @@ impl Link {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn save_ack_requires_matching_persistent_playlist() {
+        assert!(validate_saved_ack(
+            &serde_json::json!({"saved":true,"count":2,"playlistCrc":42}),
+            42,
+            2
+        )
+        .is_ok());
+        for ack in [
+            serde_json::json!({"saved":true,"count":2}),
+            serde_json::json!({"saved":false,"count":2,"playlistCrc":42}),
+            serde_json::json!({"saved":true,"count":1,"playlistCrc":42}),
+            serde_json::json!({"saved":true,"count":2,"playlistCrc":43}),
+        ] {
+            assert!(validate_saved_ack(&ack, 42, 2).is_err());
+        }
+    }
     #[test]
     fn frame_ack_must_confirm_the_sent_bitmap() {
         let frame = vec![0x55; 1024];

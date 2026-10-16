@@ -71,6 +71,7 @@ impl Drop for ChildGuard {
     }
 }
 fn credential_json(profile: &str, _timeout: Duration) -> Result<Value, String> {
+    crate::network::ensure_allowed()?;
     let directory = config_dir(profile)?;
     #[cfg(target_os = "macos")]
     {
@@ -103,11 +104,23 @@ fn credential_json(profile: &str, _timeout: Duration) -> Result<Value, String> {
             let result = stdout.take(65537).read_to_end(&mut bytes).map(|_| bytes);
             let _ = tx.send(result);
         });
-        if let Ok(Ok(bytes)) = rx.recv_timeout(_timeout) {
-            if bytes.len() <= 65536 {
-                if let Ok(value) = serde_json::from_slice(&bytes) {
-                    return Ok(value);
+        let deadline = Instant::now() + _timeout;
+        while Instant::now() < deadline {
+            crate::network::ensure_allowed()?;
+            match rx.recv_timeout(
+                deadline
+                    .saturating_duration_since(Instant::now())
+                    .min(Duration::from_millis(50)),
+            ) {
+                Ok(Ok(bytes)) if bytes.len() <= 65536 => {
+                    crate::network::ensure_allowed()?;
+                    if let Ok(value) = serde_json::from_slice(&bytes) {
+                        return Ok(value);
+                    }
+                    break;
                 }
+                Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                _ => break,
             }
         }
     }
@@ -183,6 +196,7 @@ fn token_with_refresh(
 // refresh-token writer or send an inference prompt. No trust prompt is answered
 // here; Unix retains its existing pretrusted-folder prerequisite.
 fn refresh_with_installed_client(profile: &str, rejected: Option<&str>) -> Result<(), String> {
+    crate::network::ensure_allowed()?;
     static REFRESH: Mutex<()> = Mutex::new(());
     let _lock = crate::network::lock_cancellable(&REFRESH)?;
     if stored_token(profile).is_ok_and(|token| rejected != Some(token.as_str())) {
@@ -304,11 +318,11 @@ fn refresh_client_terminal(
             Ok(())
         });
     }
-    let mut child = ChildGuard(
+    let mut child = ChildGuard(crate::network::authorized(|| {
         command
             .spawn()
-            .map_err(|_| "Installed Claude credential refresh could not start")?,
-    );
+            .map_err(|_| "Installed Claude credential refresh could not start".into())
+    })?);
     struct SessionGuard(i32);
     impl Drop for SessionGuard {
         fn drop(&mut self) {
@@ -334,6 +348,7 @@ fn refresh_client_terminal(
             return Err("Request canceled because the source changed".into());
         }
         if refreshed(deadline.saturating_duration_since(Instant::now())) {
+            crate::network::ensure_allowed()?;
             return Ok(());
         }
         if child
@@ -347,7 +362,7 @@ fn refresh_client_terminal(
         std::thread::sleep(
             deadline
                 .saturating_duration_since(Instant::now())
-                .min(Duration::from_millis(500)),
+                .min(Duration::from_millis(50)),
         );
     }
     Err("Your local Claude sign-in needs reconnecting. Open Claude Code or use Connect Claude account in Edit.".into())
@@ -456,6 +471,7 @@ pub fn normalize(v: &Value, slot: &str, now: u64) -> Result<DataCard, String> {
     Ok(card)
 }
 pub fn read(client: &Client, slot: &str, profile: &str) -> Result<DataCard, String> {
+    crate::network::ensure_allowed()?;
     read_with_recovery(
         client,
         "https://api.anthropic.com/api/oauth/usage",
@@ -482,6 +498,7 @@ fn read_with_recovery(
     mut acquire: impl FnMut() -> Result<String, String>,
     mut renew_rejected: impl FnMut(&str) -> Result<(), String>,
 ) -> Result<DataCard, String> {
+    crate::network::ensure_allowed()?;
     let mut token = acquire()?;
     let request = |token: &str| {
         crate::network::json(
@@ -503,6 +520,7 @@ fn read_with_recovery(
             // shared sign-in. Re-read through the normal renewal path, then
             // retry once only if it produced a different token.
             event("credential_rejected");
+            crate::network::ensure_allowed()?;
             let mut next = acquire()?;
             if next == token {
                 if let Err(e) = renew_rejected(&token) {
@@ -534,6 +552,7 @@ fn read_with_recovery(
             e
         }
     })?;
+    crate::network::ensure_allowed()?;
     let mut card = normalize(&value, slot, unix_now())?;
     let state = card.values["allowanceState"].as_str().unwrap_or("unknown");
     diagnostic_state()
@@ -575,6 +594,7 @@ fn executable() -> Result<PathBuf, String> {
     Err("Install Claude Code, then use Connect Claude account to sign in. No model session is needed.".into())
 }
 pub fn login(profile: &str) -> Result<(), String> {
+    crate::network::ensure_allowed()?;
     if CONNECTING
         .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
         .is_err()
@@ -587,33 +607,106 @@ pub fn login(profile: &str) -> Result<(), String> {
     if !profile.is_empty() {
         command.env("CLAUDE_CONFIG_DIR", directory);
     }
-    let mut child = ChildGuard(
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let mut child = ChildGuard(crate::network::authorized(|| {
         command
             .args(["auth", "login", "--claudeai"])
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|_| "Could not open Claude sign-in")?,
-    );
+            .map_err(|_| "Could not open Claude sign-in".into())
+    })?);
+    #[cfg(unix)]
+    struct LoginProcessGroup(u32);
+    #[cfg(unix)]
+    impl Drop for LoginProcessGroup {
+        fn drop(&mut self) {
+            unsafe {
+                libc::kill(-(self.0 as i32), libc::SIGKILL);
+            }
+        }
+    }
+    #[cfg(unix)]
+    let _process_group = LoginProcessGroup(child.0.id());
     let deadline = Instant::now() + Duration::from_secs(600);
     while Instant::now() < deadline {
+        crate::network::ensure_allowed()?;
         if let Some(result) = child.0.try_wait().map_err(|_| "Claude sign-in stopped")? {
             if result.success() {
                 token(profile)?;
+                crate::network::ensure_allowed()?;
                 return Ok(());
             }
             return Err(
                 "Claude sign-in was not completed. Try Connect Claude account again.".into(),
             );
         }
-        std::thread::sleep(Duration::from_millis(250));
+        std::thread::sleep(Duration::from_millis(50));
     }
     Err("Claude sign-in timed out. Try Connect Claude account again.".into())
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn offline_cancels_account_login_before_reading_credentials_or_spawning_cli() {
+        let policy = crate::network::Policy::new("claw", false);
+        let ticket = policy.ticket("claude").unwrap();
+        policy.update("claw", true);
+        let _guard = ticket.enter();
+        assert!(login("").unwrap_err().contains("canceled"));
+    }
+    #[cfg(unix)]
+    #[test]
+    fn offline_change_reaps_the_owned_credential_refresh_process() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir =
+            std::env::temp_dir().join(format!("droidfun-offline-refresh-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let client = dir.join("client");
+        fs::write(
+            &client,
+            "#!/bin/sh\necho $$ > pid\nwhile :; do sleep 1; done\n",
+        )
+        .unwrap();
+        fs::set_permissions(&client, fs::Permissions::from_mode(0o700)).unwrap();
+        let policy = crate::network::Policy::new("claw", false);
+        let ticket = policy.ticket("claude").unwrap();
+        let scratch = dir.clone();
+        let running = std::thread::spawn(move || {
+            let _guard = ticket.enter();
+            refresh_client_terminal("", &scratch, &client, |_| false, Duration::from_secs(10))
+        });
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !dir.join("pid").is_file() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        assert!(
+            dir.join("pid").is_file(),
+            "fixture client must have started"
+        );
+        policy.update("claw", true);
+        policy.update("claw", false);
+        let start = Instant::now();
+        assert!(running.join().unwrap().unwrap_err().contains("canceled"));
+        assert!(start.elapsed() < Duration::from_secs(2));
+        let pid: i32 = fs::read_to_string(dir.join("pid"))
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        assert_eq!(
+            unsafe { libc::kill(pid, 0) },
+            -1,
+            "canceled client must be reaped"
+        );
+        fs::remove_dir_all(dir).unwrap();
+    }
     #[test]
     #[ignore = "Reads the live account endpoint; emits only response-shape categories"]
     fn live_redacted_allowance_shape() {

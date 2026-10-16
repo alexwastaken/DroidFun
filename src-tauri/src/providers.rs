@@ -33,12 +33,14 @@ struct CodexSnapshot {
 struct Cache {
     cards: HashMap<String, (String, u64, DataCard)>,
     failures: HashMap<String, u8>,
+    generations: HashMap<String, u64>,
 }
 pub struct Providers {
+    policy: crate::network::Policy,
     client: Client,
     directory: PathBuf,
     cache: Mutex<Cache>,
-    codex: Mutex<HashMap<String, CodexSnapshot>>,
+    codex: Mutex<HashMap<(u64, String), CodexSnapshot>>,
     in_flight: Mutex<HashMap<String, Arc<Mutex<()>>>>,
 }
 fn error_state(error: &str) -> &'static str {
@@ -343,6 +345,7 @@ impl Providers {
         fs::create_dir_all(&directory)
             .map_err(|_| "Could not create provider directory".to_string())?;
         let provider = Self {
+            policy: crate::network::Policy::new("", false),
             directory,
             client: Client::builder()
                 .timeout(Duration::from_secs(10))
@@ -357,7 +360,16 @@ impl Providers {
         provider.load_public_cache();
         Ok(provider)
     }
+    pub fn set_policy(&self, bot_model: &str, offline: bool) {
+        self.policy.update(bot_model, offline);
+    }
+    pub fn request_ticket(&self, kind: &str) -> Result<crate::network::Ticket, String> {
+        self.policy.ticket(kind)
+    }
     pub fn search_locations(&self, name: &str) -> Result<Vec<Location>, String> {
+        let ticket = self.request_ticket("weather")?;
+        let _guard = ticket.enter();
+        crate::network::ensure_allowed()?;
         if !(2..=100).contains(&name.trim().len()) {
             return Err("Enter at least two characters of a city name".into());
         }
@@ -470,16 +482,18 @@ impl Providers {
         }
     }
     pub fn codex_windows(&self, path: &str) -> Result<Vec<UsageWindow>, String> {
+        let ticket = self.request_ticket("codex")?;
+        let _guard = ticket.enter();
+        crate::network::ensure_allowed()?;
         self.codex_read(path).map(|v| v.windows)
     }
     fn codex_read(&self, path: &str) -> Result<CodexSnapshot, String> {
-        let mut cache = self
-            .codex
-            .lock()
-            .map_err(|_| "Account reader unavailable")?;
+        let mut cache = crate::network::lock_cancellable(&self.codex)?;
+        crate::network::ensure_allowed()?;
+        let key = (crate::network::generation(), path.to_string());
         let now = unix_now();
         if let Some(v) = cache
-            .get(path)
+            .get(&key)
             .filter(|v| now.saturating_sub(v.fetched) < 300)
         {
             return Ok(v.clone());
@@ -499,7 +513,9 @@ impl Providers {
             scope,
             windows: normalize_codex(&limits),
         };
-        cache.insert(path.into(), snapshot.clone());
+        crate::network::ensure_allowed()?;
+        cache.retain(|(generation, _), _| *generation == key.0);
+        cache.insert(key, snapshot.clone());
         Ok(snapshot)
     }
     pub fn fetch_cancelable(
@@ -511,6 +527,15 @@ impl Providers {
         self.fetch(widget)
     }
     pub fn fetch(&self, widget: &Widget) -> DataCard {
+        let ticket = match self.request_ticket(&widget.kind) {
+            Ok(ticket) => ticket,
+            Err(error) => return failure("offline", "unavailable", &error),
+        };
+        let _guard = ticket.enter();
+        if let Err(error) = crate::network::ensure_allowed() {
+            return failure("canceled", "unavailable", &error);
+        }
+        let generation = crate::network::generation();
         let now = unix_now();
         let signature = format!(
             "{:x}",
@@ -533,7 +558,10 @@ impl Providers {
         };
         let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
         if let Some((sig, next, card)) = cache.cards.get(&cache_key) {
-            if *sig == signature && now < *next {
+            if *sig == signature
+                && now < *next
+                && cache.generations.get(&cache_key) == Some(&generation)
+            {
                 return card.clone();
             }
         }
@@ -638,8 +666,17 @@ impl Providers {
             {
                 cache.cards.remove(&key);
                 cache.failures.remove(&key);
+                cache.generations.remove(&key);
             }
         }
+        if crate::network::canceled() {
+            return failure(
+                "canceled",
+                "unavailable",
+                "Source changed; outdated request canceled",
+            );
+        }
+        cache.generations.insert(cache_key.clone(), generation);
         cache.cards.insert(
             cache_key,
             (signature, now.saturating_add(wait), card.clone()),
@@ -776,21 +813,33 @@ fn codex_path(explicit: &str) -> Result<PathBuf, String> {
 struct ChildGuard(std::process::Child);
 impl Drop for ChildGuard {
     fn drop(&mut self) {
+        #[cfg(unix)]
+        unsafe {
+            libc::kill(-(self.0.id() as i32), libc::SIGKILL);
+        }
         let _ = self.0.kill();
         let _ = self.0.wait();
     }
 }
 fn read_codex(path: &str) -> Result<(Value, Value), String> {
+    crate::network::ensure_allowed()?;
     let exe = codex_path(path)?;
-    let mut child = ChildGuard(
-        Command::new(exe)
-            .args(["app-server", "--listen", "stdio://"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+    let mut command = Command::new(exe);
+    command
+        .args(["app-server", "--listen", "stdio://"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let mut child = ChildGuard(crate::network::authorized(|| {
+        command
             .spawn()
-            .map_err(|_| "Could not start the Codex CLI".to_string())?,
-    );
+            .map_err(|_| "Could not start the Codex CLI".to_string())
+    })?);
     let mut input = child.0.stdin.take().ok_or("Codex input unavailable")?;
     let output = child.0.stdout.take().ok_or("Codex output unavailable")?;
     let (tx, rx) = mpsc::sync_channel(8);
@@ -818,6 +867,7 @@ fn read_codex(path: &str) -> Result<(Value, Value), String> {
         if !["initialize", "account/read", "account/rateLimits/read"].contains(&method) {
             return Err("Disallowed Codex method".into());
         }
+        crate::network::ensure_allowed()?;
         writeln!(
             input,
             "{}",
@@ -857,6 +907,7 @@ fn read_codex(path: &str) -> Result<(Value, Value), String> {
     )?;
     // initialize notification must precede subsequent requests.
     drop(rpc);
+    crate::network::ensure_allowed()?;
     writeln!(input, "{}", json!({"method":"initialized","params":{}}))
         .and_then(|_| input.flush())
         .map_err(|_| "Codex initialization failed".to_string())?;
@@ -865,6 +916,7 @@ fn read_codex(path: &str) -> Result<(Value, Value), String> {
                 method: &str,
                 params: Value|
      -> Result<Value, String> {
+        crate::network::ensure_allowed()?;
         writeln!(
             input,
             "{}",
@@ -903,6 +955,39 @@ fn read_codex(path: &str) -> Result<(Value, Value), String> {
 mod tests {
     use super::*;
     use crate::core::{Settings, SourceConfig};
+    #[test]
+    fn manual_provider_entrypoints_enforce_offline_and_bot_profile_before_work() {
+        let dir =
+            std::env::temp_dir().join(format!("droidfun-provider-policy-{}", std::process::id()));
+        let providers = Providers::new(dir.clone()).unwrap();
+        providers.set_policy("boo", true);
+        assert!(providers
+            .search_locations("Oslo")
+            .unwrap_err()
+            .contains("Offline"));
+        assert!(providers
+            .codex_windows("/not-a-real-cli")
+            .unwrap_err()
+            .contains("Offline"));
+        providers.set_policy("boo", false);
+        assert!(providers
+            .codex_windows("/not-a-real-cli")
+            .unwrap_err()
+            .contains("selected bot"));
+        providers.set_policy("claw", false);
+        assert!(providers
+            .search_locations("Oslo")
+            .unwrap_err()
+            .contains("selected bot"));
+        let widget = Settings::default()
+            .widgets
+            .iter()
+            .find(|w| w.kind == "weather")
+            .unwrap()
+            .clone();
+        assert_eq!(providers.fetch(&widget).state, "unavailable");
+        fs::remove_dir_all(dir).unwrap();
+    }
     #[test]
     fn codex_windows_keep_buckets_nulls_and_actual_durations_separate() {
         let v = json!({"rateLimits":{"primary":{"usedPercent":99,"windowDurationMins":300,"resetsAt":2000}},"rateLimitsByLimitId":{"codex":{"primary":{"usedPercent":25,"windowDurationMins":10080,"resetsAt":2000},"secondary":null},"other":{"limitName":"Other","primary":{"usedPercent":42,"windowDurationMins":60,"resetsAt":3000},"secondary":{"usedPercent":null,"windowDurationMins":300,"resetsAt":3000}}}});

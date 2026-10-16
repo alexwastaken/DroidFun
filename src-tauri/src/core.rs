@@ -9,6 +9,26 @@ pub const WIDTH: usize = 128;
 pub const HEIGHT: usize = 64;
 pub const FRAME_BYTES: usize = WIDTH * HEIGHT / 8;
 
+const WIDGET_KINDS: &[&str] = &[
+    "face", "text", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu",
+    "memory",
+];
+
+/// An unselected legacy profile retains its settings until the owner chooses a bot.
+/// Profiles restrict playback and editing, never erase another bot's saved screens.
+pub fn kind_allowed(bot_model: &str, kind: &str) -> bool {
+    match bot_model {
+        "" => WIDGET_KINDS.contains(&kind),
+        "claw" => matches!(kind, "codex" | "claude"),
+        "boo" | "meep" => WIDGET_KINDS.contains(&kind) && !matches!(kind, "codex" | "claude"),
+        _ => false,
+    }
+}
+
+pub fn remote_kind(kind: &str) -> bool {
+    matches!(kind, "weather" | "stock" | "codex" | "claude")
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Widget {
@@ -73,6 +93,14 @@ pub struct SourceConfig {
     pub show_graph: bool,
     pub memory_metric: String,
     pub memory_unit: String,
+    pub custom_text: String,
+    pub text_size: u8,
+    pub text_align: String,
+    pub text_valign: String,
+    pub text_border: bool,
+    pub display_invert: bool,
+    pub display_companion: bool,
+    pub display_layout: String,
 }
 impl Default for SourceConfig {
     fn default() -> Self {
@@ -112,12 +140,30 @@ impl Default for SourceConfig {
             show_graph: true,
             memory_metric: "used".into(),
             memory_unit: "gib".into(),
+            custom_text: "Hello, human!".into(),
+            text_size: 1,
+            text_align: "center".into(),
+            text_valign: "center".into(),
+            text_border: false,
+            display_invert: false,
+            display_companion: true,
+            display_layout: "classic".into(),
         }
     }
 }
 impl SourceConfig {
     pub fn validate(&self, kind: &str) -> Result<(), String> {
         crate::local_widgets::validate(self)?;
+        if ![1, 2].contains(&self.text_size)
+            || !["left", "center", "right"].contains(&self.text_align.as_str())
+            || !["top", "center", "bottom"].contains(&self.text_valign.as_str())
+            || !["classic", "minimal"].contains(&self.display_layout.as_str())
+        {
+            return Err("Choose a valid text size, alignment, and screen layout".into());
+        }
+        if kind == "text" {
+            text_lines(self)?;
+        }
         if crate::local_widgets::local(kind) && self.mode != "live" {
             return Err("Local widgets use the computer's actual time and readings".into());
         }
@@ -251,6 +297,8 @@ impl QuietHours {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Preferences {
+    pub bot_model: String,
+    pub offline_mode: bool,
     pub orientation: u16,
     pub quiet_hours: QuietHours,
     pub appearance: String,
@@ -267,6 +315,8 @@ pub struct Preferences {
 impl Default for Preferences {
     fn default() -> Self {
         Self {
+            bot_model: String::new(),
+            offline_mode: false,
             orientation: 0,
             quiet_hours: QuietHours::default(),
             appearance: "system".into(),
@@ -284,7 +334,8 @@ impl Default for Preferences {
 }
 impl Preferences {
     pub fn validate(&self) -> Result<(), String> {
-        if ![0, 180].contains(&self.orientation)
+        if !["", "boo", "claw", "meep"].contains(&self.bot_model.as_str())
+            || ![0, 180].contains(&self.orientation)
             || !["system", "light", "dark"].contains(&self.appearance.as_str())
             || !["droidfun", "green"].contains(&self.branding.as_str())
             || !["auto", "window", "background"].contains(&self.window_mode.as_str())
@@ -295,7 +346,8 @@ impl Preferences {
                 && self.quiet_hours.start_minute == self.quiet_hours.end_minute)
         {
             return Err(
-                "Choose a valid orientation, appearance, branding, and distinct quiet-hours times".into(),
+                "Choose a valid orientation, appearance, branding, and distinct quiet-hours times"
+                    .into(),
             );
         }
         Ok(())
@@ -409,12 +461,7 @@ impl Settings {
             {
                 return Err("Invalid widget ID or duration".into());
             }
-            if ![
-                "face", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting",
-                "cpu", "memory",
-            ]
-            .contains(&widget.kind.as_str())
-            {
+            if !WIDGET_KINDS.contains(&widget.kind.as_str()) {
                 return Err("Unknown widget type".into());
             }
             if widget.label.chars().count() > 24
@@ -484,7 +531,13 @@ impl Engine {
         let current_id = settings
             .widgets
             .iter()
-            .find(|w| w.enabled)
+            .find(|w| {
+                w.enabled
+                    && kind_allowed(&settings.preferences.bot_model, &w.kind)
+                    && !(settings.preferences.offline_mode
+                        && remote_kind(&w.kind)
+                        && w.config.mode == "live")
+            })
             .map(|w| w.id.clone())
             .unwrap_or_else(|| "face".into());
         let remaining_ms = settings
@@ -520,7 +573,11 @@ impl Engine {
 
     fn eligible(&self, w: &Widget) -> bool {
         w.enabled
-            && (w.kind == "face"
+            && kind_allowed(&self.settings.preferences.bot_model, &w.kind)
+            && !(self.settings.preferences.offline_mode
+                && remote_kind(&w.kind)
+                && w.config.mode == "live")
+            && (matches!(w.kind.as_str(), "face" | "text")
                 || crate::local_widgets::dynamic(&w.kind)
                 || w.config.mode == "demo"
                 || self.data.get(&w.id).is_some_and(|d| d.usable(unix_now())))
@@ -533,6 +590,38 @@ impl Engine {
     }
     pub fn render_widget(&self, id: &str) -> Vec<u8> {
         self.render_current(id, true)
+    }
+    /// Preview edited settings without changing the playlist, timers, or cached data.
+    pub fn preview_draft(&self, widget: &Widget) -> Result<Vec<u8>, String> {
+        self.ensure_kind_allowed(&widget.kind)?;
+        let mut draft = self.clone();
+        if let Some(existing) = draft
+            .settings
+            .widgets
+            .iter_mut()
+            .find(|w| w.id == widget.id)
+        {
+            *existing = widget.clone();
+        } else {
+            draft.settings.widgets.push(widget.clone());
+        }
+        draft.settings.validate()?;
+        Ok(draft.render_current(&widget.id, true))
+    }
+    fn ensure_kind_allowed(&self, kind: &str) -> Result<(), String> {
+        if kind_allowed(&self.settings.preferences.bot_model, kind) {
+            Ok(())
+        } else {
+            Err("That screen is not available for the selected bot".into())
+        }
+    }
+    pub fn set_bot_model(&mut self, model: &str) -> Result<(), String> {
+        let mut preferences = self.settings.preferences.clone();
+        preferences.bot_model = model.into();
+        if !model.is_empty() {
+            preferences.setup_complete = true;
+        }
+        self.set_preferences(preferences)
     }
     fn animation_state(&self) -> CompanionPose {
         if self.reduced_motion
@@ -568,7 +657,13 @@ impl Engine {
                 pose.closed = self.face_closed(w);
                 pose
             }
-            Some(_) if self.settings.preferences.companion_face => self.animation_state(),
+            Some(w)
+                if self.settings.preferences.companion_face
+                    && w.config.display_companion
+                    && w.kind != "text" =>
+            {
+                self.animation_state()
+            }
             _ => CompanionPose::default(),
         }
     }
@@ -576,6 +671,12 @@ impl Engine {
         let Some(mut w) = self.settings.widgets.iter().find(|w| w.id == id).cloned() else {
             return render(None, on);
         };
+        if !on {
+            return vec![0; FRAME_BYTES];
+        }
+        if w.kind == "text" {
+            return render_text(&w.config).unwrap_or_else(|_| vec![0; FRAME_BYTES]);
+        }
         let mut local_values = serde_json::Value::Null;
         if crate::local_widgets::dynamic(&w.kind) {
             let d = crate::local_widgets::dynamic_card(&w, unix_now());
@@ -602,30 +703,31 @@ impl Engine {
         } else if w.kind != "face" {
             w.footer = format!("DEMO {}", w.footer);
         }
-        if w.kind == "face" && on {
+        let frame = if w.kind == "face" {
             let mut f = Frame::new();
             let mut pose = self.animation_state();
             pose.closed = self.face_closed(&w);
             f.animated_face(&w.config.face_expression, pose);
             f.bytes
         } else {
-            let companion = self
-                .settings
-                .preferences
-                .companion_face
+            let companion = (self.settings.preferences.companion_face
+                && w.config.display_companion)
                 .then(|| self.animation_state());
-            if crate::local_widgets::local(&w.kind) {
-                return render_local(&w, on, companion, &local_values);
+            if w.config.display_layout == "minimal" {
+                return invert_frame(
+                    render_minimal(&w, companion, &local_values),
+                    w.config.display_invert,
+                );
             }
-            render_card(
-                Some(&w),
-                on,
-                self.settings
-                    .preferences
-                    .companion_face
-                    .then(|| self.animation_state()),
-            )
-        }
+            if crate::local_widgets::local(&w.kind) {
+                return invert_frame(
+                    render_local(&w, on, companion, &local_values),
+                    w.config.display_invert,
+                );
+            }
+            render_card(Some(&w), on, companion)
+        };
+        invert_frame(frame, w.config.display_invert)
     }
     pub fn set_data(&mut self, id: &str, card: DataCard) {
         self.data.insert(id.into(), card);
@@ -647,6 +749,15 @@ impl Engine {
         if label.trim().is_empty() || label.chars().count() > 24 {
             return Err("Use a name under 25 characters".into());
         }
+        let kind = self
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == id)
+            .ok_or("Widget not found")?
+            .kind
+            .clone();
+        self.ensure_kind_allowed(&kind)?;
         let w = self
             .settings
             .widgets
@@ -689,8 +800,10 @@ impl Engine {
         Ok(())
     }
     pub fn add_widget(&mut self, kind: &str) -> Result<(), String> {
+        self.ensure_kind_allowed(kind)?;
         if ![
-            "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu", "memory",
+            "face", "text", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting",
+            "cpu", "memory",
         ]
         .contains(&kind)
             || self.settings.widgets.len() >= 30
@@ -712,6 +825,7 @@ impl Engine {
                 id: String::new(),
                 kind: kind.into(),
                 label: match kind {
+                    "text" => "Custom text",
                     "clock" => "Clock",
                     "pomodoro" => "Pomodoro",
                     "meeting" => "Meeting",
@@ -731,7 +845,7 @@ impl Engine {
             });
         self.settings.widgets.push(Widget {
             id,
-            enabled: crate::local_widgets::local(kind),
+            enabled: matches!(kind, "face" | "text") || crate::local_widgets::local(kind),
             ..template
         });
         Ok(())
@@ -740,9 +854,15 @@ impl Engine {
         if id == "face" {
             return Err("Keep the built-in face for fallback".into());
         }
-        if !self.settings.widgets.iter().any(|w| w.id == id) {
-            return Err("Widget not found".into());
-        }
+        let kind = self
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == id)
+            .ok_or("Widget not found")?
+            .kind
+            .clone();
+        self.ensure_kind_allowed(&kind)?;
         self.settings.widgets.retain(|w| w.id != id);
         self.data.remove(id);
         if self.current_id == id {
@@ -754,6 +874,7 @@ impl Engine {
     }
 
     pub fn timer_action_at(&mut self, id: &str, action: &str, wall: u64) -> Result<(), String> {
+        self.ensure_kind_allowed("pomodoro")?;
         let w = self
             .settings
             .widgets
@@ -943,6 +1064,15 @@ impl Engine {
     }
 
     pub fn set_enabled(&mut self, id: &str, enabled: bool) -> Result<(), String> {
+        let kind = self
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == id)
+            .ok_or("Widget not found")?
+            .kind
+            .clone();
+        self.ensure_kind_allowed(&kind)?;
         let widget = self
             .settings
             .widgets
@@ -970,9 +1100,14 @@ impl Engine {
             .iter()
             .position(|w| w.id == id)
             .ok_or("Widget not found")?;
-        if !self.settings.widgets.iter().any(|w| w.id == before) {
-            return Err("Drop target not found".into());
-        }
+        self.ensure_kind_allowed(&self.settings.widgets[from].kind)?;
+        let target = self
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == before)
+            .ok_or("Drop target not found")?;
+        self.ensure_kind_allowed(&target.kind)?;
         let widget = self.settings.widgets.remove(from);
         let to = self
             .settings
@@ -991,11 +1126,27 @@ impl Engine {
             .iter()
             .position(|w| w.id == id)
             .ok_or("Widget not found")?;
-        let to = from as isize + direction as isize;
-        if ![-1, 1].contains(&direction) || to < 0 || to >= self.settings.widgets.len() as isize {
+        self.ensure_kind_allowed(&self.settings.widgets[from].kind)?;
+        if ![-1, 1].contains(&direction) {
             return Err("Cannot move widget there".into());
         }
-        self.settings.widgets.swap(from, to as usize);
+        let to = if direction < 0 {
+            (0..from).rev().find(|&i| {
+                kind_allowed(
+                    &self.settings.preferences.bot_model,
+                    &self.settings.widgets[i].kind,
+                )
+            })
+        } else {
+            (from + 1..self.settings.widgets.len()).find(|&i| {
+                kind_allowed(
+                    &self.settings.preferences.bot_model,
+                    &self.settings.widgets[i].kind,
+                )
+            })
+        }
+        .ok_or("Cannot move widget there")?;
+        self.settings.widgets.swap(from, to);
         Ok(())
     }
 
@@ -1003,6 +1154,15 @@ impl Engine {
         if !(3..=120).contains(&duration_sec) {
             return Err("Duration must be 3 to 120 seconds".into());
         }
+        let kind = self
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == id)
+            .ok_or("Widget not found")?
+            .kind
+            .clone();
+        self.ensure_kind_allowed(&kind)?;
         let widget = self
             .settings
             .widgets
@@ -1041,6 +1201,15 @@ impl Engine {
         {
             return Err("Use a label and keep each line under 25 characters".into());
         }
+        let kind = self
+            .settings
+            .widgets
+            .iter()
+            .find(|w| w.id == id)
+            .ok_or("Widget not found")?
+            .kind
+            .clone();
+        self.ensure_kind_allowed(&kind)?;
         let widget = self
             .settings
             .widgets
@@ -1097,6 +1266,9 @@ impl Engine {
     }
 
     pub fn show_face(&mut self) {
+        if !kind_allowed(&self.settings.preferences.bot_model, "face") {
+            return;
+        }
         self.temporary = None;
         self.current_id = "face".into();
         self.remaining_ms = self
@@ -1116,10 +1288,21 @@ impl Engine {
 
     pub fn set_preferences(&mut self, preferences: Preferences) -> Result<(), String> {
         preferences.validate()?;
+        let policy_changed = preferences.bot_model != self.settings.preferences.bot_model
+            || preferences.offline_mode != self.settings.preferences.offline_mode;
         if !preferences.quiet_hours.enabled {
             self.quiet_override_until = 0;
         }
         self.settings.preferences = preferences;
+        // A profile/offline switch must also release pins and temporary screens.
+        // The saved widgets and their enabled flags remain untouched.
+        if policy_changed {
+            self.temporary = None;
+        }
+        if !self.enabled(&self.current_id) {
+            self.playback = Playback::Running;
+            self.advance_to_next();
+        }
         self.tick(Instant::now());
         Ok(())
     }
@@ -1191,6 +1374,144 @@ impl CompanionPose {
 struct Frame {
     bytes: Vec<u8>,
 }
+
+/// Wrap before rendering, using exactly the same cell dimensions as the OLED font.
+/// Oversize text is rejected at save/preview time rather than clipped on the device.
+fn text_lines(config: &SourceConfig) -> Result<Vec<String>, String> {
+    if config.custom_text.is_empty() || config.custom_text.trim().is_empty() {
+        return Err("Enter some text for your screen".into());
+    }
+    if config.custom_text.len() > 128
+        || !config
+            .custom_text
+            .bytes()
+            .all(|c| c == b'\n' || (32..=126).contains(&c))
+    {
+        return Err(
+            "Use up to 128 letters, numbers, punctuation, spaces, or line breaks (ASCII)".into(),
+        );
+    }
+    if ![1, 2].contains(&config.text_size) {
+        return Err("Choose small or large text".into());
+    }
+    let margin = if config.text_border { 4 } else { 0 };
+    let cell = config.text_size as usize * 8;
+    let columns = (WIDTH - margin * 2) / cell;
+    let rows = (HEIGHT - margin * 2) / cell;
+    let mut lines = Vec::new();
+    for paragraph in config.custom_text.split('\n') {
+        let mut remaining = paragraph;
+        while remaining.len() > columns {
+            let boundary = remaining.as_bytes()[..=columns]
+                .iter()
+                .rposition(|&c| c == b' ')
+                .filter(|&n| n > 0)
+                .unwrap_or(columns);
+            lines.push(remaining[..boundary].trim_end_matches(' ').to_string());
+            remaining = remaining[boundary..].trim_start_matches(' ');
+        }
+        lines.push(remaining.to_string());
+    }
+    if lines.len() > rows {
+        return Err(format!(
+            "This text needs {} lines, but this size and border fit {rows}. Use smaller text, fewer words, or remove the border.",
+            lines.len()
+        ));
+    }
+    Ok(lines)
+}
+
+fn invert_frame(mut frame: Vec<u8>, invert: bool) -> Vec<u8> {
+    if invert {
+        for byte in &mut frame {
+            *byte = !*byte;
+        }
+    }
+    frame
+}
+
+fn render_text(config: &SourceConfig) -> Result<Vec<u8>, String> {
+    let lines = text_lines(config)?;
+    let mut f = Frame::new();
+    let margin: i32 = if config.text_border { 4 } else { 0 };
+    let scale = config.text_size as i32;
+    let block_height = lines.len() as i32 * 8 * scale;
+    let y = match config.text_valign.as_str() {
+        "top" => margin,
+        "bottom" => HEIGHT as i32 - margin - block_height,
+        _ => (HEIGHT as i32 - block_height) / 2,
+    };
+    if config.text_border {
+        for x in 0..WIDTH as i32 {
+            f.pixel(x, 0);
+            f.pixel(x, HEIGHT as i32 - 1);
+        }
+        for y in 0..HEIGHT as i32 {
+            f.pixel(0, y);
+            f.pixel(WIDTH as i32 - 1, y);
+        }
+    }
+    for (row, line) in lines.iter().enumerate() {
+        let width = line.len() as i32 * 8 * scale;
+        let x = match config.text_align.as_str() {
+            "left" => margin,
+            "right" => WIDTH as i32 - margin - width,
+            _ => (WIDTH as i32 - width) / 2,
+        };
+        // Custom text preserves case and never uses the data-card truncation helper.
+        for (column, ch) in line.chars().enumerate() {
+            if let Some(glyph) = BASIC_FONTS.get(ch) {
+                for (gy, bits) in glyph.iter().enumerate() {
+                    for gx in 0..8 {
+                        if bits & (1 << gx) != 0 {
+                            for dy in 0..scale {
+                                for dx in 0..scale {
+                                    f.pixel(
+                                        x + (column as i32 * 8 + gx) * scale + dx,
+                                        y + (row as i32 * 8 + gy as i32) * scale + dy,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(invert_frame(f.bytes, config.display_invert))
+}
+
+/// A compact information layout: context, main reading, and footer stay within
+/// dedicated rows, with the companion occupying its usual reserved corner.
+fn render_minimal(
+    widget: &Widget,
+    companion: Option<CompanionPose>,
+    values: &serde_json::Value,
+) -> Vec<u8> {
+    let mut f = Frame::new();
+    let context = values["context"].as_str().unwrap_or(&widget.label);
+    f.text(context, 4, 2, 1, if companion.is_some() { 10 } else { 15 });
+    if let Some(pose) = companion {
+        f.companion(pose);
+    }
+    let scale = if widget.headline.chars().count() <= 7 {
+        2
+    } else {
+        1
+    };
+    let capacity = if scale == 2 { 7 } else { 15 };
+    let width = widget.headline.chars().count().min(capacity) as i32 * 8 * scale;
+    f.text(
+        &widget.headline,
+        (WIDTH as i32 - width) / 2,
+        28,
+        scale,
+        capacity,
+    );
+    f.text(&widget.footer, 4, 55, 1, 15);
+    f.bytes
+}
+
 impl Frame {
     fn new() -> Self {
         Self {
@@ -1550,6 +1871,253 @@ fn render_local(
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn profiles_preserve_screens_but_restrict_playback_and_edits() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.set_enabled("weather", true).unwrap();
+        e.set_enabled("codex", true).unwrap();
+        let saved = serde_json::to_value(&e.settings.widgets).unwrap();
+        e.set_bot_model("boo").unwrap();
+        e.pin("weather").unwrap();
+        e.show_now("face").unwrap();
+        e.set_bot_model("claw").unwrap();
+        assert_eq!(e.snapshot().current_id, "codex");
+        assert_eq!(e.snapshot().playback, Playback::Running);
+        assert!(!e.snapshot().temporary);
+        assert!(e.pin("weather").is_err());
+        assert!(e.show_now("face").is_err());
+        assert!(e.set_enabled("weather", true).is_err());
+        assert!(e.add_widget("text").is_err());
+        assert!(e
+            .configure_source("weather", "Weather".into(), SourceConfig::default())
+            .is_err());
+        assert!(e
+            .configure("face", "Face".into(), "".into(), "".into())
+            .is_err());
+        e.show_face();
+        assert_eq!(e.snapshot().current_id, "codex");
+        e.set_bot_model("meep").unwrap();
+        assert!(!e.enabled("codex"));
+        assert!(e.pin("codex").is_err());
+        assert!(e.add_widget("claude").is_err());
+        assert_eq!(serde_json::to_value(&e.settings.widgets).unwrap(), saved);
+        let before = e.settings.preferences.clone();
+        assert!(e.set_bot_model("unknown").is_err());
+        assert_eq!(e.settings.preferences, before);
+        assert!(e.settings.preferences.setup_complete);
+    }
+
+    #[test]
+    fn offline_skips_live_sources_without_erasing_enabled_flags_or_local_screens() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.set_bot_model("boo").unwrap();
+        e.configure_source(
+            "weather",
+            "Weather".into(),
+            SourceConfig {
+                mode: "live".into(),
+                location: Some(Location {
+                    name: "Test".into(),
+                    latitude: 0.0,
+                    longitude: 0.0,
+                    country: String::new(),
+                    region: String::new(),
+                }),
+                ..SourceConfig::default()
+            },
+        )
+        .unwrap();
+        e.set_enabled("weather", true).unwrap();
+        e.add_widget("text").unwrap();
+        let text_id = e.settings.widgets.last().unwrap().id.clone();
+        e.add_widget("clock").unwrap();
+        let clock_id = e.settings.widgets.last().unwrap().id.clone();
+        let now = unix_now();
+        e.set_data(
+            "weather",
+            DataCard {
+                source_id: "weather".into(),
+                scope_id: "test".into(),
+                observed_at: now,
+                fetched_at: now,
+                stale_at: now + 100,
+                expires_at: now + 200,
+                state: "fresh".into(),
+                headline: "68 F".into(),
+                footer: "SUNNY".into(),
+                detail: String::new(),
+                values: serde_json::Value::Null,
+            },
+        );
+        e.pin("weather").unwrap();
+        let saved = serde_json::to_value(&e.settings.widgets).unwrap();
+        let mut preferences = e.settings.preferences.clone();
+        preferences.offline_mode = true;
+        e.set_preferences(preferences).unwrap();
+        assert_ne!(e.snapshot().current_id, "weather");
+        assert!(!e.enabled("weather"));
+        assert!(e.enabled(&text_id));
+        assert!(e.enabled(&clock_id));
+        assert_eq!(serde_json::to_value(&e.settings.widgets).unwrap(), saved);
+        e.settings.preferences.offline_mode = false;
+        assert!(e.enabled("weather"));
+    }
+
+    #[test]
+    fn custom_text_wraps_and_refuses_overflow_and_unsupported_characters() {
+        let mut c = SourceConfig {
+            custom_text: "A full line of text wraps neatly".into(),
+            ..SourceConfig::default()
+        };
+        assert_eq!(
+            text_lines(&c).unwrap(),
+            ["A full line of", "text wraps", "neatly"]
+        );
+        c.custom_text = "X".repeat(128);
+        assert_eq!(text_lines(&c).unwrap().len(), 8);
+        c.text_border = true;
+        assert!(c.validate("text").unwrap_err().contains("fit 7"));
+        c.text_border = false;
+        c.text_size = 2;
+        c.custom_text = "A\nB\nC\nD".into();
+        assert!(c.validate("text").is_ok());
+        c.custom_text.push_str("\nE");
+        assert!(c.validate("text").is_err());
+        for text in ["", "   ", "Hello 🦀", "bad\ttext", "bad\rtext"] {
+            c.custom_text = text.into();
+            assert!(c.validate("text").is_err(), "{text:?}");
+        }
+    }
+
+    #[test]
+    fn custom_text_rendering_preserves_case_alignment_border_and_inversion() {
+        let pixel =
+            |frame: &[u8], x: usize, y: usize| frame[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
+        let mut c = SourceConfig {
+            custom_text: "a".into(),
+            text_align: "left".into(),
+            text_valign: "top".into(),
+            ..SourceConfig::default()
+        };
+        let lower = render_text(&c).unwrap();
+        for (y, row) in BASIC_FONTS.get('a').unwrap().iter().enumerate() {
+            for x in 0..8 {
+                assert_eq!(pixel(&lower, x, y), row & (1 << x) != 0);
+            }
+        }
+        c.custom_text = "A".into();
+        assert_ne!(lower, render_text(&c).unwrap());
+        c.text_align = "right".into();
+        c.text_valign = "bottom".into();
+        let shifted = render_text(&c).unwrap();
+        assert!(shifted[..7 * WIDTH].iter().all(|b| *b == 0));
+        assert!(shifted[7 * WIDTH..7 * WIDTH + 120].iter().all(|b| *b == 0));
+        c.text_border = true;
+        let bordered = render_text(&c).unwrap();
+        assert!(pixel(&bordered, 0, 0) && pixel(&bordered, 127, 63));
+        c.display_invert = true;
+        let inverted = render_text(&c).unwrap();
+        assert!(bordered.iter().zip(inverted).all(|(a, b)| *a == !b));
+    }
+
+    #[test]
+    fn draft_preview_is_actual_text_without_demo_data_and_does_not_mutate() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.set_bot_model("boo").unwrap();
+        e.add_widget("text").unwrap();
+        let mut draft = e.settings.widgets.last().unwrap().clone();
+        let before = serde_json::to_value(e.snapshot()).unwrap();
+        draft.config.custom_text = "Made by me".into();
+        draft.config.mode = "demo".into();
+        let preview = e.preview_draft(&draft).unwrap();
+        assert_eq!(preview, render_text(&draft.config).unwrap());
+        assert_eq!(serde_json::to_value(e.snapshot()).unwrap(), before);
+        draft.config.custom_text = "X".repeat(128);
+        draft.config.text_size = 2;
+        assert!(e.preview_draft(&draft).is_err());
+        assert_eq!(serde_json::to_value(e.snapshot()).unwrap(), before);
+    }
+
+    #[test]
+    fn per_screen_display_settings_apply_without_changing_global_preferences() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        let base = e.render_widget("weather");
+        e.settings.widgets[1].config.display_companion = false;
+        assert_ne!(base, e.render_widget("weather"));
+        assert!(e.settings.preferences.companion_face);
+        let classic = e.render_widget("weather");
+        e.settings.widgets[1].config.display_layout = "minimal".into();
+        let minimal = e.render_widget("weather");
+        assert_ne!(classic, minimal);
+        e.settings.widgets[1].config.display_invert = true;
+        assert!(minimal
+            .iter()
+            .zip(e.render_widget("weather"))
+            .all(|(a, b)| *a == !b));
+        e.set_display_on(false);
+        assert!(e.snapshot().frame.iter().all(|b| *b == 0));
+    }
+
+    #[test]
+    fn visible_reorder_skips_other_bots_and_unrelated_preferences_keep_temporary_playback() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.set_bot_model("boo").unwrap();
+        e.add_widget("text").unwrap();
+        let id = e.settings.widgets.last().unwrap().id.clone();
+        let original = serde_json::to_value(&e.settings.widgets).unwrap();
+        e.move_widget(&id, -1).unwrap();
+        let visible: Vec<_> = e
+            .settings
+            .widgets
+            .iter()
+            .filter(|w| kind_allowed("boo", &w.kind))
+            .map(|w| w.kind.as_str())
+            .collect();
+        assert_eq!(visible, ["face", "weather", "text", "stock"]);
+        assert_eq!(e.settings.widgets[3].kind, "codex");
+        assert_eq!(e.settings.widgets[4].kind, "claude");
+        e.move_widget(&id, 1).unwrap();
+        assert_eq!(serde_json::to_value(&e.settings.widgets).unwrap(), original);
+        assert!(e.move_widget("codex", -1).is_err());
+        e.pin("face").unwrap();
+        e.show_now(&id).unwrap();
+        let mut preferences = e.settings.preferences.clone();
+        preferences.appearance = "dark".into();
+        e.set_preferences(preferences).unwrap();
+        assert!(e.snapshot().temporary);
+        assert_eq!(e.snapshot().current_id, id);
+        e.tick_at(e.last_tick + Duration::from_secs(9), unix_now(), 720);
+        assert_eq!(e.snapshot().current_id, "face");
+        assert_eq!(e.snapshot().playback, Playback::Pinned);
+    }
+
+    #[test]
+    fn additional_faces_keep_independent_expressions_and_base_face_is_preserved() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.set_bot_model("boo").unwrap();
+        e.add_widget("face").unwrap();
+        let id = e.settings.widgets.last().unwrap().id.clone();
+        assert_ne!(id, "face");
+        assert!(e.enabled(&id));
+        e.configure_source(
+            &id,
+            "Sleepy".into(),
+            SourceConfig {
+                face_expression: "sleepy".into(),
+                ..SourceConfig::default()
+            },
+        )
+        .unwrap();
+        assert_ne!(e.render_widget("face"), e.render_widget(&id));
+        assert_eq!(e.settings.widgets[0].config.face_expression, "happy");
+        e.set_bot_model("claw").unwrap();
+        assert!(!e.enabled(&id));
+        assert!(e.add_widget("face").is_err());
+        e.set_bot_model("meep").unwrap();
+        e.remove_widget(&id).unwrap();
+        assert!(e.remove_widget("face").is_err());
+    }
 
     #[test]
     fn companion_gestures_preserve_all_local_widget_information_and_original_identity() {

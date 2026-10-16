@@ -49,7 +49,9 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
             serde_json::from_slice::<serde_json::Value>(&fs::read(path).map_err(|e| e.to_string())?)
         {
             if value["version"].as_u64().is_some_and(|v| v > 1) {
-                return Err("Newer settings preserved; update DroidFun App before changing them".into());
+                return Err(
+                    "Newer settings preserved; update DroidFun App before changing them".into(),
+                );
             }
         }
     }
@@ -84,6 +86,56 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn legacy_settings_require_bot_selection_and_preserve_all_existing_screens() {
+        let dir = std::env::temp_dir().join(format!("droidfun-profiles-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        let mut expected = Settings::default();
+        expected.widgets[1].enabled = true;
+        expected.widgets[3].enabled = true;
+        expected.widgets[1].label = "My forecast".into();
+        let mut legacy = serde_json::to_value(&expected).unwrap();
+        let preferences = legacy["preferences"].as_object_mut().unwrap();
+        preferences.remove("botModel");
+        preferences.remove("offlineMode");
+        for widget in legacy["widgets"].as_array_mut().unwrap() {
+            let config = widget["config"].as_object_mut().unwrap();
+            for key in [
+                "customText",
+                "textSize",
+                "textAlign",
+                "textValign",
+                "textBorder",
+                "displayInvert",
+                "displayCompanion",
+                "displayLayout",
+            ] {
+                config.remove(key);
+            }
+        }
+        fs::write(&path, serde_json::to_vec(&legacy).unwrap()).unwrap();
+        let loaded = load(&path).unwrap();
+        assert_eq!(loaded.preferences.bot_model, "");
+        assert!(!loaded.preferences.offline_mode);
+        assert_eq!(
+            serde_json::to_value(&loaded.widgets).unwrap(),
+            serde_json::to_value(&expected.widgets).unwrap()
+        );
+        let mut engine = crate::core::Engine::new(loaded, std::time::Instant::now());
+        for model in ["claw", "boo", "meep"] {
+            engine.set_bot_model(model).unwrap();
+            save(&path, &engine.settings).unwrap();
+            let reopened = load(&path).unwrap();
+            assert_eq!(reopened.preferences.bot_model, model);
+            assert_eq!(
+                serde_json::to_value(&reopened.widgets).unwrap(),
+                serde_json::to_value(&expected.widgets).unwrap()
+            );
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn branding_upgrade_and_saved_selection_preserve_playlist() {
         let dir = std::env::temp_dir().join(format!("deskbot-branding-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
@@ -92,19 +144,28 @@ mod tests {
         expected.brightness = 44;
         expected.preferences.appearance = "dark".into();
         let mut legacy = serde_json::to_value(&expected).unwrap();
-        legacy["preferences"].as_object_mut().unwrap().remove("branding");
+        legacy["preferences"]
+            .as_object_mut()
+            .unwrap()
+            .remove("branding");
         fs::write(&path, serde_json::to_vec(&legacy).unwrap()).unwrap();
         let mut loaded = load(&path).unwrap();
         assert_eq!(loaded.preferences.branding, "droidfun");
         assert_eq!(loaded.brightness, 44);
         assert_eq!(loaded.preferences.appearance, "dark");
-        assert_eq!(serde_json::to_value(&loaded.widgets).unwrap(), legacy["widgets"]);
+        assert_eq!(
+            serde_json::to_value(&loaded.widgets).unwrap(),
+            legacy["widgets"]
+        );
         for branding in ["green", "droidfun"] {
             loaded.preferences.branding = branding.into();
             save(&path, &loaded).unwrap();
             let reopened = load(&path).unwrap();
             assert_eq!(reopened.preferences.branding, branding);
-            assert_eq!(serde_json::to_value(&reopened.widgets).unwrap(), legacy["widgets"]);
+            assert_eq!(
+                serde_json::to_value(&reopened.widgets).unwrap(),
+                legacy["widgets"]
+            );
             assert_eq!(reopened.brightness, 44);
             assert_eq!(reopened.preferences.appearance, "dark");
         }

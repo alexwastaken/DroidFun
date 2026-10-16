@@ -15,6 +15,49 @@ pub const FALLBACK: u8 = 0x12;
 pub const PING: u8 = 0x20;
 pub const ACK: u8 = 0x21;
 pub const ERROR: u8 = 0x22;
+pub const SAVED_BEGIN: u8 = 0x30;
+pub const SAVED_CHUNK: u8 = 0x31;
+pub const SAVED_COMMIT: u8 = 0x32;
+pub const MAX_SAVED_FRAMES: usize = 30;
+
+#[derive(Clone, Debug)]
+pub struct StandaloneFrame {
+    pub frame: Vec<u8>,
+    pub duration_sec: u16,
+}
+
+#[derive(Clone, Debug)]
+pub struct StandalonePlaylist {
+    pub frames: Vec<StandaloneFrame>,
+    pub brightness: u8,
+    pub orientation: u16,
+}
+
+impl StandalonePlaylist {
+    /// DFP1 is also the on-flash format. Generation zero is reserved for uploads;
+    /// the firmware assigns a generation only after validating a complete upload.
+    pub fn encode(&self) -> Result<Vec<u8>, String> {
+        if self.frames.is_empty() || self.frames.len() > MAX_SAVED_FRAMES {
+            return Err("Choose between 1 and 30 text or face screens to save".into());
+        }
+        if self.brightness > 100 || ![0, 180].contains(&self.orientation) {
+            return Err("Invalid saved display settings".into());
+        }
+        let mut bytes = b"DFP1".to_vec();
+        bytes.extend_from_slice(&[1, self.frames.len() as u8, self.brightness, 0]);
+        bytes.extend_from_slice(&self.orientation.to_le_bytes());
+        bytes.extend_from_slice(&[0; 6]);
+        for frame in &self.frames {
+            if frame.frame.len() != MAX_PAYLOAD || !(3..=120).contains(&frame.duration_sec) {
+                return Err("Saved screens must be 128 × 64 pixels and last 3–120 seconds".into());
+            }
+            bytes.extend_from_slice(&frame.duration_sec.to_le_bytes());
+            bytes.extend_from_slice(&frame.frame);
+        }
+        bytes.extend_from_slice(&crc32(&bytes).to_le_bytes());
+        Ok(bytes)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Packet {
@@ -202,6 +245,52 @@ impl Decoder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn persistent_playlist_has_firmware_compatible_header_records_and_bounds() {
+        let frame = StandaloneFrame {
+            frame: vec![0x55; 1024],
+            duration_sec: 3,
+        };
+        let mut playlist = StandalonePlaylist {
+            frames: vec![frame.clone()],
+            brightness: 85,
+            orientation: 0,
+        };
+        let encoded = playlist.encode().unwrap();
+        assert_eq!(encoded.len(), 1046);
+        assert_eq!(&encoded[..16], b"DFP1\x01\x01\x55\0\0\0\0\0\0\0\0\0");
+        assert_eq!(&encoded[16..18], &[3, 0]);
+        assert_eq!(&encoded[18..1042], &[0x55; 1024]);
+        // Cross-language fixture also checked by firmware/tests/standalone_test.cpp.
+        assert_eq!(crc32(&encoded[..1042]), 0x3e20_575b);
+        assert_eq!(
+            u32::from_le_bytes(encoded[1042..].try_into().unwrap()),
+            crc32(&encoded[..1042])
+        );
+        playlist.frames = vec![frame.clone(); 30];
+        assert_eq!(playlist.encode().unwrap().len(), 30800);
+        playlist.frames.push(frame.clone());
+        assert!(playlist.encode().is_err());
+        playlist.frames.clear();
+        assert!(playlist.encode().is_err());
+        playlist.frames.push(frame);
+        for duration in [0, 2, 121, u16::MAX] {
+            playlist.frames[0].duration_sec = duration;
+            assert!(playlist.encode().is_err());
+        }
+        playlist.frames[0].duration_sec = 120;
+        playlist.orientation = 180;
+        assert!(playlist.encode().is_ok());
+        playlist.orientation = 90;
+        assert!(playlist.encode().is_err());
+        playlist.orientation = 0;
+        playlist.brightness = 101;
+        assert!(playlist.encode().is_err());
+        playlist.brightness = 100;
+        playlist.frames[0].frame.pop();
+        assert!(playlist.encode().is_err());
+    }
 
     #[test]
     fn standard_crc_and_binary_roundtrip() {

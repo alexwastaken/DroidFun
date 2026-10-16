@@ -13,26 +13,126 @@ use std::{
     collections::HashMap,
     sync::{Mutex, MutexGuard},
 };
-thread_local! { static CANCEL:RefCell<Option<Arc<AtomicBool>>> = const { RefCell::new(None) }; }
-pub struct RequestGuard(Option<Arc<AtomicBool>>);
+/// Each Providers instance owns its policy. Tests and secondary instances do not
+/// change one another's connectivity. A generation never becomes valid again.
+#[derive(Clone)]
+pub struct Policy(Arc<Mutex<PolicyState>>);
+struct PolicyState {
+    bot_model: String,
+    offline: bool,
+    generation: u64,
+    cancel: Arc<AtomicBool>,
+}
+static NEXT_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+#[derive(Clone)]
+pub struct Ticket {
+    policy: Policy,
+    generation: u64,
+    cancel: Arc<AtomicBool>,
+}
+impl Policy {
+    pub fn new(bot_model: &str, offline: bool) -> Self {
+        Self(Arc::new(Mutex::new(PolicyState {
+            bot_model: bot_model.into(),
+            offline,
+            generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
+            cancel: Arc::new(AtomicBool::new(false)),
+        })))
+    }
+    pub fn update(&self, bot_model: &str, offline: bool) {
+        let mut state = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        if state.bot_model == bot_model && state.offline == offline {
+            return;
+        }
+        state.cancel.store(true, Ordering::Release);
+        state.bot_model = bot_model.into();
+        state.offline = offline;
+        state.generation = NEXT_GENERATION.fetch_add(1, Ordering::Relaxed);
+        state.cancel = Arc::new(AtomicBool::new(false));
+    }
+    pub fn ticket(&self, kind: &str) -> Result<Ticket, String> {
+        let state = self.0.lock().map_err(|_| "Network policy unavailable")?;
+        if state.offline {
+            return Err(
+                "Offline mode is on. Turn it off to use online data or connect an account.".into(),
+            );
+        }
+        if state.bot_model.is_empty() {
+            return Err("Choose your bot before connecting an online source.".into());
+        }
+        if !crate::core::kind_allowed(&state.bot_model, kind) {
+            return Err("This source is not available for the selected bot.".into());
+        }
+        Ok(Ticket {
+            policy: self.clone(),
+            generation: state.generation,
+            cancel: state.cancel.clone(),
+        })
+    }
+}
+impl Ticket {
+    pub fn current(&self) -> bool {
+        !self.cancel.load(Ordering::Acquire)
+    }
+    pub fn enter(&self) -> RequestGuard {
+        let mut next = CONTEXT.with(|c| c.borrow().clone());
+        next.cancels.push(self.cancel.clone());
+        next.ticket = Some(self.clone());
+        RequestGuard(CONTEXT.with(|c| c.replace(next)))
+    }
+}
+#[derive(Clone, Default)]
+struct Context {
+    cancels: Vec<Arc<AtomicBool>>,
+    ticket: Option<Ticket>,
+}
+thread_local! { static CONTEXT:RefCell<Context> = RefCell::new(Context::default()); }
+pub struct RequestGuard(Context);
 impl RequestGuard {
     pub fn new(cancel: Arc<AtomicBool>) -> Self {
-        Self(CANCEL.with(|c| c.replace(Some(cancel))))
+        let mut next = CONTEXT.with(|c| c.borrow().clone());
+        next.cancels.push(cancel);
+        Self(CONTEXT.with(|c| c.replace(next)))
     }
 }
 impl Drop for RequestGuard {
     fn drop(&mut self) {
-        CANCEL.with(|c| {
-            c.replace(self.0.take());
+        CONTEXT.with(|c| {
+            c.replace(std::mem::take(&mut self.0));
         });
     }
 }
 pub fn canceled() -> bool {
-    CANCEL.with(|c| {
-        c.borrow()
-            .as_ref()
-            .is_some_and(|f| f.load(Ordering::Acquire))
-    })
+    CONTEXT.with(|c| c.borrow().cancels.iter().any(|f| f.load(Ordering::Acquire)))
+}
+pub fn ensure_allowed() -> Result<(), String> {
+    if canceled() {
+        Err("Request canceled because the bot, offline mode, or source changed".into())
+    } else {
+        Ok(())
+    }
+}
+pub fn generation() -> u64 {
+    CONTEXT.with(|c| c.borrow().ticket.as_ref().map_or(0, |t| t.generation))
+}
+/// Serialize subprocess launch with policy changes. The process can never be
+/// launched after an offline transition has already completed.
+pub fn authorized<T>(operation: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    ensure_allowed()?;
+    let ticket = CONTEXT.with(|c| c.borrow().ticket.clone());
+    if let Some(ticket) = ticket {
+        let state = ticket
+            .policy
+            .0
+            .lock()
+            .map_err(|_| "Network policy unavailable")?;
+        if state.offline || state.generation != ticket.generation || canceled() {
+            return Err("Request canceled because the bot or offline mode changed".into());
+        }
+        operation()
+    } else {
+        operation()
+    }
 }
 pub fn lock_cancellable<T>(mutex: &Mutex<T>) -> Result<MutexGuard<'_, T>, String> {
     loop {
@@ -76,13 +176,14 @@ pub fn json(
     headers: &[(&str, &str)],
     limit: usize,
 ) -> Result<Value, String> {
+    ensure_allowed()?;
     if crate::reliability::fault("network-offline") {
         return Err("The provider could not be reached. Try again later.".into());
     }
     let key = format!(
         "{:x}",
         Sha256::digest(
-            serde_json::to_vec(&(url, query, bearer, headers, limit))
+            serde_json::to_vec(&(generation(), url, query, bearer, headers, limit))
                 .map_err(|_| "Invalid request")?
         )
     );
@@ -131,7 +232,8 @@ pub fn json(
     for (key, value) in headers {
         request = request.header(*key, *value);
     }
-    let cancel = CANCEL.with(|c| c.borrow().clone());
+    ensure_allowed()?;
+    let cancels = CONTEXT.with(|c| c.borrow().cancels.clone());
     let result=runtime().block_on(async {
         let operation=async {
             let mut response=request.send().await.map_err(|_|"The provider could not be reached. Try again later.".to_string())?;
@@ -147,10 +249,11 @@ pub fn json(
             serde_json::from_slice::<Value>(&bytes).map_err(|_|"Provider returned invalid JSON".into())
         };
         let cancellation=async {
-            loop { if cancel.as_ref().is_some_and(|f|f.load(Ordering::Acquire)) {break;} tokio::time::sleep(Duration::from_millis(20)).await; }
+            loop { if cancels.iter().any(|f|f.load(Ordering::Acquire)) {break;} tokio::time::sleep(Duration::from_millis(20)).await; }
         };
-        tokio::select! { result=operation=>result, _=cancellation=>Err("Request canceled because the source changed".into()) }
+        tokio::select! { biased; _=cancellation=>Err("Request canceled because the source changed".into()), result=operation=>result }
     });
+    ensure_allowed()?;
     if let Ok(value) = &result {
         let mut cache = responses().lock().unwrap_or_else(|e| e.into_inner());
         let now = crate::core::unix_now();
@@ -200,6 +303,111 @@ mod tests {
         net::TcpListener,
         time::Instant,
     };
+    #[test]
+    fn offline_transition_blocks_even_an_already_captured_http_request() {
+        let policy = Policy::new("boo", false);
+        let ticket = policy.ticket("weather").unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let url = format!("http://{}/never-requested", listener.local_addr().unwrap());
+        policy.update("boo", true);
+        assert!(policy.ticket("weather").err().unwrap().contains("Offline"));
+        let _guard = ticket.enter();
+        let client = reqwest::Client::new();
+        assert!(json(&client, &url, &[], None, &[], 1024)
+            .unwrap_err()
+            .contains("canceled"));
+        assert_eq!(
+            listener.accept().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+        let mut launched = false;
+        assert!(authorized(|| {
+            launched = true;
+            Ok(())
+        })
+        .is_err());
+        assert!(
+            !launched,
+            "an offline request must not launch an authentication subprocess"
+        );
+    }
+    #[test]
+    fn policies_are_isolated_and_generations_never_revive_after_mode_or_profile_changes() {
+        let first = Policy::new("claw", false);
+        let second = Policy::new("boo", false);
+        let old = first.ticket("claude").unwrap();
+        assert!(first.ticket("weather").is_err());
+        assert!(second.ticket("codex").is_err());
+        assert!(Policy::new("", false).ticket("weather").is_err());
+        first.update("claw", true);
+        first.update("claw", false);
+        assert!(
+            !old.current(),
+            "off/on must never resurrect an in-flight result"
+        );
+        assert!(second.ticket("weather").unwrap().current());
+        let current = first.ticket("codex").unwrap();
+        first.update("boo", false);
+        first.update("claw", false);
+        assert!(
+            !current.current(),
+            "bot switches must invalidate the entire old generation"
+        );
+        let guard = old.enter();
+        let nested = first.ticket("claude").unwrap().enter();
+        assert!(
+            ensure_allowed().is_err(),
+            "nested provider calls must retain parent cancellation"
+        );
+        drop(nested);
+        drop(guard);
+        assert!(
+            !canceled(),
+            "request context must be restored for the next operation"
+        );
+    }
+    #[test]
+    fn offline_cancels_an_inflight_http_request_and_rejects_its_late_response() {
+        let policy = Policy::new("boo", false);
+        let ticket = policy.ticket("weather").unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        let server = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .unwrap();
+            let mut bytes = [0; 2048];
+            socket.read(&mut bytes).unwrap();
+            tx.send(()).unwrap();
+            std::thread::sleep(Duration::from_millis(300));
+            let _ = socket.write_all(
+                b"HTTP/1.1 200 OK\r\nContent-Length: 12\r\nConnection: close\r\n\r\n{\"value\":42}",
+            );
+        });
+        let captured = ticket.clone();
+        let request = std::thread::spawn(move || {
+            let _guard = captured.enter();
+            json(
+                &reqwest::Client::new(),
+                &format!("http://{address}/slow"),
+                &[],
+                None,
+                &[],
+                1024,
+            )
+        });
+        rx.recv_timeout(Duration::from_secs(3)).unwrap();
+        let start = Instant::now();
+        policy.update("boo", true);
+        policy.update("boo", false);
+        assert!(request.join().unwrap().unwrap_err().contains("canceled"));
+        assert!(start.elapsed() < Duration::from_millis(250));
+        assert!(!ticket.current());
+        server.join().unwrap();
+    }
     #[test]
     fn shared_requests_fetch_once_and_quota_blocks_other_queries() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();

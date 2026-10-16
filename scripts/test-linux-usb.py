@@ -120,9 +120,20 @@ def ui():
     driver=Driver()
     rule_installed_before = RULE.read_bytes()
     try:
-        driver.wait('window.__TAURI_INTERNALS__ && document.querySelector(".robot-access-setup button")')
-        driver.js('window.__TAURI_INTERNALS__.invoke("get_state").then(s => window.__TAURI_INTERNALS__.invoke("set_preferences",{preferences:{...s.settings.preferences,setupComplete:true}}));')
-        driver.wait('!document.querySelector("[role=dialog]")')
+        driver.wait('window.__TAURI_INTERNALS__ && (document.querySelector(".bot-picker") || document.querySelector(".bot-controls"))')
+        # The mandatory first-run chooser is the actual entry point now. Do not
+        # bypass it by setting the old setupComplete flag: that no longer selects
+        # a bot and would leave all USB controls hidden behind the chooser.
+        if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
+            driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => b.textContent.trim() === "Change bot").click();')
+        driver.wait('document.querySelectorAll(".bot-choice").length === 3')
+        driver.capture('linux-bot-chooser.png')
+        driver.js('Array.from(document.querySelectorAll(".bot-choice")).find(b => b.querySelector("strong").textContent.trim() === "Boo Bot").click();')
+        driver.wait('!document.querySelector(".bot-picker") && document.querySelector(".robot-access-setup button")')
+        # Verify the button reached the real native command and persisted a
+        # profile, rather than merely changing a frontend-only selection.
+        driver.js('window.__droidfunSmokeModel = null; window.__TAURI_INTERNALS__.invoke("get_state").then(s => { window.__droidfunSmokeModel = s.settings.preferences.botModel; });')
+        driver.wait('window.__droidfunSmokeModel === "boo"')
         driver.wait('!document.querySelector(".robot-access-setup button").disabled')
         # Previous lifecycle runs intentionally preserve settings. Select and
         # verify blue explicitly instead of mistaking a saved green theme for it.
@@ -158,7 +169,7 @@ def ui():
         driver.js('const s=document.querySelector(".branding-control select");s.value="green";s.dispatchEvent(new Event("change",{bubbles:true}));')
         driver.wait('document.documentElement.dataset.branding === "green"')
         driver.capture('linux-usb-green.png')
-        print(json.dumps({'nativeButton':'passed','installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        print(json.dumps({'nativeButton':'passed','mandatoryBotChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()

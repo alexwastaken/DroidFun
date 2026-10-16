@@ -5,6 +5,7 @@
 #include <pico/unique_id.h>
 #include <tusb.h>
 #include "fallback_face.h"
+#include "standalone_storage.h"
 
 // User-supplied wiring: GP4=SDA, GP5=SCL. Bus ACKs at 0x3C;
 // visible output and the controller model are still being commissioned.
@@ -17,7 +18,8 @@ static constexpr size_t RX_STORAGE = 1100;
 
 static constexpr uint8_t HELLO = 0x01, HELLO_ACK = 0x02, FRAME = 0x10,
                          MSG_DISPLAY = 0x11, FALLBACK = 0x12, PING = 0x20,
-                         ACK = 0x21, ERROR_PACKET = 0x22;
+                         ACK = 0x21, ERROR_PACKET = 0x22, SAVED_BEGIN = 0x30,
+                         SAVED_CHUNK = 0x31, SAVED_COMMIT = 0x32;
 
 static uint8_t rx[RX_STORAGE];
 static uint8_t decoded[MAX_PACKET];
@@ -28,13 +30,16 @@ static bool rx_discard = false;
 static uint32_t rx_started = 0;
 static uint32_t session = 0, last_sequence = 0, last_request_crc = 0;
 static uint8_t last_reply_kind = 0;
-static char last_reply[160] = {};
+static char last_reply[320] = {};
 static char board_id[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {};
 static uint32_t last_host_command = 0;
 static bool manual_off = false, oled_ready = false, fallback_shown = false;
 static uint8_t idle_stage = 0;
 static uint8_t contrast = 216;
 static bool usb_suspended = false;
+static bool standalone_active = false;
+static uint8_t standalone_index = 0;
+static uint32_t standalone_started = 0;
 
 static uint16_t le16(const uint8_t *p) { return (uint16_t)p[0] | ((uint16_t)p[1] << 8); }
 static uint32_t le32(const uint8_t *p) {
@@ -88,8 +93,8 @@ static size_t cobsEncode(const uint8_t *src, size_t length, uint8_t *dst) {
 }
 
 static void sendPacket(uint8_t type, uint32_t id, uint32_t sequence, const char *message) {
-  size_t length = strnlen(message, 159);
-  uint8_t body[16 + 160 + 4];
+  size_t length = strnlen(message, 319);
+  uint8_t body[16 + 320 + 4];
   body[0] = 'D'; body[1] = 'B'; body[2] = 1; body[3] = type;
   put32(body + 4, id); put32(body + 8, sequence);
   put16(body + 12, length); put16(body + 14, 0);
@@ -179,6 +184,33 @@ static void wakeDisplay() {
   idle_stage = 0;
 }
 
+// A saved playlist owns the display only while there is no desktop session.
+// USB wall chargers need neither USB enumeration nor an open serial port.
+static void playStandalone() {
+  using namespace DroidSaved;
+  if (!saved_length) return;
+  uint32_t now = millis();
+  bool changed = false;
+  if (!standalone_active) {
+    standalone_active = true; standalone_index = 0; standalone_started = now;
+    manual_off = false; idle_stage = 0;
+    contrast = (uint16_t(saved[6]) * 255 + 50) / 100;
+    uint16_t orientation = read16(saved + 8);
+    const uint8_t direction[] = {static_cast<uint8_t>(orientation ? 0xa0 : 0xa1),
+                                static_cast<uint8_t>(orientation ? 0xc0 : 0xc8)};
+    if (!oled_ready) oled_ready = oledInit();
+    oled_ready = oledCommands(direction, sizeof(direction)) && oledContrast(contrast) && oledPower(true) && oled_ready;
+    changed = true;
+  } else if (now - standalone_started >= durationMs(saved, standalone_index)) {
+    standalone_index = (standalone_index + 1) % saved[5];
+    standalone_started = now; changed = true;
+  }
+  if (changed) {
+    memcpy(screen, frame(saved, standalone_index), FRAME_SIZE);
+    oled_ready = oledFrame(screen);
+  }
+}
+
 static bool jsonBool(const char *json, const char *name, bool *result) {
   const char *value = strstr(json, name);
   if (!value) return false;
@@ -213,12 +245,13 @@ static void processPacket(const uint8_t *packet, size_t size) {
   if (supplied_crc != crc32(packet, 16 + length)) return;
   if (type == HELLO && id != 0 && sequence != 0 && length <= 160) {
     session = id; last_sequence = 0; last_request_crc = 0;
+    standalone_active = false; DroidSaved::upload.cancel();
     wakeDisplay();
     last_host_command = millis(); fallback_shown = false;
-    char response[160];
+    char response[320];
     snprintf(response, sizeof(response),
-      "{\"firmware\":\"1.1.0\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5-0x3C\",\"maxFps\":5,\"displayHealth\":\"%s\"}",
-      board_id, oled_ready ? "ready" : "i2c_error");
+      "{\"firmware\":\"1.2.0\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5-0x3C\",\"maxFps\":5,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
+      board_id, oled_ready ? "ready" : "i2c_error", DroidSaved::saved_length ? "true" : "false", DroidSaved::saved_length ? DroidSaved::saved[5] : 0);
     reply(HELLO_ACK, sequence, supplied_crc, response);
     return;
   }
@@ -228,9 +261,34 @@ static void processPacket(const uint8_t *packet, size_t size) {
     return;
   }
   if (sequence <= last_sequence) return;
+  bool was_standalone = standalone_active;
+  standalone_active = false;
   wakeDisplay();
   last_host_command = millis();
   const uint8_t *payload = packet + 16;
+  if (type == SAVED_BEGIN) {
+    if (length != 6 || !DroidSaved::upload.begin(le16(payload), le32(payload + 2))) {
+      reply(ERROR_PACKET, sequence, supplied_crc, "{\"code\":\"invalid_saved_size\"}"); return;
+    }
+    reply(ACK, sequence, supplied_crc, "{\"receiving\":true}"); return;
+  }
+  if (type == SAVED_CHUNK) {
+    if (length < 3 || !DroidSaved::upload.append(le16(payload), payload + 2, length - 2)) {
+      reply(ERROR_PACKET, sequence, supplied_crc, "{\"code\":\"invalid_saved_chunk\"}"); return;
+    }
+    reply(ACK, sequence, supplied_crc, "{\"receiving\":true}"); return;
+  }
+  if (type == SAVED_COMMIT) {
+    uint32_t uploaded_crc = DroidSaved::upload.crc;
+    if (length || !DroidSaved::commit()) {
+      DroidSaved::upload.cancel();
+      reply(ERROR_PACKET, sequence, supplied_crc, "{\"code\":\"saved_verification_or_storage_failed\"}"); return;
+    }
+    char response[120];
+    snprintf(response, sizeof(response), "{\"saved\":true,\"count\":%u,\"playlistCrc\":%lu}",
+      DroidSaved::saved[5], static_cast<unsigned long>(uploaded_crc));
+    reply(ACK, sequence, supplied_crc, response); return;
+  }
   if (type == FRAME) {
     if (length != FRAME_SIZE) { reply(ERROR_PACKET, sequence, supplied_crc, "{\"code\":\"frame_size\"}"); return; }
     if (manual_off) { reply(ACK, sequence, supplied_crc, "{\"displayHealth\":\"off\"}"); return; }
@@ -270,7 +328,8 @@ static void processPacket(const uint8_t *packet, size_t size) {
     return;
   }
   if (type == PING) {
-    reply(ACK, sequence, supplied_crc, oled_ready ? "{\"displayHealth\":\"ready\"}" : "{\"displayHealth\":\"i2c_error\"}");
+    reply(ACK, sequence, supplied_crc, !oled_ready ? "{\"displayHealth\":\"i2c_error\"}" : was_standalone
+      ? "{\"displayHealth\":\"ready\",\"hostFrameNeeded\":true}" : "{\"displayHealth\":\"ready\"}");
     return;
   }
   reply(ERROR_PACKET, sequence, supplied_crc, "{\"code\":\"unknown_command\"}");
@@ -286,20 +345,21 @@ void setup() {
   gpio_pull_up(SDA_PIN); gpio_pull_up(SCL_PIN);
   watchdog_enable(8000, true);
   oled_ready = oledInit();
-  showFallback();
+  DroidSaved::load();
+  if (DroidSaved::saved_length) playStandalone(); else showFallback();
   last_host_command = millis();
 }
 
 void loop() {
   watchdog_update();
   bool suspended = tud_suspended();
-  if (suspended && !usb_suspended) {
+  if (!DroidSaved::saved_length && suspended && !usb_suspended) {
     oledPower(false); usb_suspended = true; session = 0;
   } else if (!suspended && usb_suspended) {
     usb_suspended = false; last_host_command = millis(); idle_stage = 0;
     if (!manual_off) { oled_ready = oledContrast(contrast) && oledPower(true) && oledFrame(screen); }
   }
-  if (usb_suspended) { delay(1); return; }
+  if (usb_suspended && !DroidSaved::saved_length) { delay(1); return; }
   uint32_t now = millis();
   if (rx_length && now - rx_started > 500) { rx_length = 0; rx_discard = false; }
   while (Serial.available()) {
@@ -321,6 +381,9 @@ void loop() {
   // the earlier loop timestamp can underflow and falsely trigger all idle
   // stages, including display-off, immediately after a valid command.
   uint32_t idle = millis() - last_host_command;
+  if (DroidSaved::saved_length && (!Serial.dtr() || suspended || idle >= 5000)) {
+    playStandalone(); delay(1); return;
+  }
   if (idle >= 10000 && idle_stage < 1 && !manual_off) { showFallback(); idle_stage = 1; }
   if (idle >= 60000 && idle_stage < 2 && oled_ready && !manual_off) { oledContrast(32); idle_stage = 2; }
   if (idle >= 600000 && idle_stage < 3 && oled_ready && !manual_off) { oledPower(false); idle_stage = 3; }

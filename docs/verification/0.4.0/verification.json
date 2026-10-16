@@ -1,0 +1,34 @@
+{
+  "version": "0.4.0",
+  "nativeTests": {
+    "passed": 61,
+    "failed": 0,
+    "ignored": 1,
+    "ignoredReason": "Opt-in live account endpoint"
+  },
+  "frontend": {
+    "typescript": "passed",
+    "vite": "passed"
+  },
+  "firmware": {
+    "version": "1.2.0",
+    "toolchain": "Arduino CLI 1.5.1 / Arduino-Pico 6.3.0",
+    "board": "rp2040:rp2040:waveshare_rp2040_zero:flash=2097152_262144",
+    "programBytes": 89636,
+    "staticRamBytes": 75352,
+    "sha256": "97f3b23eda23c41336e5f6919f9a619827784169027588edc8537c4e99ad24af",
+    "hostStorageAndLifecycleTests": "passed with AddressSanitizer and UndefinedBehaviorSanitizer"
+  },
+  "nativeMacPreview": [
+    "isolated bundle ID io.droidfun.preview040",
+    "mandatory chooser opened",
+    "Boo hides Claude/Codex",
+    "custom text created, multiline preview with border rendered and saved",
+    "Claw displays only Claude/Codex widgets",
+    "Save to bot disabled without connected hardware"
+  ],
+  "remaining": [
+    "Physical USB upload, unplug and wall-charger power-cycle test",
+    "Native platform installer builds and final package runtime checks"
+  ]
+}

@@ -286,23 +286,26 @@ pub(crate) fn refresh(
     let mut process: PROCESS_INFORMATION = unsafe { zeroed() };
     // Atomic job assignment happens before the first thread runs. Handles
     // are not inherited; the pseudoconsole attribute supplies console I/O.
-    if unsafe {
-        CreateProcessW(
-            exe.as_ptr(),
-            command.as_mut_ptr(),
-            null(),
-            null(),
-            0,
-            EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
-            env.as_ptr().cast(),
-            cwd.as_ptr(),
-            &startup.StartupInfo,
-            &mut process,
-        )
-    } == 0
-    {
-        return Err(ERROR.into());
-    }
+    crate::network::authorized(|| {
+        if unsafe {
+            CreateProcessW(
+                exe.as_ptr(),
+                command.as_mut_ptr(),
+                null(),
+                null(),
+                0,
+                EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT,
+                env.as_ptr().cast(),
+                cwd.as_ptr(),
+                &startup.StartupInfo,
+                &mut process,
+            )
+        } == 0
+        {
+            return Err(ERROR.into());
+        }
+        Ok(())
+    })?;
     session.process = Some(Handle(process.hProcess));
     let _thread = Handle(process.hThread);
     drop(input_read);
@@ -346,6 +349,7 @@ pub(crate) fn refresh(
             return Err("Request canceled because the source changed".into());
         }
         if refreshed(deadline.saturating_duration_since(Instant::now())) {
+            crate::network::ensure_allowed()?;
             return Ok(());
         }
         match unsafe { WaitForSingleObject(session.process.as_ref().unwrap().0, 0) } {

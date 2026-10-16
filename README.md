@@ -4,6 +4,12 @@ Private development home: **[alexwastaken/DroidFun](https://github.com/alexwasta
 
 DroidFun App is a robot-themed tray companion for a USB RP2040-Zero and SSD1306 128×64 OLED. Clock, Pomodoro, meeting countdown, CPU, memory, weather, free stock quotes, Codex allowance, Claude account allowance and a friendly face are configurable in the app. The controls and cycle preview also work without hardware.
 
+## Screens and bot profiles: 0.4.0
+
+Choose Boo, Claw or Meep on first launch. Boo and Meep support custom text, faces and everyday widgets; Claw offers Claude/Codex usage screens only. The editor previews exact 128 × 64 output with text layout, borders, inversion and per-screen appearance controls.
+
+**Save to bot** stores enabled text and still face screens for USB wall power, using firmware 1.2.0. It verifies a complete saved playlist before confirming success. Live data and desktop-driven clocks/timers are not stored. **Pause online data** is a separate desktop option that cancels internet requests while local screens keep working. See the [screen setup guide](docs/SCREENS.md) and [firmware builds](firmware/releases/README.md). Physical wall-power verification remains outstanding.
+
 ## App branding: 0.3.3
 
 Choose **DroidFun · blue** (the palette from [droidfun.io](https://droidfun.io)) or **Classic · green** in the Branding dropdown. Both keep the DroidFun name and logo, and the choice is saved independently of light/dark appearance. See [branding and upgrade notes](docs/BRANDING.md).
