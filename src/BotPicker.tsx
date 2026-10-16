@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { BotAvatar } from "./BotPreview";
 
 const bots = [
   { id: "boo", name: "Boo Bot", summary: "A little ghost with a lot to say.", detail: "Custom text, faces, clocks, weather, stocks and more.", face: "boo" },
@@ -17,8 +18,8 @@ export default function BotPicker({ current, busy, error, onSelect, onCancel }: 
   return <main className="app-shell bot-picker">
     <div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div>
     <div className="intro"><div className="eyebrow">LET’S GET STARTED</div><h1 ref={title} tabIndex={-1}>Which bot is yours?</h1><p>Choose your bot to see its screens and settings. You can change this any time.</p></div>
-    <div className="bot-choices" aria-label="Choose your bot">{bots.map(bot => <button key={bot.id} className="bot-choice" disabled={busy} aria-pressed={current === bot.id} onClick={() => onSelect(bot.id)}>
-      <span className={`picker-face ${bot.face}`} aria-hidden="true"><i/><i/></span>
+    <div className="bot-choices" aria-label="Choose your bot">{bots.map(bot => <button key={bot.id} className="bot-choice" data-bot={bot.id} disabled={busy} aria-pressed={current === bot.id} onClick={() => onSelect(bot.id)}>
+      <BotAvatar model={bot.id}/>
       <span className="bot-choice-copy"><strong>{bot.name}</strong><span>{bot.summary}</span><small>{bot.detail}</small></span><span aria-hidden="true">→</span>
     </button>)}</div>
     <p className="bot-picker-note">Your saved widgets stay safe when you change bots. Only the selected bot’s screens will appear and play.</p>

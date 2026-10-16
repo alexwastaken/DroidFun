@@ -4,7 +4,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
 
-OUT=Path(__file__).resolve().parent / 'Droid-Fun-Controller-Guide-0.4.0.pdf'
+OUT=Path(__file__).resolve().parent / 'Droid-Fun-Controller-Guide-0.4.1.pdf'
 BLUE=colors.HexColor('#3268dc'); INK=colors.HexColor('#17283d'); MUTED=colors.HexColor('#526174'); PALE=colors.HexColor('#edf2f8')
 styles=getSampleStyleSheet()
 styles.add(ParagraphStyle(name='TitleDF',fontName='Helvetica',fontSize=27,leading=30,textColor=INK,spaceAfter=12))
@@ -25,17 +25,17 @@ def table(rows,widths):
  t=Table([[p(s,'SmallDF') for s in row] for row in rows],colWidths=widths,hAlign='LEFT');t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),PALE),('LINEBELOW',(0,0),(-1,0),0.6,colors.HexColor('#cbd6e3')),('LINEBELOW',(0,1),(-1,-1),0.35,colors.HexColor('#dce3ec')),('LEFTPADDING',(0,0),(-1,-1),9),('RIGHTPADDING',(0,0),(-1,-1),9),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),4)]));story.append(t)
 def new():story.append(PageBreak())
 
-title('01 / GET STARTED','Your droid, your way.','The controller setup guide for <b>DroidFun App 0.4.0</b>.<br/>Guide 1.4 / October 16, 2026 / Robot firmware 1.2.0.')
-box("""<b>New in this update</b><br/>Choose your bot, design custom text screens, and save text and still faces to Boo or Meep for USB wall power. Claw keeps its dedicated Claude and Codex usage screens.""")
+title('01 / GET STARTED','Your droid, your way.','The controller setup guide for <b>DroidFun App 0.4.1</b>.<br/>Guide 1.5 / October 16, 2026 / Robot firmware 1.2.0.')
+box("""<b>New in this update</b><br/>The preview, settings and screen controls now match your bot automatically. Boo uses pearl/violet, Claw warm orange, and Meep mint/teal. All existing screen and wall-power features stay available.""")
 section('Choose your bot')
-text("""When you first open this update, select <b>Boo Bot</b>, <b>Claw Bot</b> or <b>Meep Bot</b>. The choice is remembered. Use <b>Change bot</b> any time; screens for your other bots stay saved and reappear when you switch back.""")
+text("""On first setup, select <b>Boo Bot</b>, <b>Claw Bot</b> or <b>Meep Bot</b>. The choice is remembered. Use <b>Change bot</b> any time; screens for your other bots stay saved and reappear when you switch back.""")
 table([['<b>Bot</b>','<b>Available screens</b>'],['Boo Bot and Meep Bot','Custom text, faces, clocks, focus timers, meeting countdowns, weather, stocks, CPU and memory.'],['Claw Bot','Claude and Codex account allowance screens. Boo/Meep widgets are hidden.']],[160,332])
 section('Before you begin')
 text("""Use a desktop computer, a USB <b>data</b> cable, and a compatible robot: <b>RP2040-Zero with a 128 x 64 SSD1306 OLED</b>, SDA GPIO 4, SCL GPIO 5, address 0x3C. Firmware 1.2.0 adds storage for wall-powered screens. Confirm this electronics profile before installing firmware.""")
 text("""You can explore the app preview without hardware. The app controls the screen and its playlist; it does not operate motors or move a claw. Live data requires the computer and internet. Saved text and still faces can run from USB wall power after a successful save.""")
 section('Choose your installer')
 table([['<b>Computer</b>','<b>Download type</b>'],['Mac, macOS 13 or later','Universal DMG for Apple Silicon and Intel'],['Intel/AMD Windows PC','Windows x64 installer'],['Windows on ARM / Snapdragon','Windows ARM64 installer'],['Ubuntu/Debian, Intel/AMD 64-bit','Linux x86_64 DEB'],['RPM-based Linux, Intel/AMD 64-bit','Linux x86_64 RPM']],[210,282])
-text("""Get the matching version from <link href="https://droidfun.io/downloads" color="#3268dc">droidfun.io/downloads</link>. Normal use needs no Node.js, Rust, Git or repository access. This guide describes 0.4.0; check the version shown on the download page.""")
+text("""Get the matching version from <link href="https://droidfun.io/downloads" color="#3268dc">droidfun.io/downloads</link>. Normal use needs no Node.js, Rust, Git or repository access. This guide describes 0.4.1; check the version shown on the download page.""")
 story.append(p('Development packages: Mac is not Developer ID signed or notarized; Windows installers are unsigned. Physical USB upload and wall-charger power-cycle verification for the new saved-screen feature remain outstanding. See release notes for platform verification limits.','SmallDF'))
 
 new();title('02 / INSTALL + CONNECT','Say hello over USB.','Install the app, choose your bot, and connect its screen.')
@@ -85,7 +85,7 @@ box("""<b>What is stored?</b><br/>Up to 30 enabled text and still face screens, 
 section('What still needs your computer')
 text("""Weather, stocks, clocks, timers, computer statistics, and Claude/Codex usage are <b>not</b> saved for wall-powered playback. They need DroidFun App running and USB connected; live sources also need internet. Claw Bot does not offer Save to bot because its allowance screens depend on the computer.""")
 section('Update firmware if the app asks')
-text("""Only use this firmware for the RP2040-Zero / SSD1306 profile on page 1. In <b>Settings &gt; Robot &gt; Install firmware manually</b>, choose <b>Save robot firmware</b>. Version 0.4.0 exports firmware <b>1.2.0</b>.""")
+text("""Only use this firmware for the RP2040-Zero / SSD1306 profile on page 1. In <b>Settings &gt; Robot &gt; Install firmware manually</b>, choose <b>Save robot firmware</b>. Version 0.4.1 exports firmware <b>1.2.0</b>.""")
 steps(['Preserve the original program/source or flash backup if you need it. Copying a UF2 replaces the board’s program; plan to save your desired screens again afterward.','Unplug the robot, hold its <b>BOOT</b> button, and reconnect USB. Release BOOT when the <b>RPI-RP2</b> drive appears.','Copy the exported UF2 file to that drive. Wait for the robot to restart, then return to Connection, scan and connect.','Check the firmware version and physical OLED. Then use <b>Save to bot</b> and verify the wall-power behavior described above.'])
 story.append(p('The app confirms only after the bot acknowledges a complete save. Physical USB upload and wall-charger power-cycle testing of this new feature remain outstanding in the release evidence. Confirm it on your bot before relying on standalone playback.','SmallDF'))
 
@@ -108,7 +108,7 @@ new();title('07 / SETTINGS + HELP','Keep it comfortable.','Your settings stay on
 section('Display and appearance')
 text("""Use <b>Display</b> for brightness and screen on/off. Boo and Meep also offer <b>Show face</b>. In <b>Settings &gt; Display</b>, adjust orientation, the companion animation and quiet hours, then choose <b>Apply settings</b>. Quiet hours follow the computer’s local time. <b>Wake for 15 minutes</b> temporarily overrides them; manual screen-off takes priority.""")
 text("""Quiet hours, playlist pause and animated faces are desktop features. They are not stored for wall power. Save to bot stores the current brightness and orientation; save again after changing either if you want the wall-powered display to match.""")
-text("""Choose <b>DroidFun - blue</b> or <b>Classic - green</b> in Branding. In <b>Settings &gt; App</b>, choose light/dark/system appearance and how the controls behave when closed. The main Branding dropdown applies immediately; changes inside Settings need Apply settings.""")
+text("""The app automatically matches your selected bot: pearl/violet for Boo, warm orange for Claw, and mint/teal for Meep. Its preview, buttons, settings and screen editor follow the same theme. <b>Change bot</b> switches the look. In <b>Settings &gt; App</b>, choose light/dark/system appearance and how the controls behave when closed, then <b>Apply settings</b>.""")
 section('Keep the app running, or quit')
 text("""Mac uses the menu bar; Windows uses the notification area. Linux needs a compatible tray host or keeps a normal window available. Relaunching DroidFun App reopens the controls. Start at login is opt-in. Turn it off and quit the app before manually removing the app on Mac or Linux.""")
 section('Troubleshooting')
@@ -119,8 +119,8 @@ text("""No automatic updater is enabled. Return to the Droid Fun Downloads page 
 def frame(c,doc):
  c.setStrokeColor(colors.HexColor('#dce3ec'));c.line(54,752,558,752)
  c.setFillColor(BLUE);c.setFont('Helvetica-Bold',9);c.drawString(54,766,'droid fun.')
- c.setFillColor(MUTED);c.setFont('Helvetica',8);c.drawRightString(558,766,'APP 0.4.0  |  FIRMWARE 1.2.0')
- c.line(54,40,558,40);c.drawString(54,27,'Droid Fun  |  Guide 1.4  |  October 16, 2026');c.drawRightString(558,27,str(doc.page))
-doc=SimpleDocTemplate(str(OUT),pagesize=(612,792),leftMargin=54,rightMargin=54,topMargin=58,bottomMargin=53,title='Droid Fun Controller Guide - App 0.4.0',author='Droid Fun',subject='Bot setup, custom screens and saved USB wall-power screens')
+ c.setFillColor(MUTED);c.setFont('Helvetica',8);c.drawRightString(558,766,'APP 0.4.1  |  FIRMWARE 1.2.0')
+ c.line(54,40,558,40);c.drawString(54,27,'Droid Fun  |  Guide 1.5  |  October 16, 2026');c.drawRightString(558,27,str(doc.page))
+doc=SimpleDocTemplate(str(OUT),pagesize=(612,792),leftMargin=54,rightMargin=54,topMargin=58,bottomMargin=53,title='Droid Fun Controller Guide - App 0.4.1',author='Droid Fun',subject='Bot setup, custom screens and saved USB wall-power screens')
 doc.build(story,onFirstPage=frame,onLaterPages=frame)
 print(OUT)

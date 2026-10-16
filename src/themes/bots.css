@@ -1,0 +1,316 @@
+/*
+ * Automatic bot palettes. The logo stays DroidFun blue; these tokens belong to
+ * the selected bot's controls. An unselected chooser keeps the neutral brand.
+ */
+:root[data-bot="boo"] {
+  --bot-page: #f8f7fb;
+  --bot-panel: #ffffff;
+  --bot-tint: #eee9f7;
+  --bot-tint-hover: #e4dcf1;
+  --bot-ink: #2b2635;
+  --bot-muted: #655b74;
+  --bot-accent: #70529b;
+  --bot-accent-strong: #583c80;
+  --bot-on-accent: #ffffff;
+  --bot-border: #dcd4e8;
+  --bot-control-border: #9785b0;
+  --bot-focus: #70529b;
+  --bot-shadow: #2b26351f;
+}
+:root[data-bot="claw"] {
+  --bot-page: #fff8f2;
+  --bot-panel: #fffdfb;
+  --bot-tint: #f8e8da;
+  --bot-tint-hover: #efd8c5;
+  --bot-ink: #35271f;
+  --bot-muted: #795a45;
+  --bot-accent: #9c480d;
+  --bot-accent-strong: #783505;
+  --bot-on-accent: #ffffff;
+  --bot-border: #e5d2c1;
+  --bot-control-border: #b17b52;
+  --bot-focus: #9c480d;
+  --bot-shadow: #35271f1f;
+}
+:root[data-bot="meep"] {
+  --bot-page: #f3faf7;
+  --bot-panel: #fcfffd;
+  --bot-tint: #e1f1e9;
+  --bot-tint-hover: #cde6da;
+  --bot-ink: #19392f;
+  --bot-muted: #4e6c60;
+  --bot-accent: #186956;
+  --bot-accent-strong: #0c4d3d;
+  --bot-on-accent: #ffffff;
+  --bot-border: #c7dfd2;
+  --bot-control-border: #689581;
+  --bot-focus: #186956;
+  --bot-shadow: #19392f1f;
+}
+:root[data-bot="boo"][data-theme="dark"] {
+  --bot-page: #19161f;
+  --bot-panel: #24202e;
+  --bot-tint: #332b40;
+  --bot-tint-hover: #423552;
+  --bot-ink: #f4eefb;
+  --bot-muted: #c3b7d2;
+  --bot-accent: #cdb4f5;
+  --bot-accent-strong: #e0ceff;
+  --bot-on-accent: #291a3d;
+  --bot-border: #493d5b;
+  --bot-control-border: #837094;
+  --bot-focus: #d5baff;
+  --bot-shadow: #00000045;
+}
+:root[data-bot="claw"][data-theme="dark"] {
+  --bot-page: #211813;
+  --bot-panel: #2e2119;
+  --bot-tint: #443024;
+  --bot-tint-hover: #563b2b;
+  --bot-ink: #fff1e7;
+  --bot-muted: #d8bca8;
+  --bot-accent: #ffb77f;
+  --bot-accent-strong: #ffcea6;
+  --bot-on-accent: #38200f;
+  --bot-border: #634532;
+  --bot-control-border: #a17a60;
+  --bot-focus: #ffbd89;
+  --bot-shadow: #00000045;
+}
+:root[data-bot="meep"][data-theme="dark"] {
+  --bot-page: #10231d;
+  --bot-panel: #193128;
+  --bot-tint: #24483a;
+  --bot-tint-hover: #305a49;
+  --bot-ink: #eaf9f1;
+  --bot-muted: #abcdbb;
+  --bot-accent: #84d9b5;
+  --bot-accent-strong: #aff0cf;
+  --bot-on-accent: #103426;
+  --bot-border: #3c6553;
+  --bot-control-border: #6c9c83;
+  --bot-focus: #91e6c3;
+  --bot-shadow: #00000045;
+}
+
+/* Bridge existing shared controls to one complete palette. */
+:root[data-bot] {
+  --ui-accent: var(--bot-accent);
+  --ui-panel: var(--bot-panel);
+  --ui-tint: var(--bot-tint);
+  --ui-muted: var(--bot-muted);
+  --ui-border: var(--bot-border);
+  --border: var(--bot-border);
+  color: var(--bot-ink);
+  background: var(--bot-page);
+  color-scheme: light;
+}
+:root[data-bot][data-theme="dark"] { color-scheme: dark; }
+:root[data-bot] body { color: var(--bot-ink); background: var(--bot-page); }
+:root[data-bot] :is(.topline, .screen-caption h2, .section-heading h2, .editor, .widget-main) {
+  color: var(--bot-ink);
+}
+:root[data-bot] :is(.intro h1 em, .eyebrow, .demo-text, .source-notice, .editor a) {
+  color: var(--bot-accent);
+}
+:root[data-bot] :is(.intro p, .caption-sub, .section-intro, .live-source-detail,
+  .connection-detail, .widget-copy small, .port-row small, .cycle-summary,
+  .widget-tools, footer, .editor p, .preview-placeholder, .offline-control small,
+  .bot-controls p, .standalone-controls p, .app-brand > span) {
+  color: var(--bot-muted);
+}
+:root[data-bot] .standalone-controls .standalone-count { color: var(--bot-ink); }
+:root[data-bot] :is(.playlist, .robot-connection, .display-settings, .standalone-controls,
+  .remove-widget, .screen-appearance, .offline-control, .timer-controls, footer,
+  .app-brand > span) {
+  border-color: var(--bot-border);
+}
+
+/* Cards, dialogs and inset panels. */
+:root[data-bot] :is(.widget-row, .port-row, .editor, .bot-controls) {
+  background: var(--bot-panel);
+  color: var(--bot-ink);
+  border-color: var(--bot-border);
+}
+:root[data-bot] .widget-row.selected {
+  border-color: var(--bot-accent);
+  box-shadow: 0 0 0 2px var(--bot-tint-hover);
+}
+:root[data-bot] :is(.source-group, .quiet-status, .source-editor .draft-preview,
+  .source-editor .offline-notice) {
+  background: var(--bot-tint);
+  color: var(--bot-ink);
+  border-color: var(--bot-border);
+}
+:root[data-bot] .modal-backdrop { background: #14111bcc; }
+:root[data-bot] .editor { box-shadow: 0 18px 60px var(--bot-shadow); }
+:root[data-bot] :is(.count-pill, .demo-pill, .connection-state) {
+  background: var(--bot-tint);
+  color: var(--bot-accent);
+  border-color: var(--bot-border);
+}
+:root[data-bot] .widget-icon {
+  background: var(--bot-tint);
+  color: var(--bot-accent);
+}
+:root[data-bot] .status-dot {
+  background: var(--bot-accent);
+  box-shadow: 0 0 0 4px var(--bot-tint);
+}
+:root[data-bot] .status-dot.off {
+  background: var(--bot-muted);
+  box-shadow: 0 0 0 4px var(--bot-tint);
+}
+
+/* Secondary actions share the same treatment throughout every settings panel. */
+:root[data-bot] button:not(.primary-control):not(:where(.widget-main, .bot-choice, .error button)) {
+  background: var(--bot-tint);
+  color: var(--bot-accent);
+  border-color: var(--bot-border);
+}
+:root[data-bot] button:not(.primary-control):not(:where(.widget-main, .bot-choice, .error button)):hover:not(:disabled) {
+  background: var(--bot-tint-hover);
+  border-color: var(--bot-control-border);
+}
+:root[data-bot] :is(.primary-control, .source-editor .primary-control,
+  .settings-tabs button[aria-pressed="true"]) {
+  background: var(--bot-accent);
+  color: var(--bot-on-accent);
+  border: 1px solid var(--bot-accent);
+  box-shadow: none;
+}
+:root[data-bot] .source-editor .settings-tabs button[aria-pressed="true"] {
+  background: var(--bot-accent);
+  color: var(--bot-on-accent);
+  border: 1px solid var(--bot-accent);
+}
+:root[data-bot] :is(.primary-control, .source-editor .primary-control):hover:not(:disabled),
+:root[data-bot] .source-editor .settings-tabs button[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--bot-accent-strong);
+  color: var(--bot-on-accent);
+  border-color: var(--bot-accent-strong);
+}
+:root[data-bot] .widget-main { background: transparent; border-color: transparent; }
+:root[data-bot] .widget-main:hover:not(:disabled) .widget-copy strong { color: var(--bot-accent); }
+
+/* Fields and native controls keep their sizes, labels and keyboard behavior. */
+:root[data-bot] :is(input:not([type="checkbox"]):not([type="range"]), select, textarea) {
+  background: var(--bot-panel);
+  color: var(--bot-ink);
+  border-color: var(--bot-control-border);
+}
+:root[data-bot] :is(input, textarea)::placeholder { color: var(--bot-muted); opacity: 1; }
+:root[data-bot] :is(input[type="checkbox"], input[type="range"]) { accent-color: var(--bot-accent); }
+:root[data-bot] .switch span { background: var(--bot-control-border); }
+:root[data-bot] .switch input:checked + span { background: var(--bot-accent); }
+:root[data-bot] .switch span::after { background: var(--bot-on-accent); }
+:root[data-bot] :is(button, input, select, textarea, summary, a):focus-visible,
+:root[data-bot] .switch input:focus-visible + span {
+  outline: 3px solid var(--bot-focus);
+  outline-offset: 3px;
+}
+:root[data-bot] .widget-tools select { border: 1px solid var(--bot-control-border); }
+:root[data-bot] .widget-tools button { border: 1px solid var(--bot-border); }
+:root[data-bot] .source-editor button:disabled { cursor: not-allowed; }
+
+/* Preserve useful warning semantics independently of a bot's accent. */
+:root[data-bot] :is(.source-error, .source-editor .source-error, .robot-access-setup [role="alert"]) {
+  color: #a13220;
+}
+:root[data-bot] .error {
+  color: #842d1e;
+  background: #fff0ea;
+  border-color: #d79581;
+}
+:root[data-bot] .error button { color: inherit; background: transparent; }
+:root[data-bot] :is(.connection-state.setup_needed, .connection-state.display_error,
+  .connection-state.permission_needed) {
+  color: #7b3d05;
+  background: #ffedcf;
+  border-color: #d8b081;
+}
+:root[data-bot][data-theme="dark"] :is(.source-error, .source-editor .source-error,
+  .robot-access-setup [role="alert"]) { color: #ffb9a6; }
+:root[data-bot][data-theme="dark"] .error {
+  color: #ffd2c5;
+  background: #4b2722;
+  border-color: #aa7564;
+}
+:root[data-bot][data-theme="dark"] :is(.connection-state.setup_needed,
+  .connection-state.display_error, .connection-state.permission_needed) {
+  color: #ffd7a4;
+  background: #51371f;
+  border-color: #9c7146;
+}
+
+/* The neutral chooser previews each bot's color without tinting the whole page. */
+.bot-choice[data-bot="boo"] {
+  --bot-card-accent: #70529b;
+  --bot-card-panel: #fcfaff;
+  --bot-card-tint: #eee9f7;
+  --bot-card-ink: #2b2635;
+  --bot-card-muted: #655b74;
+  --bot-card-border: #dcd4e8;
+}
+.bot-choice[data-bot="claw"] {
+  --bot-card-accent: #9c480d;
+  --bot-card-panel: #fffaf5;
+  --bot-card-tint: #f8e8da;
+  --bot-card-ink: #35271f;
+  --bot-card-muted: #795a45;
+  --bot-card-border: #e5d2c1;
+}
+.bot-choice[data-bot="meep"] {
+  --bot-card-accent: #186956;
+  --bot-card-panel: #f7fdf9;
+  --bot-card-tint: #e1f1e9;
+  --bot-card-ink: #19392f;
+  --bot-card-muted: #4e6c60;
+  --bot-card-border: #c7dfd2;
+}
+:root[data-theme="dark"] .bot-choice[data-bot="boo"] {
+  --bot-card-accent: #cdb4f5; --bot-card-panel: #24202e;
+  --bot-card-tint: #332b40; --bot-card-ink: #f4eefb;
+  --bot-card-muted: #c3b7d2; --bot-card-border: #493d5b;
+}
+:root[data-theme="dark"] .bot-choice[data-bot="claw"] {
+  --bot-card-accent: #ffb77f; --bot-card-panel: #2e2119;
+  --bot-card-tint: #443024; --bot-card-ink: #fff1e7;
+  --bot-card-muted: #d8bca8; --bot-card-border: #634532;
+}
+:root[data-theme="dark"] .bot-choice[data-bot="meep"] {
+  --bot-card-accent: #84d9b5; --bot-card-panel: #193128;
+  --bot-card-tint: #24483a; --bot-card-ink: #eaf9f1;
+  --bot-card-muted: #abcdbb; --bot-card-border: #3c6553;
+}
+.bot-choice[data-bot] {
+  --ui-accent: var(--bot-card-accent);
+  --ui-panel: var(--bot-card-panel);
+  --ui-tint: var(--bot-card-tint);
+  --ui-muted: var(--bot-card-muted);
+  --ui-border: var(--bot-card-border);
+  color: var(--bot-card-ink);
+  background: var(--bot-card-panel);
+  border-color: var(--bot-card-border);
+}
+.bot-choice[data-bot]:hover:not(:disabled),
+.bot-choice[data-bot][aria-pressed="true"] {
+  border-color: var(--bot-card-accent);
+  box-shadow: 0 0 0 1px var(--bot-card-accent);
+}
+.bot-choice[data-bot]:focus-visible { outline-color: var(--bot-card-accent); }
+.bot-choice[data-bot] .bot-choice-copy strong,
+.bot-choice[data-bot] > span:last-child { color: var(--bot-card-accent); }
+
+@media (max-width: 390px) {
+  :root[data-bot] .bot-controls { padding: 14px; }
+  :root[data-bot] .widget-tools { row-gap: 8px; }
+  :root[data-bot] .settings-tabs { gap: 6px; }
+  :root[data-bot] .source-editor .screen-field-pair { gap: 8px; }
+}
+
+:root[data-bot] input[type="range"] { background: transparent; }
+:root[data-bot] input[type="checkbox"] {
+  background: var(--bot-panel);
+  border-color: var(--bot-control-border);
+}

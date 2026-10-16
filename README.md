@@ -10,9 +10,9 @@ Choose Boo, Claw or Meep on first launch. Boo and Meep support custom text, face
 
 **Save to bot** stores enabled text and still face screens for USB wall power, using firmware 1.2.0. It verifies a complete saved playlist before confirming success. Live data and desktop-driven clocks/timers are not stored. **Pause online data** is a separate desktop option that cancels internet requests while local screens keep working. See the [screen setup guide](docs/SCREENS.md) and [firmware builds](firmware/releases/README.md). Physical wall-power verification remains outstanding.
 
-## App branding: 0.3.3
+## Bot themes: 0.4.1
 
-Choose **DroidFun · blue** (the palette from [droidfun.io](https://droidfun.io)) or **Classic · green** in the Branding dropdown. Both keep the DroidFun name and logo, and the choice is saved independently of light/dark appearance. See [branding and upgrade notes](docs/BRANDING.md).
+Choosing a bot automatically matches its preview, settings and screen controls: pearl/violet for Boo, orange/copper for Claw, and mint/teal for Meep. The Droid Fun logo stays blue. Light/dark/system appearance remains available in Settings → App. See [branding and upgrade notes](docs/BRANDING.md).
 
 ## Downloads: 0.4.0
 

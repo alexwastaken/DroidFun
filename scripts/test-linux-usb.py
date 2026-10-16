@@ -119,28 +119,40 @@ class Driver:
 def ui():
     driver=Driver()
     rule_installed_before = RULE.read_bytes()
-    try:
+    themes_verified = []
+    def choose_bot(model, capture_chooser=False):
         driver.wait('window.__TAURI_INTERNALS__ && (document.querySelector(".bot-picker") || document.querySelector(".bot-controls"))')
+        if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
+            driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => b.textContent.trim() === "Change bot").click();')
+        driver.wait('document.querySelectorAll(".bot-choice").length === 3 && document.documentElement.dataset.bot === ""')
+        if capture_chooser: driver.capture('linux-bot-chooser.png')
+        selector = '.bot-choice[data-bot="'+model+'"]'
+        driver.js('document.querySelector('+json.dumps(selector)+').click();')
+        driver.wait('!document.querySelector(".bot-picker") && document.querySelector(".robot-access-setup button") && document.documentElement.dataset.bot === '+json.dumps(model))
+        # Theme and allowed controls must follow the real persisted bot choice,
+        # not a frontend-only skin or the former saved branding preference.
+        driver.js('window.__droidfunSmokeModel = null; window.__droidfunSmokeSnapshot = null; window.__TAURI_INTERNALS__.invoke("get_state").then(s => { window.__droidfunSmokeSnapshot = s; window.__droidfunSmokeModel = s.settings.preferences.botModel; });')
+        driver.wait('window.__droidfunSmokeModel === '+json.dumps(model))
+        assert driver.js('return document.documentElement.dataset.branding') == 'droidfun'
+        driver.js('document.querySelector(".add-widget-controls button").click();')
+        widget_selector = json.dumps('select[aria-label="New widget type"]')
+        driver.wait('document.querySelector('+widget_selector+')')
+        options = set(driver.js('return Array.from(document.querySelector('+widget_selector+').options).map(o => o.value);'))
+        if model == 'claw':
+            assert options == {'codex', 'claude'}, options
+        else:
+            assert not options & {'codex', 'claude'} and {'text', 'face', 'clock', 'weather', 'stock'} <= options, options
+        driver.js('Array.from(document.querySelectorAll(".add-widget-controls button")).find(b => b.textContent.trim() === "Cancel").click();')
+        driver.wait('!document.querySelector('+widget_selector+')')
+        driver.wait('!document.querySelector(".robot-access-setup button").disabled')
+        driver.js('document.querySelector(".robot-access-setup").scrollIntoView({block:"center"});')
+        driver.capture('linux-usb-'+model+'.png')
+        themes_verified.append(model)
+    try:
         # The mandatory first-run chooser is the actual entry point now. Do not
         # bypass it by setting the old setupComplete flag: that no longer selects
         # a bot and would leave all USB controls hidden behind the chooser.
-        if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
-            driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => b.textContent.trim() === "Change bot").click();')
-        driver.wait('document.querySelectorAll(".bot-choice").length === 3')
-        driver.capture('linux-bot-chooser.png')
-        driver.js('Array.from(document.querySelectorAll(".bot-choice")).find(b => b.querySelector("strong").textContent.trim() === "Boo Bot").click();')
-        driver.wait('!document.querySelector(".bot-picker") && document.querySelector(".robot-access-setup button")')
-        # Verify the button reached the real native command and persisted a
-        # profile, rather than merely changing a frontend-only selection.
-        driver.js('window.__droidfunSmokeModel = null; window.__TAURI_INTERNALS__.invoke("get_state").then(s => { window.__droidfunSmokeModel = s.settings.preferences.botModel; });')
-        driver.wait('window.__droidfunSmokeModel === "boo"')
-        driver.wait('!document.querySelector(".robot-access-setup button").disabled')
-        # Previous lifecycle runs intentionally preserve settings. Select and
-        # verify blue explicitly instead of mistaking a saved green theme for it.
-        driver.js('const s=document.querySelector(".branding-control select");s.value="droidfun";s.dispatchEvent(new Event("change",{bubbles:true}));')
-        driver.wait('document.documentElement.dataset.branding === "droidfun"')
-        driver.js('document.querySelector(".robot-access-setup").scrollIntoView({block:"center"});')
-        driver.capture('linux-usb-blue.png')
+        choose_bot('boo', capture_chooser=True)
         # Headless CI has no active physical desktop. Explicit test-only polkit
         # authorization exercises real pkexec/helper IPC without a password.
         # Production policy defaults are separately checked; this rule is never shipped.
@@ -166,10 +178,17 @@ def ui():
         driver.wait('document.querySelector(".robot-access-setup [role=alert]")',seconds=30)
         assert 'not granted' in driver.js('return document.querySelector(".robot-access-setup [role=alert]").innerText')
         assert RULE.read_bytes() == rule_installed_before
-        driver.js('const s=document.querySelector(".branding-control select");s.value="green";s.dispatchEvent(new Event("change",{bubbles:true}));')
-        driver.wait('document.documentElement.dataset.branding === "green"')
-        driver.capture('linux-usb-green.png')
-        print(json.dumps({'nativeButton':'passed','mandatoryBotChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'blueAndGreenControls':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        choose_bot('claw')
+        # Fresh Claw defaults have no enabled usage widgets. Its caption must
+        # describe the idle display rather than a nonexistent cycling countdown.
+        assert driver.js('return window.__droidfunSmokeSnapshot.totalSec') == 0
+        assert not driver.js('return Array.from(document.querySelectorAll(".widget-row .switch input")).some(input => input.checked)')
+        driver.wait('document.querySelector(".screen-caption h2").textContent === "Idle display"')
+        caption = driver.js('return document.querySelector(".screen-caption .caption-sub").textContent')
+        assert caption == 'Enable a Claude or Codex widget to begin', caption
+        assert not re.search(r'\bCycling\b|\d+s left', caption), caption
+        choose_bot('meep')
+        print(json.dumps({'nativeButton':'passed','mandatoryBotChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()

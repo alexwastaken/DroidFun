@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import SettingsPanel, { type Preferences } from "./Settings";
 import BotPicker, { botName, widgetOptions, widgetAllowed } from "./BotPicker";
 import Oled from "./Oled";
+import BotPreview, { BotAvatar } from "./BotPreview";
 import LinuxRobotAccess from "./LinuxRobotAccess";
 
 type Playback = "running" | "paused" | "pinned";
@@ -73,8 +74,12 @@ export default function App() {
   }, []);
 
   useLayoutEffect(() => {
-    document.documentElement.dataset.branding = state?.settings.preferences.branding ?? "droidfun";
-  }, [state?.settings.preferences.branding]);
+    // The selected bot supplies the controls' theme; keep the shared brand identity.
+    // Legacy branding preferences remain stored for upgrade compatibility.
+    document.documentElement.dataset.branding = "droidfun";
+    if (botName(model) && !choosingBot) document.documentElement.dataset.bot = model;
+    else delete document.documentElement.dataset.bot;
+  }, [model, choosingBot]);
 
   useEffect(() => {
     const dark = window.matchMedia("(prefers-color-scheme: dark)");
@@ -130,7 +135,10 @@ export default function App() {
   const current = widgets.find(w => w.id === state.currentId);
   const activeCount = widgets.filter(w => w.enabled).length;
   const standaloneCount = widgets.filter(w => w.enabled && ["face", "text"].includes(w.kind)).length;
-  const status = !state.displayOn ? state.displayReason : state.playback === "pinned" ? "Pinned" : state.playback === "paused" ? "Paused" : state.temporary ? "Showing now" : "Cycling";
+  const idle = !selected && state.totalSec === 0 && state.playback !== "pinned" && !state.temporary;
+  const screenTitle = selectedWidget?.label ?? (idle ? "Idle display" : current?.label ?? state.currentLabel);
+  const idleStatus = activeCount > 0 ? "Waiting for an available screen" : model === "claw" ? "Enable a Claude or Codex widget to begin" : "Enable a widget to begin";
+  const status = !state.displayOn ? state.displayReason : idle ? idleStatus : state.playback === "pinned" ? "Pinned" : state.playback === "paused" ? "Paused" : state.temporary ? "Showing now" : "Cycling";
   const visibleFrame = selected && preview ? preview : state.frame;
   const visibleWidget = selectedWidget ?? current;
   const liveCard = visibleWidget ? state.data?.[visibleWidget.id] : undefined;
@@ -140,14 +148,9 @@ export default function App() {
   return <main className="app-shell">
     <div className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><span className="demo-pill">{connection?.state === "connected" ? "ROBOT CONNECTED" : "PREVIEW MODE"}</span></div>
     <section className="intro"><div><div className="eyebrow">YOUR DROID, YOUR WAY</div><h1>{botName(model)}<br /><em>{model === "claw" ? "Keep usage in view." : "Make it yours."}</em></h1><p>{model === "claw" ? "Claude and Codex usage, right on your desk." : "Your words, favorite faces, and everyday updates."}</p></div></section>
-    <section className="bot-controls" aria-label="Bot and connectivity"><div className="bot-control-row"><span>{botName(model)}</span><button disabled={busy} onClick={() => setChoosingBot(true)}>Change bot</button></div><label className="offline-control"><span><strong>Pause online data</strong><small>{offline ? "Internet requests paused · USB available" : "Internet sources available"}</small></span><input type="checkbox" checked={offline} disabled={busy} onChange={e => act("set_offline_mode", { offline: e.target.checked })}/></label>{offline && <p role="status">{model === "claw" ? "Live usage needs internet. Sample screens still work over USB." : "Text, faces, clocks, timers and computer stats work over USB. Live weather and stocks are paused."} Keep DroidFun App running and your bot connected.</p>}</section>
-    <label className="branding-control">Branding<select value={state.settings.preferences.branding} disabled={busy} onChange={e => act("set_preferences", {preferences:{...state.settings.preferences,branding:e.target.value}})}><option value="droidfun">DroidFun · blue</option><option value="green">Classic · green</option></select></label>
-    <section className="robot-wrap" aria-label="Robot screen preview">
-      <div className="antenna"><span /></div>
-      <div className="robot-head"><span className="head-highlight" /><div className="screen-bezel"><Oled frame={visibleFrame} brightness={state.displayOn || selected ? state.settings.brightness : 0} orientation={state.settings.preferences.orientation} description={`${selectedWidget?.label ?? current?.label ?? "Happy face"} OLED preview. ${liveCard?.headline ?? visibleWidget?.headline ?? ""}. ${liveCard?.footer ?? visibleWidget?.footer ?? ""}. ${liveCard?.detail ?? visibleWidget?.config.faceExpression ?? ""}`} /></div><div className="robot-cheek left" /><div className="robot-cheek right" /></div>
-      <div className="robot-neck" />
-    </section>
-    <div className="screen-caption"><div><div className="eyebrow">ON THE SCREEN {sourceLabel && <span className="demo-text">· {sourceLabel.toUpperCase().replaceAll("_", " ")}</span>}</div><h2>{selectedWidget ? selectedWidget.label : (current?.label ?? state.currentLabel)}</h2><span className="caption-sub">{selectedWidget ? "Local preview only — cycle continues" : `${status}${state.playback === "running" && state.displayOn ? ` · ${state.remainingSec}s left` : ""}`}</span></div><span className={`status-dot ${state.displayOn ? "" : "off"}`} /></div>
+    <section className="bot-controls" aria-label="Bot and connectivity"><div className="bot-control-row"><span className="bot-context"><BotAvatar model={model}/>{botName(model)}</span><button disabled={busy} onClick={() => setChoosingBot(true)}>Change bot</button></div><label className="offline-control"><span><strong>Pause online data</strong><small>{offline ? "Internet requests paused · USB available" : "Internet sources available"}</small></span><input type="checkbox" checked={offline} disabled={busy} onChange={e => act("set_offline_mode", { offline: e.target.checked })}/></label>{offline && <p role="status">{model === "claw" ? "Live usage needs internet. Sample screens still work over USB." : "Text, faces, clocks, timers and computer stats work over USB. Live weather and stocks are paused."} Keep DroidFun App running and your bot connected.</p>}</section>
+    <BotPreview model={model}><Oled frame={visibleFrame} brightness={state.displayOn || selected ? state.settings.brightness : 0} orientation={state.settings.preferences.orientation} description={`${screenTitle} OLED preview. ${liveCard?.headline ?? visibleWidget?.headline ?? ""}. ${liveCard?.footer ?? visibleWidget?.footer ?? ""}. ${liveCard?.detail ?? visibleWidget?.config.faceExpression ?? ""}`} /></BotPreview>
+    <div className="screen-caption"><div><div className="eyebrow">ON THE SCREEN {sourceLabel && <span className="demo-text">· {sourceLabel.toUpperCase().replaceAll("_", " ")}</span>}</div><h2>{screenTitle}</h2><span className="caption-sub">{selectedWidget ? "Local preview only — cycle continues" : `${status}${!idle && state.playback === "running" && state.displayOn ? ` · ${state.remainingSec}s left` : ""}`}</span></div><span className={`status-dot ${state.displayOn ? "" : "off"}`} /></div>
     {visibleWidget?.config.mode === "live" && visibleWidget.kind !== "text" && visibleWidget.kind !== "face" && <div className="live-source-detail"><span>{offline && !isLocal ? "Live data is paused. Any preview values are saved data, not a current reading." : (liveCard?.detail ?? "Waiting for this source to be configured or refreshed.")}</span>{liveCard?.observedAt ? <small>{visibleWidget.kind === "stock" ? "Quote age" : "Report age"}: {reportAge(liveCard.observedAt)}</small> : null}{!isLocal && !offline && <button disabled={busy || offline} onClick={() => act("refresh_widget", { id: visibleWidget.id })}>Refresh within source limits</button>}</div>}
     {selected && <div className="preview-actions"><button onClick={() => setSelected(null)}>Back to live cycle</button><button disabled={!selectedWidget?.enabled || busy} onClick={() => act("show_now", { id: selected })}>Show now</button><button disabled={!selectedWidget?.enabled || busy} onClick={() => act("pin_widget", { id: selected })}>Pin</button></div>}
     {(state.quietActive || state.quietOverrideUntil > Date.now()/1000) && <div className="quiet-status" role="status"><span>{state.displayReason}</span>{state.quietActive && <button disabled={busy} onClick={() => act("override_quiet")}>Wake for 15 minutes</button>}</div>}
@@ -177,7 +180,7 @@ export default function App() {
     <footer>{model === "claw" ? "Claude and Codex show account allowance, not token counts. Unavailable live widgets are skipped." : "Text, faces, clocks, timers and computer stats run locally. Weather by Open-Meteo; quotes by Yahoo Finance."} Keep the app open and your bot connected by USB.</footer>
     {error && <div className="error" role="alert">{error}<button onClick={() => setError("")}>Dismiss</button></div>}
     {settingsOpen && <SettingsPanel preferences={state.settings.preferences} connection={connection} onChangeBot={() => { setSettingsOpen(false); setChoosingBot(true); }} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />}
-    {editor && <SourceEditor widget={editor} offline={offline} orientation={state.settings.preferences.orientation} onClose={() => setEditor(null)} onApply={(label: string, config: SourceConfig, headline: string, footer: string) => act("configure_source", { id: editor.id, label, config, headline, footer })} onRemove={async () => { const ok = await act("remove_widget", { id: editor.id }); if (ok && selected === editor.id) setSelected(null); return ok; }} />}
+    {editor && <SourceEditor model={model} widget={editor} offline={offline} orientation={state.settings.preferences.orientation} onClose={() => setEditor(null)} onApply={(label: string, config: SourceConfig, headline: string, footer: string) => act("configure_source", { id: editor.id, label, config, headline, footer })} onRemove={async () => { const ok = await act("remove_widget", { id: editor.id }); if (ok && selected === editor.id) setSelected(null); return ok; }} />}
 
   </main>;
 }

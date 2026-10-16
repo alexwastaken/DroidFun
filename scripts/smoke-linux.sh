@@ -98,7 +98,7 @@ dbus-run-session -- xvfb-run -a bash -eu -c '
   kill -0 "$app_pid"
   xdotool search --pid "$app_pid" --name "DroidFun App"
 '
-# Drive the exact installed app, actual IPC, pkexec and helper in both themes.
+# Drive the exact installed app, bot themes, actual IPC, pkexec and helper.
 dbus-run-session -- xvfb-run -a /usr/bin/python3 scripts/test-linux-usb.py --ui | tee "$DESKBOT_ARTIFACT_DIR/linux-usb-ui-tests.json"
 # Removal must remove only packaged files and preserve a local administrator rule
 # and saved app settings. Reinstallation restores installer-managed USB access.
@@ -119,4 +119,4 @@ sudo apt-get install -y "${debs[0]}"
 cmp src-tauri/linux/70-droidfun.rules "$rule"
 test "$(id -nG)" = "$groups_before"
 sudo rm "$sentinel"
-node -e 'require("node:fs").writeFileSync(require("node:path").join(process.env.DESKBOT_ARTIFACT_DIR,"native-smoke.json"),JSON.stringify({result:"passed",debInstalled:true,automaticUsbRuleInstalled:true,repairButtonRealIpc:true,mandatoryBotChooser:true,botSelectionRealIpc:true,scopedUaccessFixture:true,removalAndReinstallPreserveUserFiles:true,noGroupChanges:true,installedBinaryMatchesPackage:true,rpmMetadataArchitecture:"x86_64",nativeWindowCreated:true,aliveSeconds:15,runnerPolicyDirectoryFixture:process.env.DESKBOT_CI_POLICY_DIR_FIXTURE==="true",environment:"Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; hosted runner policy ancestors normalized to ordinary root:root 0755; no tray host, robot or account credentials"},null,2))'
+node -e 'require("node:fs").writeFileSync(require("node:path").join(process.env.DESKBOT_ARTIFACT_DIR,"native-smoke.json"),JSON.stringify({result:"passed",debInstalled:true,automaticUsbRuleInstalled:true,repairButtonRealIpc:true,mandatoryBotChooser:true,botSelectionRealIpc:true,automaticBotThemes:["boo","claw","meep"],botSpecificWidgetOptions:true,scopedUaccessFixture:true,removalAndReinstallPreserveUserFiles:true,noGroupChanges:true,installedBinaryMatchesPackage:true,rpmMetadataArchitecture:"x86_64",nativeWindowCreated:true,aliveSeconds:15,runnerPolicyDirectoryFixture:process.env.DESKBOT_CI_POLICY_DIR_FIXTURE==="true",environment:"Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; hosted runner policy ancestors normalized to ordinary root:root 0755; no tray host, robot or account credentials"},null,2))'

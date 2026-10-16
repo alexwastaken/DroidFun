@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
 import Oled from "./Oled";
+import { BotAvatar } from "./BotPreview";
+import { botName } from "./BotPicker";
 import { invoke } from "@tauri-apps/api/core";
 
 export type Location = { name: string; latitude: number; longitude: number; country: string; region: string };
@@ -11,7 +13,7 @@ type Bridge = { enabled: boolean; command: string; hasExisting: boolean; explana
 type SourceInfo = { claudeBridge: Bridge; claudeAccount: { signedIn: boolean; connecting: boolean; explanation: string } };
 const minutesLabel = (n: number) => n % 1440 === 0 ? `${n / 1440} days` : n % 60 === 0 ? `${n / 60} hours` : `${n} minutes`;
 
-export default function SourceEditor({ widget, offline, orientation, onClose, onApply, onRemove }: { widget: Widget; offline: boolean; orientation: number; onClose: () => void; onApply: (label: string, config: SourceConfig, headline: string, footer: string) => Promise<boolean>; onRemove: () => Promise<boolean> }) {
+export default function SourceEditor({ model, widget, offline, orientation, onClose, onApply, onRemove }: { model: string; widget: Widget; offline: boolean; orientation: number; onClose: () => void; onApply: (label: string, config: SourceConfig, headline: string, footer: string) => Promise<boolean>; onRemove: () => Promise<boolean> }) {
   const local = ["text","clock","pomodoro","meeting","cpu","memory"].includes(widget.kind);
   const [zones,setZones] = useState<string[]>([]);
   useEffect(() => {if(widget.kind!=="clock")return;let active=true;invoke<string[]>("time_zones").then(z => {if(active)setZones(z);}).catch(e => {if(active)setError(String(e));});return () => {active=false;};},[widget.kind]);
@@ -53,10 +55,10 @@ export default function SourceEditor({ widget, offline, orientation, onClose, on
     try { await action(); } catch (e) { setError(String(e)); } finally { setPending(""); }
   }
   const patch = (value: Partial<SourceConfig>) => setConfig(c => ({ ...c, ...value }));
-  return <Modal title="Configure widget" onClose={onClose}><form className="editor source-editor" onSubmit={e => {
+  return <Modal title={`Configure ${botName(model)} screen`} onClose={onClose}><form className="editor source-editor" onSubmit={e => {
     e.preventDefault(); if (previewPending || previewError || pending) return; run("Applying", async () => { if (await onApply(label, config, headline, footer)) onClose(); else setError("Settings could not be applied. Check the widget settings, then try again."); });
   }}>
-    <div className="eyebrow">CONFIGURE WIDGET</div><h2>{widget.kind === "stock" ? "Stocks" : widget.kind === "codex" ? "Codex allowance" : widget.kind === "claude" ? "Claude allowance" : widget.label}</h2>
+    <div className="bot-context"><BotAvatar model={model}/><span>{botName(model)} · screen settings</span></div><h2>{widget.kind === "stock" ? "Stocks" : widget.kind === "codex" ? "Codex allowance" : widget.kind === "claude" ? "Claude allowance" : widget.label}</h2>
     <section className="draft-preview" aria-label="Your screen preview"><div className="eyebrow">128 × 64 SCREEN PREVIEW</div>{draftFrame ? <Oled frame={draftFrame} brightness={100} orientation={orientation} description={`${label} draft screen`} /> : <div className="preview-placeholder">Preparing your screen…</div>}<p role="status">{previewPending ? "Updating preview…" : previewError ? "Your last valid preview is shown. Adjust the settings below." : offline && !local && widget.kind !== "face" && config.mode === "live" ? "Online data is paused. This preview may show saved data; it is not a live reading." : "This is how your screen will look. Apply to save it."}</p>{previewError && <p className="source-error" role="alert">{previewError}</p>}</section>
     {offline && !local && widget.kind !== "face" && <p className="offline-notice">Online data is paused. Sample screens still work. Resume online data to connect accounts or search for a city.</p>}
     <label>Name<input maxLength={24} required value={label} onChange={e => setLabel(e.target.value)} /></label>

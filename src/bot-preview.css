@@ -1,0 +1,170 @@
+.bot-preview--boo,
+.bot-avatar--boo {
+  --bot-preview-body: #fbfaff;
+  --bot-preview-edge: #cec9df;
+  --bot-preview-limb: #ede9f7;
+  --bot-preview-joint: #c9c3da;
+  --bot-preview-shine: #fff;
+}
+
+.bot-preview--claw,
+.bot-avatar--claw {
+  --bot-preview-body: #f59a48;
+  --bot-preview-edge: #cc6e2e;
+  --bot-preview-limb: #e58439;
+  --bot-preview-joint: #c86c2e;
+  --bot-preview-shine: #ffc887;
+}
+
+.bot-preview--meep,
+.bot-avatar--meep {
+  --bot-preview-body: #b0dfc2;
+  --bot-preview-edge: #6ca58a;
+  --bot-preview-limb: #8fc8a7;
+  --bot-preview-joint: #639c81;
+  --bot-preview-shine: #e1f6e9;
+}
+
+.bot-preview {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  margin: 16px auto 12px;
+  isolation: isolate;
+}
+
+.bot-preview__figure {
+  position: relative;
+  width: 330px;
+  max-width: 100%;
+  height: 280px;
+}
+
+.bot-preview__housing {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.bot-preview__body {
+  fill: var(--bot-preview-body);
+  stroke: var(--bot-preview-edge);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.bot-preview__limb {
+  fill: var(--bot-preview-limb);
+  stroke: var(--bot-preview-edge);
+  stroke-width: 2;
+}
+
+.bot-preview__joint {
+  fill: var(--bot-preview-joint);
+}
+
+.bot-preview__shine {
+  fill: none;
+  stroke: var(--bot-preview-shine);
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: .8;
+}
+
+.bot-preview__eye {
+  fill: #39271e;
+}
+
+.bot-preview__ground {
+  fill: #34424f;
+  opacity: .11;
+}
+
+.bot-preview__screen {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  top: 93px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Oled measures this content box: 280 - 12 - 12 = 256 exact pixels. */
+  box-sizing: border-box;
+  width: 280px;
+  max-width: calc(100% - 12px);
+  min-height: 152px;
+  padding: 12px;
+  border-radius: 19px;
+  background: #15222a;
+  box-shadow: 0 1px 0 #ffffff7a, inset 0 2px 4px #0008;
+}
+
+.bot-preview--claw .bot-preview__screen {
+  top: 96px;
+  border-radius: 9px;
+  background: #302923;
+  box-shadow: 0 1px 0 #ffd49b, inset 0 2px 4px #0008;
+}
+
+.bot-preview--meep .bot-preview__screen {
+  top: 78px;
+  background: #1e322c;
+}
+
+.bot-preview__screen > .oled {
+  max-width: 100%;
+  margin: auto;
+  border-radius: 5px;
+}
+
+.bot-avatar {
+  display: inline-block;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 54px;
+  vertical-align: middle;
+}
+
+.bot-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bot-context .bot-avatar {
+  flex-basis: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.bot-avatar .bot-preview__housing {
+  overflow: visible;
+}
+
+.bot-avatar .bot-preview__body,
+.bot-avatar .bot-preview__limb {
+  stroke-width: 4;
+}
+
+.bot-avatar .bot-preview__shine {
+  stroke-width: 6;
+}
+
+.bot-preview__mini-screen {
+  fill: #18272e;
+}
+
+.bot-preview__mini-pixel {
+  fill: #91d8ed;
+}
+
+.bot-preview__mini-meter {
+  fill: #3c5a62;
+}
+
+html[data-theme="dark"] .bot-preview__ground {
+  fill: #000;
+  opacity: .28;
+}

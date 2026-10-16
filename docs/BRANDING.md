@@ -1,12 +1,14 @@
 # DroidFun App branding and upgrades
 
-DroidFun App is the desktop controller for Droid Fun bots. Version 0.3.1 replaces the Deskbot name in the app, settings, tray menu, diagnostics export, window title and future installer names. The logo comes directly from droidfun.io; use the assets in public/brand rather than inventing another logo. The Branding dropdown offers **DroidFun · blue** (the website palette and default for existing/new settings without a saved selection) and **Classic · green** (the original green robot and controls). Both preserve the DroidFun name, supplied logo and native app/tray icons. The selection is saved with preferences and works independently of system/light/dark appearance. The main controls apply it immediately; Settings → App applies it with the other draft settings. Changing it does not affect widgets, account connections or OLED frames.
+DroidFun App keeps the supplied Droid Fun wordmark and blue app icon. From 0.4.1, the selected bot automatically themes its controls, settings, screen editor and preview housing: **Boo** uses pearl/violet with a ghost silhouette, **Claw** uses orange/copper with a stacked, square body, and **Meep** uses mint/teal with a rounded antenna robot. The bot chooser shows each identity on its own card.
+
+Change bot applies the matching theme immediately and remembers the bot through the existing saved botModel preference. Light/dark/system appearance remains independent. The old blue/green Branding selectors have been removed; legacy branding values remain readable and are preserved in settings for compatibility, but no longer override a bot's theme. The Droid Fun logo stays blue. OLED frame pixels, firmware, widgets and account settings are unchanged by theming.
 
 The user approved the October 14 selector and Claude recovery changes for publication. Version 0.3.3 packages are published from the approved source; [upload verification](verification/native-0.3.3/release-upload-verification.json) records the exact application commit and asset hashes.
 
 ## Compatibility
 
-Keep the bundle identifier `com.deskbot.companion`, Cargo executable `deskbot`, event/command IDs, settings paths, status-line bridge names and firmware wire protocol stable. These are compatibility identifiers, not customer-facing branding. Changing them without migration can disconnect existing users from preferences or installed integrations. Existing firmware 1.1.0 remains compatible and its verified binary is unchanged; the exported download has a DroidFun filename. Historical release URLs, evidence and records intentionally keep their original names.
+Keep the bundle identifier `com.deskbot.companion`, Cargo executable `deskbot`, event/command IDs, settings paths, status-line bridge names and firmware wire protocol stable. These are compatibility identifiers, not customer-facing branding. Changing them without migration can disconnect existing users from preferences or installed integrations. The exported firmware remains 1.2.0, unchanged by 0.4.1; older compatible firmware can still drive live screens but Save to bot needs 1.2.0. Historical release URLs, evidence and records intentionally keep their original names.
 
 ## Upgrading an installed app
 
