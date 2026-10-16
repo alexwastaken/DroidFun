@@ -12,8 +12,8 @@ The owner will ask for an update when ready. At that time:
 2. Prefer finished, verified release installers. If no installers exist, build and
    test real installers for the platforms being updated. Pushing source
    code alone does not create a new executable. Report any build/platform limits.
-   Check version per platform: the current release set uses Mac/Windows 0.3.3
-   and Linux 0.3.4. Never relabel an older binary as the newest release.
+   Check version per platform: the current release set is 0.4.0 for Mac, Windows
+   and Linux. Never relabel an older binary as the newest release.
 3. Verify the files and upload/deploy them to the existing Droid Fun website.
    Publish matching file records and version labels only after verifying uploads.
 4. Update the Controller setup PDF separately if the instructions have changed.
@@ -30,4 +30,10 @@ Serve files through /api/files/:id so publication/access checks remain in place.
 There is no scheduled GitHub polling, no automatic release publishing endpoint,
 and no permanent GitHub/Cloudflare automation credential to revoke. The website
 Worker remains necessary for the shop, owner dashboard and downloads.
-The separate Windows/Linux build workflow in the app repository remains available.
+The manual Mac and Windows/Linux build workflows remain available. Their optional
+private-draft upload mode places verified installers in an existing draft release
+when Actions artifact storage is unavailable. It never publishes the release or
+updates the website automatically. Publish only after all intended files pass
+verification. The current guide is version 1.4 and explains firmware 1.2.0 for
+Save to bot. Physical USB save and wall-power reboot acceptance remains pending;
+CI and host simulations do not replace a check on an actual bot.

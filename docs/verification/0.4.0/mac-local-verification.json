@@ -1,0 +1,14 @@
+{
+  "version": "0.4.0",
+  "applicationCommit": "2da685d3d7c998067801781145c67cc7b952a78b",
+  "downloadHashesMatchPrivateRelease": true,
+  "dmgChecksumValid": true,
+  "zipAppSignatureValid": true,
+  "architectures": [
+    "arm64",
+    "x86_64"
+  ],
+  "nativeUiPreview": "docs/verification/0.4.0/custom-text-mac-preview.png",
+  "releaseInstallerLaunched": false,
+  "physicalRobotVerified": false
+}

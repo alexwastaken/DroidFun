@@ -1,0 +1,113 @@
+{
+  "version": "0.4.0",
+  "commit": "2da685d3d7c998067801781145c67cc7b952a78b",
+  "platforms": [
+    {
+      "platform": "macOS",
+      "version": "0.4.0",
+      "commit": "2da685d3d7c998067801781145c67cc7b952a78b",
+      "tests": {
+        "passed": 61,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.0-macOS-universal.dmg",
+          "bytes": 12001523,
+          "sha256": "e992bc6a41ee01b26ce2edc2b277be69004e53c2d01a22b8a31e5829ef81d709",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/artifacts/macOS/DroidFun-App-0.4.0-macOS-universal.dmg"
+        },
+        {
+          "name": "DroidFun-App-0.4.0-macOS-universal.zip",
+          "bytes": 11983256,
+          "sha256": "e0e34964ff9c81f06ce92c6a0947bd9b259e727c85895036c4713ea72dc3a8bf",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/artifacts/macOS/DroidFun-App-0.4.0-macOS-universal.zip"
+        }
+      ],
+      "remaining": [
+        "Local launch and upgrade verification",
+        "USB robot connection verification",
+        "Intel Mac runtime"
+      ]
+    },
+    {
+      "platform": "Windows-x64",
+      "version": "0.4.0",
+      "commit": "2da685d3d7c998067801781145c67cc7b952a78b",
+      "tests": {
+        "passed": 64,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.0-Windows-x64-setup.exe",
+          "bytes": 4194536,
+          "sha256": "a424d23cd20a0b8491d92f6703142b643c3293faf0cf0c85cbc9f0501d7c3438",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/artifacts/Windows-x64/DroidFun-App-0.4.0-Windows-x64-setup.exe"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ]
+    },
+    {
+      "platform": "Windows-ARM64",
+      "version": "0.4.0",
+      "commit": "2da685d3d7c998067801781145c67cc7b952a78b",
+      "tests": {
+        "passed": 64,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.0-Windows-ARM64-setup.exe",
+          "bytes": 3796166,
+          "sha256": "338f6608bd06850e3217a5692a9e3fda15d85625e0eb62d5f094a51a320a5a77",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/artifacts/Windows-ARM64/DroidFun-App-0.4.0-Windows-ARM64-setup.exe"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ]
+    },
+    {
+      "platform": "Linux-x86_64",
+      "version": "0.4.0",
+      "commit": "2da685d3d7c998067801781145c67cc7b952a78b",
+      "tests": {
+        "passed": 64,
+        "failed": 0
+      },
+      "assets": [
+        {
+          "name": "DroidFun-App-0.4.0-Linux-x86_64.deb",
+          "bytes": 7405666,
+          "sha256": "09028c1c6271ab2e50443983104561ba37cf405a4e0d6388466ee7b5cd7d5633",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/artifacts/Linux-x86_64/DroidFun-App-0.4.0-Linux-x86_64.deb"
+        },
+        {
+          "name": "DroidFun-App-0.4.0-Linux-x86_64.rpm",
+          "bytes": 7406685,
+          "sha256": "56ea4bf27124a588a6fc908a3aa0020c08f89e7cce111ac826389e726eced872",
+          "path": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.4.0/artifacts/Linux-x86_64/DroidFun-App-0.4.0-Linux-x86_64.rpm"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ]
+    }
+  ],
+  "allVerified": true
+}

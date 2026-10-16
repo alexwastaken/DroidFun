@@ -1,0 +1,57 @@
+{
+  "version": "0.4.0",
+  "platform": "Linux-x86_64",
+  "target": "x86_64-unknown-linux-gnu",
+  "applicationCommit": "2da685d3d7c998067801781145c67cc7b952a78b",
+  "pipelineCommit": "5aa8b399b0dd3fea58e8077f73ad15df5308a341",
+  "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/38881551066",
+  "runner": {
+    "os": "Linux",
+    "architecture": "X64",
+    "image": "20261012.334.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.21.0",
+  "tests": {
+    "passed": 64,
+    "failed": 0
+  },
+  "architecture": "x86_64",
+  "smoke": {
+    "result": "passed",
+    "debInstalled": true,
+    "automaticUsbRuleInstalled": true,
+    "repairButtonRealIpc": true,
+    "mandatoryBotChooser": true,
+    "botSelectionRealIpc": true,
+    "scopedUaccessFixture": true,
+    "removalAndReinstallPreserveUserFiles": true,
+    "noGroupChanges": true,
+    "installedBinaryMatchesPackage": true,
+    "rpmMetadataArchitecture": "x86_64",
+    "nativeWindowCreated": true,
+    "aliveSeconds": 15,
+    "runnerPolicyDirectoryFixture": true,
+    "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; hosted runner policy ancestors normalized to ordinary root:root 0755; no tray host, robot or account credentials"
+  },
+  "signed": false,
+  "assets": [
+    {
+      "name": "DroidFun-App-0.4.0-Linux-x86_64.deb",
+      "bytes": 7405666,
+      "sha256": "09028c1c6271ab2e50443983104561ba37cf405a4e0d6388466ee7b5cd7d5633"
+    },
+    {
+      "name": "DroidFun-App-0.4.0-Linux-x86_64.rpm",
+      "bytes": 7406685,
+      "sha256": "56ea4bf27124a588a6fc908a3aa0020c08f89e7cce111ac826389e726eced872"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

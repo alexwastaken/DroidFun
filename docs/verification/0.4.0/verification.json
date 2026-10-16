@@ -30,6 +30,31 @@
   ],
   "remaining": [
     "Physical USB upload, unplug and wall-charger power-cycle test",
-    "Native platform installer builds and final package runtime checks"
-  ]
+    "Intel Mac runtime, Fedora RPM runtime, live account behavior on Windows/Linux",
+    "Mac release installer upgrade and platform signing/notarization"
+  ],
+  "nativePackages": {
+    "macOS": {
+      "testsPassed": 61,
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ],
+      "archiveAndSignatureVerified": true
+    },
+    "Windows-x64": {
+      "testsPassed": 64,
+      "installedNativeWindow": true
+    },
+    "Windows-ARM64": {
+      "testsPassed": 64,
+      "installedNativeWindow": true
+    },
+    "Linux-x86_64": {
+      "testsPassed": 64,
+      "installedNativeWindow": true,
+      "botChooserAndUsbRepairIpc": true,
+      "runnerPolicyDirectoryFixture": true
+    }
+  }
 }
