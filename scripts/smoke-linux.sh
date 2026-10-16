@@ -19,6 +19,29 @@ cmp src-tauri/linux/70-droidfun.rules "$rule"
 cmp src-tauri/linux/70-droidfun.rules /usr/share/droidfun/70-droidfun.rules
 cmp src-tauri/linux/setup-robot-access "$helper"
 test "$(stat -c '%U:%G:%a' "$helper")" = root:root:644
+# Match the native repair gate exactly so packaging failures identify the unsafe
+# file or ancestor instead of surfacing later as an unexplained disabled button.
+/usr/bin/python3 - <<'PY' | tee "$DESKBOT_ARTIFACT_DIR/linux-repair-path-trust.json"
+import json, pathlib, stat
+checks = []
+for name, executable in [
+    ("/usr/lib/droidfun/setup-robot-access", False),
+    ("/usr/bin/sh", True),
+    ("/usr/bin/pkexec", True),
+    ("/usr/share/polkit-1/actions/io.droidfun.usb-access.policy", False),
+    ("/usr/share/droidfun/70-droidfun.rules", False),
+]:
+    path = pathlib.Path(name).resolve(strict=True)
+    parts = []
+    for index, part in enumerate([path, *path.parents]):
+        meta = part.lstat()
+        trusted = meta.st_uid == 0 and meta.st_mode & 0o022 == 0
+        trusted = trusted and (stat.S_ISREG(meta.st_mode) and (not executable or meta.st_mode & 0o111 != 0) if index == 0 else stat.S_ISDIR(meta.st_mode))
+        parts.append({"path": str(part), "uid": meta.st_uid, "gid": meta.st_gid, "mode": oct(stat.S_IMODE(meta.st_mode)), "trusted": trusted})
+    checks.append({"requested": name, "trusted": all(p["trusted"] for p in parts), "components": parts})
+print(json.dumps(checks, indent=2))
+assert all(check["trusted"] for check in checks), "Installed Linux USB repair paths fail the native ownership/permission guard; see components above"
+PY
 xmllint --noout --nonet "$policy"
 pkaction --action-id io.droidfun.setup-robot-access --verbose > "$DESKBOT_ARTIFACT_DIR/linux-polkit-policy.txt"
 grep -q 'auth_admin' "$DESKBOT_ARTIFACT_DIR/linux-polkit-policy.txt"
