@@ -1,64 +1,107 @@
-# DroidFun App
+<div align="center">
 
-Private development home: **[alexwastaken/DroidFun](https://github.com/alexwastaken/DroidFun)**. Future changes and releases belong here. Customers download installers from **[droidfun.io/downloads](https://droidfun.io/downloads)**; they do not need GitHub access. Website updates remain manual, at Alex’s request. Current per-platform downloads and checksums are recorded in `distribution/current.json`.
+# DroidFun
 
-DroidFun App is a robot-themed tray companion for a USB RP2040-Zero and SSD1306 128×64 OLED. Clock, Pomodoro, meeting countdown, CPU, memory, weather, free stock quotes, Codex allowance, Claude account allowance and a friendly face are configurable in the app. The controls and cycle preview also work without hardware.
+### A tiny robot. A complete desktop-to-device system.
 
-## Screens and bot profiles: 0.4.0
+Cross-platform desktop software and RP2040 firmware for a USB robot with a 128 × 64 OLED.
 
-Choose Boo, Claw or Meep on first launch. Boo and Meep support custom text, faces and everyday widgets; Claw offers Claude/Codex usage screens only. The editor previews exact 128 × 64 output with text layout, borders, inversion and per-screen appearance controls.
+**Rust · Tauri 2 · React · TypeScript · C++ · RP2040**
 
-**Save to bot** stores enabled text and still face screens for USB wall power, using firmware 1.2.0. It verifies a complete saved playlist before confirming success. Live data and desktop-driven clocks/timers are not stored. **Pause online data** is a separate desktop option that cancels internet requests while local screens keep working. See the [screen setup guide](docs/SCREENS.md) and [firmware builds](firmware/releases/README.md). Physical wall-power verification remains outstanding.
+[Download the app](https://droidfun.io/downloads) · [Get started](#run-locally) · [Architecture](#how-it-works) · [Verification](#tested-and-still-to-test) · [MIT source](LICENSE)
 
-## Bot themes: 0.4.1
+<img src="docs/verification/0.4.1/meep-dark.png" width="270" alt="DroidFun Meep desktop preview with a mint robot and a happy OLED face">
+<img src="docs/verification/0.4.1/boo-light.png" width="270" alt="DroidFun Boo desktop preview in the light theme">
 
-Choosing a bot automatically matches its preview, settings and screen controls: pearl/violet for Boo, orange/copper for Claw, and mint/teal for Meep. The Droid Fun logo stays blue. Light/dark/system appearance remains available in Settings → App. See [branding and upgrade notes](docs/BRANDING.md).
+*Native app previews from the recorded 0.4.1 release. The editor also works without a robot.*
 
-## Downloads: 0.4.1
+</div>
 
-Customers can get the app and **Controller setup PDF** from [droidfun.io/downloads](https://droidfun.io/downloads). Private release assets and platform verification records are kept in [v0.4.1](https://github.com/alexwastaken/DroidFun/releases/tag/v0.4.1).
+## What it does
 
-- **Mac:** universal DMG and ZIP for Apple Silicon and Intel. Architecture, archive checksums and ad-hoc signature are verified. The bot chooser, all three light/dark themes, settings and screen editors were checked in an isolated Apple Silicon preview. Intel runtime and upgrading the user's installed app were not tested for this release.
-- **Windows:** x64 and ARM64 installers. Native behavior tests, real installation, payload comparison and window startup passed on each architecture.
-- **Linux:** x86_64 DEB and RPM. The DEB configures robot permissions; **Connection → Set up robot access** repairs access through the desktop password dialog. See the release's native verification record for installation and repair checks. RPM payloads are checked; Fedora runtime is untested.
-- **Firmware:** included 1.2.0 for RP2040-Zero, SSD1306 128×64, SDA GPIO 4 / SCL GPIO 5, address 0x3C. Export it from **Settings → Robot**. Firmware storage and lifecycle tests passed, but physical Save to bot, unplug and wall-power reboot acceptance remains outstanding. No connected bot was flashed during this release.
+DroidFun turns a small USB display into a desk companion. Build a playlist of faces, custom text, clocks, Pomodoro timers, meeting countdowns, CPU/memory stats, weather, stock quotes, or account-allowance screens. Preview the exact pixels, choose how long each screen stays, and send the playlist to your bot.
 
-Mac packages are not Developer ID signed or notarized; Windows installers are unsigned. [Native build instructions](docs/NATIVE_BUILDS.md), [screen setup](docs/SCREENS.md) and [feature acceptance record](SPEC_COMPLETION.md) record the remaining limits. Earlier hardware and provider test results are historical and do not replace physical checks of this firmware.
+- **Boo, Claw and Meep profiles** with matching controls, previews, and light/dark themes. Boo and Meep support everyday widgets; Claw focuses on Claude/Codex account allowance.
+- **A real screen editor:** reorder widgets, set their timing, adjust text layout, borders and inversion, and preview the 128 × 64 result.
+- **Desktop playback:** Show now, Pin, Pause, Next and Resume share one playback state; closing the controls leaves the tray app running.
+- **Local operation:** text, faces, clocks, timers and system stats work without internet. Pause online data cancels network work while local screens and USB continue.
+- **Saved text and faces:** firmware 1.2.0 supports up to 30 stored screens for USB wall power. Host storage/lifecycle tests pass; physical unplug-and-reboot acceptance remains open.
+- **Optional online sources:** Open-Meteo weather, Yahoo Finance quotes, and existing Codex/Claude Code sign-ins. Allowance widgets show percentages, not token counts.
 
-![The original happy bot stays beside live data](docs/images/companion-original-face-preview.png)
+See [screen setup](docs/SCREENS.md), [local widgets](LOCAL_WIDGETS.md), and [Linux USB setup](docs/LINUX_USB_ACCESS.md).
 
-## Linux robot setup
+## How it works
 
-From 0.3.4, install the DEB using Ubuntu’s graphical package installer and approve its normal password prompt, then plug in your robot. Serial access is configured automatically. **Connection → Set up robot access** repairs existing installations through the desktop’s password dialog, without Terminal or a reboot. [Setup details and supported desktops](docs/LINUX_USB_ACCESS.md).
-
-## Controls
-
-- Add independent weather cities, stock symbols and usage windows. Enable/disable, reorder by dragging or arrow buttons, and choose each duration.
-- Add clocks with local/named timezones, 12/24-hour time, seconds and date; Pomodoro timers with editable focus/break lengths and Start/Pause/Reset/Skip; meeting titles/date/time/duration; CPU sampling/history; and memory used/available, units and sampling. [Local widget guide](LOCAL_WIDGETS.md).
-- Select a row for local preview. **Show now** displays it for one dwell and restores the cycle; **Pin** holds it; Pause, Next and Resume follow the saved playback state. Closing controls leaves the robot cycling.
-- Data widgets keep the original happy bot in their upper-right corner, enlarged from the same face bitmap, with quicker blinks, glances toward the information, Ahh/Ooo mouths and a gentle one-pixel movement. Its reserved corner does not overlap the figures. Display settings control animation energy, glances and mouth shapes, or disable the companion/animation. Reduced motion and Pause freeze animation.
-- The full face has happy, neutral, sleepy and surprised expressions, blinking and speed controls.
-- Weather has Fahrenheit/Celsius and current conditions or daily high/low layouts. Stocks optionally show a verified price change while retaining currency and quote date. Public Yahoo quotes need no account or API key and may be delayed.
-- Codex and Claude display **remaining account allowance percentages**, not token counts. Claude includes desktop/web/Code usage through your existing Claude Code sign-in. An optional status-line source supports selected reports; existing commands are preserved.
-- Claude window-reset handling and bounded sign-in renewal are documented in [Claude recovery](docs/CLAUDE_RECOVERY.md). Mac natural renewal was verified in the recorded preceding build. Windows automatic recovery now passes native ConPTY/credential/HTTP/cycle fixtures; see [Windows recovery and its live-account boundary](docs/WINDOWS_CLAUDE_RECOVERY.md).
-- Settings include orientation, overnight quiet hours, a 15-minute wake override, system/light/dark appearance, opt-in start at login, and tray/window behavior.
-- Review diagnostics before saving a local report. Export the included firmware with manual BOOT instructions. Reset only DroidFun App preferences with a backup; account sign-ins remain intact.
-- Invalid or expired data is skipped. Requests are bounded, cancel when configuration changes, share cached results, honor retry limits, and persist only usable public weather/stock cards. Credentials, prompts and transcripts are not persisted by DroidFun App.
-
-On macOS the tray is the menu bar. On Windows it is the notification area beside the clock. Linux uses a compatible status notifier/system tray; without one, controls remain available as a normal minimized window and through the application launcher.
-
-## Development
-
-Install Node.js 22+, Rust and [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). Ordinary users run the packaged app and need no development tools. Codex/Claude Code are optional dependencies for their account integrations.
-
-```sh
-npm ci
-npm run tauri -- dev
-npm run check
-CARGO_TARGET_DIR="$HOME/.cache/deskbot/target" cargo test --manifest-path src-tauri/Cargo.toml
-npm run release -- --target universal-apple-darwin
+```mermaid
+flowchart LR
+    UI[React editor and pixel preview] --> Core[Rust playback engine]
+    Local[Clocks, timers and system stats] --> Core
+    Online[Optional online providers] --> Policy[Cache, cancellation and retry policy]
+    Policy --> Core
+    Core --> USB[USB serial: COBS framing + CRC32]
+    USB --> Firmware[RP2040 firmware]
+    Firmware --> OLED[128 × 64 SSD1306 OLED]
+    Firmware --> Saved[Two-slot saved playlist storage]
 ```
 
-Native packaging runs only on the current OS: macOS app/DMG, Windows NSIS x64 or ARM64, Linux x86_64 DEB/RPM. `--signed` requires platform signing configuration. It does not dispatch hosted builds or publish artifacts. Dependency versions and lockfiles are pinned. [Manual GitHub builds](docs/NATIVE_BUILDS.md) use native Windows/Linux runners and upload checked Actions artifacts for review; they do not publish automatically. The launcher uses an internal-disk Cargo cache on this Mac and removes only AppleDouble metadata sidecars before parsing project configuration.
+The interesting work is at the boundaries:
 
-Windows/Linux physical robot and live-account behavior, GNOME/KDE tray interaction, Fedora RPM runtime, Intel Mac runtime, full installer lifecycle, accessibility at enlarged text sizes, signing/notarization, timed hardware recovery and the 24-hour soak remain release gates. Disable Start at login before manually removing the macOS/Linux app, and Quit DroidFun App first. No automatic updater is enabled.
+| Engineering decision | What it protects |
+| --- | --- |
+| [Framed packets, CRC32, session IDs and sequence numbers](src-tauri/src/protocol.rs) | Rejects malformed or stale serial traffic and lets the decoder recover for the next packet. |
+| [Bounded connection handling](src-tauri/src/connection.rs) | Reconnects to the selected device and separates transport acknowledgments from display health. |
+| [Cancellable provider requests](src-tauri/src/network.rs) | Stops work after a source, bot or online-data setting changes; shares cached responses and bounds retries. |
+| [Version-aware settings storage](src-tauri/src/persistence.rs) | Writes through a temporary file, keeps a usable backup and preserves unknown future schemas. |
+| [Checksummed, two-slot firmware storage](firmware/deskbot_firmware/standalone_storage.h) | Validates the whole upload before committing a saved playlist; an incomplete upload leaves the prior slot intact. |
+| [Native packaging and smoke checks](docs/NATIVE_BUILDS.md) | Records installer payloads, architecture checks, launch results and remaining platform limits. |
+
+The desktop renders the frames; the firmware validates them and drives the display. This keeps widget behavior independent of the USB packet format. No firmware flashing happens automatically.
+
+## Run locally
+
+Use **Node.js 22.12+ (24 recommended)**, Rust, and the [Tauri prerequisites for your OS](https://v2.tauri.app/start/prerequisites/). The native build workflows pin Rust 1.99.0. Codex and Claude Code are optional; they are only needed for their account integrations.
+
+```sh
+git clone https://github.com/alexwastaken/DroidFun.git
+cd DroidFun
+npm ci
+npm run tauri -- dev
+```
+
+You can configure screens and use the preview without hardware. A physical bot uses an **RP2040-Zero + SSD1306 128 × 64 OLED**, with **SDA GPIO 4, SCL GPIO 5, address 0x3C**. See the [firmware builds and setup](firmware/releases/README.md) before connecting or flashing a board.
+
+```sh
+npm run check
+npm run build
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+The [firmware host tests](firmware/tests/README.md) compile the production storage headers and full firmware sketch against in-memory hardware substitutes, with AddressSanitizer and UndefinedBehaviorSanitizer. They do not access or flash a device.
+
+For installers, use the [native build guide](docs/NATIVE_BUILDS.md). Packaging runs on the target OS; publishing and website updates are separate manual steps.
+
+## Tested and still to test
+
+The repository keeps [versioned release evidence](docs/verification/0.4.1/README.md), not just screenshots. Recorded 0.4.1 results include 61 passing native tests on macOS and 64 on each Windows architecture and Linux. Those are release records, not a claim that every platform was rerun for this public-source update.
+
+For the October 21, 2026 publication review, TypeScript checking, the frontend production build, and both firmware host-test executables passed. Native Rust tests and hardware acceptance were not rerun; see the [review record](docs/verification/publication-2026-10-21.json).
+
+Current limits are explicit: physical Save to bot / wall-power reboot validation is pending; macOS downloads are ad-hoc signed and not notarized; Windows installers are unsigned; Intel Mac and Fedora runtime checks remain open. The detailed [acceptance record](SPEC_COMPLETION.md) and [reliability notes](RELIABILITY_TESTS.md) preserve the other release gates.
+
+## Project map
+
+| Directory | Responsibility |
+| --- | --- |
+| [`src/`](src/) | React controls, bot previews, screen editing and themes |
+| [`src-tauri/src/`](src-tauri/src/) | Playback, rendering, serial protocol, providers and persistence |
+| [`firmware/`](firmware/) | RP2040 firmware, diagnostic sketch, host tests and versioned UF2 builds |
+| [`scripts/`](scripts/) | Packaging, installer checks and reliability fixtures |
+| [`docs/`](docs/) | Setup guides, platform behavior and verification evidence |
+
+## Privacy, dependencies and license
+
+Account widgets are optional and use the user's existing local sign-in. DroidFun does not persist credentials, prompts or transcripts. The Claude allowance integration uses a client-compatibility endpoint rather than an advertised public API, so provider changes can affect it. See [provider implementation](PROVIDER_IMPLEMENTATION.md) and [recovery behavior](docs/CLAUDE_RECOVERY.md).
+
+Original project source is available under the **[MIT License](LICENSE)**. Dependencies, fonts and the third-party components linked into the UF2 binaries retain their own terms. See [third-party notices](THIRD_PARTY_NOTICES.md) and [firmware source/rebuild instructions](docs/FIRMWARE_SOURCE.md). DroidFun is an independent project; references to services and hardware do not imply endorsement.
+
+This repository contains the controller software and firmware. The separate enclosure/manufacturing collection and storefront are outside its scope.
