@@ -137,6 +137,12 @@ fn exchange(
                             }
                             if reply.kind == protocol::ERROR {
                                 let message = String::from_utf8_lossy(&reply.payload);
+                                if serde_json::from_slice::<serde_json::Value>(&reply.payload)
+                                    .ok()
+                                    .is_some_and(|v| v["code"] == "i2c_error")
+                                {
+                                    return Err("USB is connected, but the screen is not responding. Reconnect power; if this continues, contact Droid Fun support.".into());
+                                }
                                 return Err(format!("Robot rejected command: {message}"));
                             }
                             if reply.kind == expected {

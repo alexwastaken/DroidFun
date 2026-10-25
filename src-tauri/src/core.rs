@@ -621,6 +621,27 @@ impl Engine {
         if !model.is_empty() {
             preferences.setup_complete = true;
         }
+        preferences.validate()?;
+        // A brand-new Claw profile needs a usable screen before an account is
+        // connected. Existing profiles keep every saved enabled/config flag.
+        if model == "claw"
+            && self.settings.preferences.bot_model.is_empty()
+            && !self.settings.preferences.setup_complete
+            && !self
+                .settings
+                .widgets
+                .iter()
+                .any(|w| w.enabled && kind_allowed(model, &w.kind))
+        {
+            if let Some(sample) = self
+                .settings
+                .widgets
+                .iter_mut()
+                .find(|w| w.kind == "codex" && w.config.mode == "demo")
+            {
+                sample.enabled = true;
+            }
+        }
         self.set_preferences(preferences)
     }
     fn animation_state(&self) -> CompanionPose {
@@ -1871,6 +1892,50 @@ fn render_local(
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn fresh_bot_profiles_start_with_visible_ready_screens() {
+        for (model, expected) in [("boo", "face"), ("meep", "face"), ("claw", "codex")] {
+            let mut engine = Engine::new(Settings::default(), Instant::now());
+            engine.set_bot_model(model).unwrap();
+            let snapshot = engine.snapshot();
+            assert_eq!(snapshot.current_id, expected, "{model}");
+            assert!(snapshot.total_sec > 0, "{model} has no playable screen");
+            assert!(snapshot.display_on);
+            assert_eq!(snapshot.settings.brightness, 85);
+            assert!(!snapshot.settings.preferences.quiet_hours.enabled);
+            assert!(
+                snapshot.frame.iter().any(|byte| *byte != 0),
+                "{model} is blank"
+            );
+            let widget = snapshot
+                .settings
+                .widgets
+                .iter()
+                .find(|w| w.id == expected)
+                .unwrap();
+            assert!(widget.enabled);
+            assert_eq!(widget.config.mode, "demo");
+        }
+    }
+
+    #[test]
+    fn changing_profiles_does_not_reenable_screens_the_owner_disabled() {
+        let mut engine = Engine::new(Settings::default(), Instant::now());
+        engine.set_bot_model("claw").unwrap();
+        engine.set_enabled("codex", false).unwrap();
+        engine.set_bot_model("meep").unwrap();
+        engine.set_enabled("face", false).unwrap();
+        let widgets = serde_json::to_value(&engine.settings.widgets).unwrap();
+        for model in ["claw", "boo", "meep"] {
+            engine.set_bot_model(model).unwrap();
+            assert_eq!(
+                serde_json::to_value(&engine.settings.widgets).unwrap(),
+                widgets
+            );
+            assert_eq!(engine.snapshot().total_sec, 0);
+        }
+    }
 
     #[test]
     fn profiles_preserve_screens_but_restrict_playback_and_edits() {

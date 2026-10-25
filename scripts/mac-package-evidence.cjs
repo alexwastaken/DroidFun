@@ -1,8 +1,8 @@
 // Collect a real native build. Never publishes or relabels older binaries.
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
+const {collectUpdater,digest} = require('./updater-assets.cjs');
 if (process.platform !== 'darwin') throw new Error('Run on macOS after native packaging');
 const run = (cmd, args) => execFileSync(cmd, args, {encoding:'utf8'}).trim();
 const version = JSON.parse(fs.readFileSync('package.json')).version;
@@ -30,8 +30,9 @@ run('ditto',['-c','-k','--sequesterRsrc','--keepParent',app,zip]);
 const testLog = fs.readFileSync('packages/native-tests-macOS.txt','utf8');
 const passed = Number(testLog.match(/test result: ok\. (\d+) passed; 0 failed/)?.[1]);
 if (!(passed > 0)) throw new Error('Passing native tests are required');
-const assets = [dmg,zip].map(file=>{const data=fs.readFileSync(file);return {name:path.basename(file),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};});
-const evidence = {version,productName:config.productName,identifier,applicationCommit:run('git',['rev-parse','HEAD']),architectures,tests:{passed,failed:0},adHocSignatureVerified:true,developerIdSigned:false,notarized:false,assets,remaining:['Local launch and upgrade verification','USB robot connection verification','Intel Mac runtime']};
+const updater = collectUpdater(`${app}.tar.gz`,'packages',version,'macOS-universal',config.plugins?.updater?.pubkey);
+const assets = [dmg,zip,path.join('packages',updater.assetName),path.join('packages',updater.signatureName)].map(digest);
+const evidence = {version,platform:'macOS-universal',productName:config.productName,identifier,applicationCommit:run('git',['rev-parse','HEAD']),architectures,tests:{passed,failed:0},adHocSignatureVerified:true,developerIdSigned:false,notarized:false,updater,assets,remaining:['Local launch and upgrade verification','USB robot connection verification','Intel Mac runtime']};
 fs.writeFileSync(`packages/verification-${version}-macOS.json`,JSON.stringify(evidence,null,2)+'\n');
 fs.writeFileSync(`packages/SHA256SUMS-${version}-macOS.txt`,assets.map(a=>`${a.sha256}  ${a.name}`).join('\n')+'\n');
 console.log(JSON.stringify(evidence,null,2));

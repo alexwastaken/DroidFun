@@ -1,11 +1,15 @@
+mod app_update;
 pub mod claude_account;
 pub mod claude_bridge;
 mod connection;
 mod core;
+mod display_test;
+mod firmware_setup;
 pub mod linux_usb;
 mod local_widgets;
 mod network;
 mod persistence;
+mod picoboot;
 mod platform;
 mod protocol;
 mod providers;
@@ -47,6 +51,9 @@ struct AppState {
     save_generation: std::sync::atomic::AtomicU64,
 }
 struct StandaloneRequest {
+    // The request owns the lock while queued and throughout the USB flash
+    // transaction, even if its caller times out or closes the webview.
+    _operation: Arc<UsbOperationGuard>,
     generation: u64,
     settings: Vec<u8>,
     serial: String,
@@ -206,6 +213,13 @@ fn select_robot(
     app: AppHandle,
     state: State<AppState>,
 ) -> Result<Snapshot, String> {
+    // A timed-out USB operation can still own a blocked native driver call.
+    // Do not let a manual Connect start the normal worker against that port.
+    let _operation = if serial.is_some() {
+        Some(UsbOperationGuard::acquire()?)
+    } else {
+        None
+    };
     if let Some(ref value) = serial {
         if !connection::robot_ports()?
             .iter()
@@ -307,7 +321,9 @@ async fn save_to_bot(state: State<'_, AppState>) -> Result<serde_json::Value, St
         if pending.is_some() {
             return Err("A save is already waiting. Please wait for it to finish.".into());
         }
+        let operation = UsbOperationGuard::acquire()?;
         *pending = Some(StandaloneRequest {
+            _operation: operation,
             generation: state
                 .save_generation
                 .load(std::sync::atomic::Ordering::Acquire),
@@ -908,7 +924,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         let path = app
             .dialog()
             .file()
-            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.0.uf2")
+            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.2.uf2")
             .add_filter("RP2040 firmware", &["uf2"])
             .blocking_save_file();
         let Some(path) = path else {
@@ -916,13 +932,373 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         };
         fs::write(
             path.into_path().map_err(|_| "Choose a local file")?,
-            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.0.uf2"),
+            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.2.uf2"),
         )
         .map_err(|_| "Could not save firmware")?;
         Ok(true)
     })
     .await
     .map_err(|_| "Firmware export stopped".to_string())?
+}
+#[tauri::command]
+async fn list_setup_drives() -> Result<Vec<firmware_setup::SetupDrive>, String> {
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        tauri::async_runtime::spawn_blocking(firmware_setup::drives),
+    )
+    .await
+    .map_err(|_| {
+        "USB scan is waiting for the drive. Reconnect your USB cable and scan again.".to_string()
+    })?
+    .map_err(|_| "USB setup scan stopped".to_string())?
+}
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PreparedUpdate {
+    path: String,
+    board_id: String,
+}
+
+static USB_OPERATION: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub(crate) struct UsbOperationGuard;
+
+impl UsbOperationGuard {
+    pub(crate) fn acquire() -> Result<Arc<Self>, String> {
+        USB_OPERATION
+            .compare_exchange(
+                false,
+                true,
+                std::sync::atomic::Ordering::SeqCst,
+                std::sync::atomic::Ordering::SeqCst,
+            )
+            .map_err(|_| {
+                "An app update or USB operation is still running. Wait for it to finish before trying again."
+                    .to_string()
+            })?;
+        Ok(Arc::new(Self))
+    }
+}
+
+impl Drop for UsbOperationGuard {
+    fn drop(&mut self) {
+        USB_OPERATION.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+fn restart_canceled(cancel: &std::sync::atomic::AtomicBool) -> bool {
+    cancel.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+// A small port interface keeps the actual reset sequence testable without
+// opening hardware. The native driver calls themselves cannot be interrupted.
+trait RestartPort {
+    fn dtr(&mut self, state: bool) -> Result<(), String>;
+    fn baud(&mut self, rate: u32) -> Result<(), String>;
+}
+
+impl RestartPort for Box<dyn serialport::SerialPort> {
+    fn dtr(&mut self, state: bool) -> Result<(), String> {
+        self.write_data_terminal_ready(state)
+            .map_err(|_| "Could not request USB restart".into())
+    }
+
+    fn baud(&mut self, rate: u32) -> Result<(), String> {
+        self.set_baud_rate(rate)
+            .map_err(|_| "Could not prepare USB update".into())
+    }
+}
+
+fn request_usb_restart(
+    usb: &mut impl RestartPort,
+    cancel: &std::sync::atomic::AtomicBool,
+    settle: impl FnOnce(),
+) -> Result<(), String> {
+    let canceled =
+        || "USB restart was canceled. Scan USB to check your bot’s current state.".to_string();
+    if restart_canceled(cancel) {
+        return Err(canceled());
+    }
+    let dtr = usb.dtr(true);
+    if restart_canceled(cancel) {
+        return Err(canceled());
+    }
+    dtr?;
+    // A baud call may have changed the device even if its driver later reports
+    // an error. Restore a non-triggering rate before dropping the port whenever
+    // the 1200-baud operation is canceled or fails.
+    let baud = usb.baud(1200);
+    if restart_canceled(cancel) || baud.is_err() {
+        let _ = usb.baud(115200);
+        return Err(if restart_canceled(cancel) {
+            canceled()
+        } else {
+            baud.unwrap_err()
+        });
+    }
+    settle();
+    if restart_canceled(cancel) {
+        let _ = usb.baud(115200);
+        return Err(canceled());
+    }
+    let reset = usb.dtr(false);
+    if restart_canceled(cancel) || reset.is_err() {
+        // The reset may already have reached the board. This is best-effort
+        // cleanup, not a claim that a blocked native call was rolled back.
+        let _ = usb.baud(115200);
+        return Err(if restart_canceled(cancel) {
+            canceled()
+        } else {
+            reset.unwrap_err()
+        });
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn supports_display_test() -> bool {
+    picoboot::supported()
+}
+
+#[tauri::command]
+async fn prepare_display_test(app: AppHandle) -> Result<PreparedUpdate, String> {
+    if !picoboot::supported() {
+        return Err(
+            "The standalone display test requires direct USB setup on a supported Mac.".into(),
+        );
+    }
+    prepare_robot_update(None, app).await
+}
+
+#[tauri::command]
+async fn prepare_robot_update(
+    serial: Option<String>,
+    app: AppHandle,
+) -> Result<PreparedUpdate, String> {
+    let preparation = UsbOperationGuard::acquire()?;
+    // An explicit serial permits restoring the diagnostic sketch, which does
+    // not implement the normal app handshake. Resolve it against current USB
+    // descriptors, then pass its identity through to the flash verification.
+    let (requested, expected_port) = if let Some(serial) = serial {
+        (serial, None)
+    } else {
+        let state = app.state::<AppState>();
+        let c = state
+            .connection
+            .lock()
+            .map_err(|_| "Connection state unavailable")?;
+        if c.board_id.is_none() || c.firmware.is_none() {
+            return Err(
+                "Connect a bot that answers DroidFun App before requesting a USB update.".into(),
+            );
+        }
+        (
+            c.board_id.clone().unwrap(),
+            Some(c.port.clone().ok_or("Robot USB port unavailable")?),
+        )
+    };
+    let candidate = connection::robot_ports()?
+        .into_iter()
+        .find(|p| {
+            p.serial.eq_ignore_ascii_case(&requested)
+                && expected_port.as_ref().is_none_or(|path| &p.path == path)
+        })
+        .ok_or("Your bot is no longer on USB. Reconnect its cable and scan again.")?;
+    let serial = candidate.serial;
+    let port = candidate.path;
+    let previous_selection = app
+        .state::<AppState>()
+        .engine
+        .lock()
+        .map_err(|_| "State unavailable")?
+        .settings
+        .selected_device_serial
+        .clone();
+    let before = list_setup_drives().await?;
+    // Stop the normal link worker before opening the selected serial port.
+    select_robot(None, app.clone(), app.state::<AppState>())?;
+    let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let worker_cancel = cancel.clone();
+    let worker_guard = preparation.clone();
+    let job = tauri::async_runtime::spawn_blocking(move || {
+        // The caller keeps its reference through ROM discovery; this reference
+        // also keeps the operation locked if a native call outlives the timeout.
+        let _guard = worker_guard;
+        // A failed handshake may take two bounded attempts to release its port.
+        std::thread::sleep(Duration::from_millis(1500));
+        if restart_canceled(&worker_cancel) {
+            return Err("USB restart was canceled before opening the port.".to_string());
+        }
+        let mut usb = serialport::new(&port, 115200)
+            .dtr_on_open(true)
+            .timeout(Duration::from_millis(500))
+            .open()
+            .map_err(|_| {
+                "Could not prepare the bot for its update. Reconnect USB and try again.".to_string()
+            })?;
+        if restart_canceled(&worker_cancel) {
+            return Err("USB restart was canceled after opening the port.".to_string());
+        }
+        request_usb_restart(&mut usb, &worker_cancel, || {
+            std::thread::sleep(Duration::from_millis(100));
+        })
+    });
+    let result = match tokio::time::timeout(Duration::from_secs(10), job).await {
+        Ok(result) => result
+            .map_err(|_| "USB update preparation stopped".to_string())
+            .and_then(|result| result),
+        Err(_) => {
+            cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+            // Keep selection paused: the native worker may still own the port.
+            // Its guard prevents another restart until it has actually exited.
+            return Err("USB restart timed out. The bot may still restart when the driver returns. Unplug and reconnect its cable, then scan USB before trying again.".into());
+        }
+    };
+    if let Err(error) = result {
+        let _ = mutate(&app, app.state::<AppState>(), true, |e| {
+            e.settings.selected_device_serial = previous_selection.clone();
+            Ok(())
+        });
+        return Err(error);
+    }
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while Instant::now() < deadline {
+        if let Ok(found) = list_setup_drives().await {
+            let new: Vec<_> = found
+                .into_iter()
+                .filter(|d| !before.iter().any(|old| old.path == d.path))
+                .collect();
+            if new.len() == 1 {
+                return Ok(PreparedUpdate {
+                    path: new[0].path.clone(),
+                    board_id: serial,
+                });
+            }
+            if new.len() > 1 {
+                let _ = mutate(&app, app.state::<AppState>(), true, |e| {
+                    e.settings.selected_device_serial = previous_selection.clone();
+                    Ok(())
+                });
+                return Err("More than one robot is in setup mode. Use the Connection section to choose yours.".into());
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    let _ = mutate(&app, app.state::<AppState>(), true, |e| {
+        e.settings.selected_device_serial = previous_selection;
+        Ok(())
+    });
+    Err("The app could not detect your bot’s update connection. Scan USB to check whether setup is available.".into())
+}
+#[tauri::command]
+async fn install_robot_firmware(
+    path: String,
+    expected_board_id: Option<String>,
+    app: AppHandle,
+) -> Result<Snapshot, String> {
+    let serial = install_image(path, expected_board_id, false, app.clone()).await?;
+    // Persist the newly discovered board, replacing any old robot selection.
+    // The link worker performs HELLO and OLED checks before saying connected.
+    select_robot(Some(serial), app.clone(), app.state::<AppState>())
+}
+
+#[tauri::command]
+async fn install_display_test(
+    path: String,
+    expected_board_id: Option<String>,
+    app: AppHandle,
+) -> Result<String, String> {
+    install_image(path, expected_board_id, true, app).await
+}
+
+#[tauri::command]
+async fn read_display_test(serial: String, app: AppHandle) -> Result<display_test::Report, String> {
+    let operation = UsbOperationGuard::acquire()?;
+    {
+        let state = app.state::<AppState>();
+        let engine = state.engine.lock().map_err(|_| "State unavailable")?;
+        if engine.settings.selected_device_serial.is_some() {
+            return Err(
+                "Pause the normal bot connection before reading its standalone display test."
+                    .into(),
+            );
+        }
+    }
+    let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let worker_cancel = cancel.clone();
+    let worker_guard = operation.clone();
+    let job = tauri::async_runtime::spawn_blocking(move || {
+        let _guard = worker_guard;
+        display_test::read(&serial, &worker_cancel)
+    });
+    match tokio::time::timeout(Duration::from_secs(7), job).await {
+        Ok(result) => result.map_err(|_| {
+            "The display test reader stopped. Its result was not confirmed.".to_string()
+        })?,
+        Err(_) => {
+            cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+            Err("The display test’s USB connection stalled. Unplug and reconnect the cable before reading again. Its result was not confirmed.".into())
+        }
+    }
+}
+
+async fn install_image(
+    path: String,
+    expected_board_id: Option<String>,
+    test: bool,
+    app: AppHandle,
+) -> Result<String, String> {
+    let operation = UsbOperationGuard::acquire()?;
+    {
+        let state = app.state::<AppState>();
+        let engine = state.engine.lock().map_err(|_| "State unavailable")?;
+        if !["boo", "meep", "claw"].contains(&engine.settings.preferences.bot_model.as_str()) {
+            return Err("Choose Boo, Meep or Claw before installing its software.".into());
+        }
+    }
+    if test {
+        if !path.starts_with("picoboot:") || !picoboot::supported() {
+            return Err(
+                "The standalone display test requires direct USB setup on a supported Mac.".into(),
+            );
+        }
+        // Persist the paused selection across app restarts. The diagnostic
+        // sketch runs independently and reports JSON rather than app packets.
+        select_robot(None, app.clone(), app.state::<AppState>())?;
+    }
+    let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let worker_cancel = cancel.clone();
+    let worker_guard = operation.clone();
+    let progress = app.clone();
+    let job = tauri::async_runtime::spawn_blocking(move || {
+        let _guard = worker_guard;
+        let report = |message: &str| {
+            if !worker_cancel.load(std::sync::atomic::Ordering::SeqCst) {
+                let _ = progress.emit("deskbot-firmware-setup", message);
+            }
+        };
+        if test {
+            firmware_setup::install_display_test(
+                &path,
+                expected_board_id.as_deref(),
+                &worker_cancel,
+                report,
+            )
+        } else {
+            firmware_setup::install(&path, expected_board_id.as_deref(), &worker_cancel, report)
+        }
+    });
+    let serial = match tokio::time::timeout(Duration::from_secs(75), job).await {
+        Ok(result) => result.map_err(|_| "Robot installation stopped".to_string())??,
+        Err(_) => {
+            cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+            return Err(
+                "USB setup has stalled. Unplug and reconnect the USB cable before trying again."
+                    .into(),
+            );
+        }
+    };
+    Ok(serial)
 }
 #[tauri::command]
 async fn export_diagnostics(app: AppHandle, state: State<'_, AppState>) -> Result<bool, String> {
@@ -1033,13 +1409,25 @@ fn connection_worker(app: AppHandle) {
             std::thread::sleep(Duration::from_secs(1));
             continue;
         };
+        let previous = app
+            .state::<AppState>()
+            .connection
+            .lock()
+            .ok()
+            .map(|c| c.clone())
+            .filter(|c| {
+                c.board_id
+                    .as_deref()
+                    .is_some_and(|id| id.eq_ignore_ascii_case(&serial))
+            })
+            .unwrap_or_default();
         publish_connection(
             &app,
             ConnectionSnapshot {
                 state: "connecting".into(),
                 detail: "Checking the DroidFun App firmware handshake".into(),
                 port: Some(candidate.path.clone()),
-                ..ConnectionSnapshot::default()
+                ..previous
             },
         );
         match Link::connect(&candidate) {
@@ -1081,7 +1469,9 @@ fn connection_worker(app: AppHandle) {
                             publish_connection(
                                 &app,
                                 ConnectionSnapshot {
-                                    state: if error.contains("i2c_error") {
+                                    state: if error.contains("i2c_error")
+                                        || error.contains("screen is not responding")
+                                    {
                                         "display_error"
                                     } else {
                                         "reconnecting"
@@ -1214,6 +1604,7 @@ pub fn run() {
             show_window(app)
         }))
         .setup(|app| {
+            app_update::initialize(app.handle());
             let settings_path = app.path().app_config_dir()?.join("settings.json");
             // An already enabled integration follows app updates without changing Claude settings.
             let bridge = app.path().app_config_dir()?.join("claude-bridge");
@@ -1366,6 +1757,10 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            app_update::get_app_update_status,
+            app_update::check_app_update,
+            app_update::install_app_update,
+            app_update::restart_app_after_update,
             set_preferences,
             set_bot_model,
             set_offline_mode,
@@ -1379,6 +1774,13 @@ pub fn run() {
             diagnostics_preview,
             export_diagnostics,
             export_firmware,
+            list_setup_drives,
+            supports_display_test,
+            prepare_display_test,
+            prepare_robot_update,
+            install_robot_firmware,
+            install_display_test,
+            read_display_test,
             configure_source,
             add_widget,
             remove_widget,
@@ -1411,14 +1813,216 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("DroidFun App could not start")
         .run(|app, event| {
-            if let tauri::RunEvent::ExitRequested { code: None, api, .. } = event {
+            if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
+                // Ordinary Quit cannot stop a bundle replacement halfway
+                // through. The explicit updater restart remains permitted.
+                if app_update::installing(app) && code != Some(tauri::RESTART_EXIT_CODE) {
+                    api.prevent_exit();
+                    return;
+                }
                 let state = app.state::<AppState>();
-                if state.platform.tray_available {
+                if code.is_none() && state.platform.tray_available {
                     // Last control window closed; explicit Quit uses exit(0).
                     api.prevent_exit();
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod usb_restart_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    // Only tests exercising the real process-wide guard need serialization.
+    static GUARD_TEST: Mutex<()> = Mutex::new(());
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Action {
+        Dtr(bool),
+        Baud(u32),
+    }
+
+    struct Port<'a> {
+        cancel: &'a AtomicBool,
+        actions: Vec<Action>,
+        cancel_on: Option<Action>,
+        fail_on: Option<Action>,
+    }
+
+    impl Port<'_> {
+        fn act(&mut self, action: Action) -> Result<(), String> {
+            self.actions.push(action);
+            if self.cancel_on == Some(action) {
+                self.cancel.store(true, Ordering::SeqCst);
+            }
+            if self.fail_on == Some(action) {
+                Err("Driver call failed after it may have reached the board".into())
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    impl RestartPort for Port<'_> {
+        fn dtr(&mut self, state: bool) -> Result<(), String> {
+            self.act(Action::Dtr(state))
+        }
+        fn baud(&mut self, rate: u32) -> Result<(), String> {
+            self.act(Action::Baud(rate))
+        }
+    }
+
+    #[test]
+    fn canceled_baud_call_is_disarmed_before_drop_without_requesting_reset() {
+        let cancel = AtomicBool::new(false);
+        let mut port = Port {
+            cancel: &cancel,
+            actions: Vec::new(),
+            cancel_on: Some(Action::Baud(1200)),
+            fail_on: None,
+        };
+        assert!(request_usb_restart(&mut port, &cancel, || {}).is_err());
+        assert_eq!(
+            port.actions,
+            [Action::Dtr(true), Action::Baud(1200), Action::Baud(115200)]
+        );
+    }
+
+    #[test]
+    fn failed_baud_call_is_disarmed_even_if_driver_reports_an_error() {
+        let cancel = AtomicBool::new(false);
+        let mut port = Port {
+            cancel: &cancel,
+            actions: Vec::new(),
+            cancel_on: None,
+            fail_on: Some(Action::Baud(1200)),
+        };
+        assert!(request_usb_restart(&mut port, &cancel, || {}).is_err());
+        assert_eq!(
+            port.actions,
+            [Action::Dtr(true), Action::Baud(1200), Action::Baud(115200)]
+        );
+    }
+
+    #[test]
+    fn cancellation_before_or_between_native_calls_stops_later_reset_actions() {
+        let cancel = AtomicBool::new(true);
+        let mut port = Port {
+            cancel: &cancel,
+            actions: Vec::new(),
+            cancel_on: None,
+            fail_on: None,
+        };
+        assert!(request_usb_restart(&mut port, &cancel, || {}).is_err());
+        assert!(port.actions.is_empty());
+        cancel.store(false, Ordering::SeqCst);
+        port.cancel_on = Some(Action::Dtr(true));
+        assert!(request_usb_restart(&mut port, &cancel, || {}).is_err());
+        assert_eq!(port.actions, [Action::Dtr(true)]);
+        cancel.store(false, Ordering::SeqCst);
+        port.actions.clear();
+        port.cancel_on = None;
+        assert!(
+            request_usb_restart(&mut port, &cancel, || cancel.store(true, Ordering::SeqCst))
+                .is_err()
+        );
+        assert_eq!(
+            port.actions,
+            [Action::Dtr(true), Action::Baud(1200), Action::Baud(115200)]
+        );
+    }
+
+    #[test]
+    fn normal_restart_and_cancellation_during_reset_have_distinct_results() {
+        let cancel = AtomicBool::new(false);
+        let mut port = Port {
+            cancel: &cancel,
+            actions: Vec::new(),
+            cancel_on: None,
+            fail_on: None,
+        };
+        assert!(request_usb_restart(&mut port, &cancel, || {}).is_ok());
+        assert_eq!(
+            port.actions,
+            [Action::Dtr(true), Action::Baud(1200), Action::Dtr(false)]
+        );
+        port.actions.clear();
+        port.cancel_on = Some(Action::Dtr(false));
+        assert!(request_usb_restart(&mut port, &cancel, || {}).is_err());
+        assert_eq!(
+            port.actions,
+            [
+                Action::Dtr(true),
+                Action::Baud(1200),
+                Action::Dtr(false),
+                Action::Baud(115200)
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn timeout_does_not_release_usb_operation_guard_until_blocking_worker_exits() {
+        let _test = GUARD_TEST.lock().unwrap();
+        let caller = UsbOperationGuard::acquire().unwrap();
+        let worker = caller.clone();
+        let (release, wait) = std::sync::mpsc::channel();
+        let (exited, done) = std::sync::mpsc::channel();
+        let job = tokio::task::spawn_blocking(move || {
+            wait.recv().unwrap();
+            drop(worker);
+            exited.send(()).unwrap();
+        });
+        assert!(tokio::time::timeout(Duration::from_millis(1), job)
+            .await
+            .is_err());
+        drop(caller);
+        assert!(UsbOperationGuard::acquire().is_err());
+        release.send(()).unwrap();
+        done.recv_timeout(Duration::from_secs(2)).unwrap();
+        let completed = UsbOperationGuard::acquire().unwrap();
+        drop(completed);
+    }
+
+    #[test]
+    fn queued_and_active_saves_hold_guard_until_completion_even_after_caller_leaves() {
+        let _test = GUARD_TEST.lock().unwrap();
+        for disconnect_caller in [false, true] {
+            let (response, rx) = std::sync::mpsc::sync_channel(1);
+            let mut queue = Some(StandaloneRequest {
+                _operation: UsbOperationGuard::acquire().unwrap(),
+                generation: 0,
+                settings: Vec::new(),
+                serial: "test-board".into(),
+                playlist: protocol::StandalonePlaylist {
+                    frames: Vec::new(),
+                    brightness: 1,
+                    orientation: 0,
+                },
+                cancel: Arc::new(AtomicBool::new(false)),
+                response,
+            });
+            // Restart and another firmware operation must both be refused
+            // before the connection worker has even dequeued this save.
+            assert!(UsbOperationGuard::acquire().is_err());
+            let active = queue.take().unwrap();
+            assert!(UsbOperationGuard::acquire().is_err());
+            if disconnect_caller {
+                drop(rx);
+                active.cancel.store(true, Ordering::Release);
+                assert!(UsbOperationGuard::acquire().is_err());
+                assert!(active.response.send(Err("Save canceled".into())).is_err());
+            } else {
+                active.response.send(Ok(1)).unwrap();
+                assert_eq!(rx.recv().unwrap().unwrap(), 1);
+            }
+            // Sending a response is not the end of the native operation's
+            // ownership; release only when the worker drops the request.
+            assert!(UsbOperationGuard::acquire().is_err());
+            drop(active);
+            drop(UsbOperationGuard::acquire().unwrap());
+        }
+    }
 }
 
 #[cfg(test)]

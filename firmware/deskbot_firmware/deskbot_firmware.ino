@@ -11,7 +11,7 @@
 // visible output and the controller model are still being commissioned.
 static constexpr uint SDA_PIN = 4;
 static constexpr uint SCL_PIN = 5;
-static constexpr uint8_t OLED_ADDRESS = 0x3C;
+static uint8_t oled_address = 0x3C;
 static constexpr size_t FRAME_SIZE = 1024;
 static constexpr size_t MAX_PACKET = 1044;
 static constexpr size_t RX_STORAGE = 1100;
@@ -63,9 +63,15 @@ static size_t cobsDecode(const uint8_t *src, size_t length, uint8_t *dst) {
   size_t read = 0, written = 0;
   while (read < length) {
     uint8_t code = src[read++];
-    if (code == 0 || read + code - 1 > length || written + code > MAX_PACKET + 1) return 0;
+    if (code == 0) return 0;
+    const size_t copied = code - 1;
+    if (copied > length - read) return 0;
+    const bool separator = code != 255 && copied < length - read;
+    // A non-final block also emits an implicit zero. Reserve room for that
+    // byte before writing; otherwise an oversized block can overwrite board_id.
+    if (copied + size_t(separator) > MAX_PACKET - written) return 0;
     for (uint8_t i = 1; i < code; ++i) dst[written++] = src[read++];
-    if (code != 255 && read < length) dst[written++] = 0;
+    if (separator) dst[written++] = 0;
   }
   return written;
 }
@@ -115,7 +121,7 @@ static void reply(uint8_t type, uint32_t sequence, uint32_t request_crc, const c
 }
 
 static bool writeI2c(const uint8_t *data, size_t size) {
-  return i2c_write_timeout_us(i2c0, OLED_ADDRESS, data, size, false, 25000) == (int)size;
+  return i2c_write_timeout_us(i2c0, oled_address, data, size, false, 25000) == (int)size;
 }
 
 static bool oledCommands(const uint8_t *commands, size_t size) {
@@ -159,7 +165,13 @@ static bool oledInit() {
     0x8d, 0x14, 0x20, 0x02, 0xa1, 0xc8, 0xda, 0x12,
     0x81, 0xd8, 0xd9, 0xf1, 0xdb, 0x40, 0xa4, 0xa6, 0x2e, 0xaf
   };
-  return oledCommands(commands, sizeof(commands));
+  // Standard SSD1306 modules use either address. Keep the commissioned GPIO
+  // wiring; do not probe unrelated pins or assume an ACK proves visible pixels.
+  for (uint8_t address : {uint8_t(0x3C), uint8_t(0x3D)}) {
+    oled_address = address;
+    if (oledCommands(commands, sizeof(commands))) return true;
+  }
+  return false;
 }
 
 static void pixel(int x, int y) {
@@ -250,7 +262,7 @@ static void processPacket(const uint8_t *packet, size_t size) {
     last_host_command = millis(); fallback_shown = false;
     char response[320];
     snprintf(response, sizeof(response),
-      "{\"firmware\":\"1.2.0\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5-0x3C\",\"maxFps\":5,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
+      "{\"firmware\":\"1.2.2\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5\",\"maxFps\":5,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
       board_id, oled_ready ? "ready" : "i2c_error", DroidSaved::saved_length ? "true" : "false", DroidSaved::saved_length ? DroidSaved::saved[5] : 0);
     reply(HELLO_ACK, sequence, supplied_crc, response);
     return;
