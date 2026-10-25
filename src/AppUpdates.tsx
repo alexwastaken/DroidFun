@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -18,7 +18,7 @@ type AppUpdateStatus = {
 };
 type Operation = "check" | "download" | "restart" | null;
 const activePhase = (phase?: UpdatePhase) => phase === "checking" || phase === "downloading" || phase === "restarting";
-const releaseUrl = "https://github.com/alexwastaken/DroidFun/releases";
+const releaseUrl = "https://droidfun.io/downloads";
 
 // Keep this hook in App so progress and restart readiness survive closing Settings.
 // Reading this status is local; only the Check button makes a network request.
@@ -98,13 +98,16 @@ export function useAppUpdates() {
 
 export type AppUpdatesController = ReturnType<typeof useAppUpdates>;
 
-export default function AppUpdates({ updates, offline, pending, hasUnsavedSettings, beforeRestart }: {
+export default function AppUpdates({ updates, offline, pending, hasUnsavedSettings, beforeRestart, home = false, onResumeOnline }: {
   updates: AppUpdatesController;
   offline: boolean;
   pending: boolean;
   hasUnsavedSettings: boolean;
   beforeRestart: () => Promise<void>;
+  home?: boolean;
+  onResumeOnline?: () => void;
 }) {
+  const headingId = useId();
   const { status, loading, operation, error, busy } = updates;
   const phase = operation === "check" ? "checking" : operation === "download" && status?.phase !== "ready" ? "downloading" : operation === "restart" ? "restarting" : status?.phase;
   const ready = Boolean(status?.readyToRestart);
@@ -127,8 +130,8 @@ export default function AppUpdates({ updates, offline, pending, hasUnsavedSettin
   else if (phase === "error") summary = "The update could not finish. You can try again.";
   const issue = error || (phase === "error" ? status?.message : "");
 
-  return <section className="app-updates" aria-labelledby="app-updates-heading" aria-busy={busy}>
-    <div className="app-updates-heading"><h3 id="app-updates-heading">App updates</h3>{status && <span>Version {status.currentVersion}</span>}</div>
+  return <section className={`app-updates${home ? " home-app-updates" : ""}`} aria-labelledby={headingId} aria-busy={busy}>
+    <div className="app-updates-heading"><h3 id={headingId}>App updates</h3>{status && <span>Version {status.currentVersion}</span>}</div>
     <p role="status">{summary}</p>
     {offline && status?.supported && !manual && !ready && phase !== "restarting" && <p className="app-update-note">Online data is paused. Resume it in the main controls to check for or download updates.</p>}
     {phase === "downloading" && <div className="app-update-progress"><progress max={100} value={percent} aria-label="Update download"/><span>{percent === undefined ? `${downloaded} MB downloaded` : `${percent}% · ${downloaded} MB downloaded`}</span><p>You can close Settings while the download continues.</p></div>}
@@ -136,8 +139,9 @@ export default function AppUpdates({ updates, offline, pending, hasUnsavedSettin
     {status?.version && status.notes && <details className="app-update-notes"><summary>What’s new in {status.version}{releaseDate ? ` · ${releaseDate}` : ""}</summary><div>{status.notes}</div></details>}
     {issue && <p className="source-error" role="alert">{issue}</p>}
     <div className="app-update-actions">
+      {offline && status?.supported && !manual && !ready && onResumeOnline && <button type="button" disabled={busy || pending} onClick={onResumeOnline}>Resume online data</button>}
       {!status && !loading && <button type="button" disabled={pending} onClick={() => void updates.reload()}>Try again</button>}
-      {manual && <a href={releaseUrl} target="_blank" rel="noreferrer">Download the latest version ↗</a>}
+      {(manual || phase === "error") && <a href={releaseUrl} target="_blank" rel="noreferrer">Download the latest installer ↗</a>}
       {status?.supported && !manual && !ready && phase !== "restarting" && <>
         {(phase === "available" || phase === "downloading") && <button type="button" className="primary-control" disabled={busy || pending || offline} onClick={() => void updates.download()}>{phase === "downloading" ? "Downloading…" : "Download update"}</button>}
         {phase !== "downloading" && <button type="button" disabled={busy || pending || offline} onClick={() => void updates.check()}>{phase === "checking" ? "Checking…" : phase === "available" ? "Check again" : "Check for updates"}</button>}

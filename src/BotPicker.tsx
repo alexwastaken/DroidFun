@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { BotAvatar } from "./BotPreview";
 
 const bots = [
@@ -12,11 +12,12 @@ export const botName = (model: string) => bots.find(bot => bot.id === model)?.na
 export const widgetOptions = (model: string) => model === "claw" ? usageOptions : generalOptions;
 export const widgetAllowed = (model: string, kind: string) => widgetOptions(model).some(option => option[0] === kind);
 
-export default function BotPicker({ current, busy, error, onSelect, onCancel }: { current: string; busy: boolean; error: string; onSelect: (model: string) => Promise<void>; onCancel?: () => void }) {
+export default function BotPicker({ current, busy, error, onSelect, onCancel, updates }: { current: string; busy: boolean; error: string; onSelect: (model: string) => Promise<void>; onCancel?: () => void; updates?: ReactNode }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
   return <main className="app-shell bot-picker">
     <div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div>
+    {updates}
     <div className="intro"><div className="eyebrow">LET’S GET STARTED</div><h1 ref={title} tabIndex={-1}>Which bot is yours?</h1><p>Choose your bot to see its screens and settings. You can change this any time.</p></div>
     <div className="bot-choices" aria-label="Choose your bot">{bots.map(bot => <button key={bot.id} className="bot-choice" data-bot={bot.id} disabled={busy} aria-pressed={current === bot.id} onClick={() => onSelect(bot.id)}>
       <BotAvatar model={bot.id}/>
