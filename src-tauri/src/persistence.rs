@@ -81,6 +81,23 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
     if path.exists() {
         let bytes = fs::read(path).map_err(|e| e.to_string())?;
         if serde_json::from_slice::<Settings>(&bytes).is_ok_and(|mut s| { if s.version == 1 { s.version = 2; } s.validate().is_ok() }) {
+            if serde_json::from_slice::<Settings>(&bytes).is_ok_and(|s| s.version == 1) {
+                let archive = path.with_extension("before-droid-profiles.json");
+                match fs::OpenOptions::new().write(true).create_new(true).open(&archive) {
+                    Ok(mut original) => {
+                        #[cfg(unix)] {
+                            use std::os::unix::fs::PermissionsExt;
+                            original.set_permissions(fs::Permissions::from_mode(0o600)).map_err(|e| e.to_string())?;
+                        }
+                        if let Err(error) = original.write_all(&bytes).and_then(|_| original.sync_all()) {
+                            let _ = fs::remove_file(&archive);
+                            return Err(format!("Could not preserve your original droid settings: {error}"));
+                        }
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {},
+                    Err(error) => return Err(format!("Could not preserve your original droid settings: {error}")),
+                }
+            }
             fs::copy(path, path.with_extension("json.bak")).map_err(|e| e.to_string())?;
         }
     }
@@ -102,7 +119,10 @@ mod tests {
         assert!(upgraded.widgets.iter().all(|w| !w.enabled));assert_eq!(upgraded.droids[0].name,"Meep 1");
         assert_eq!(fs::read(&path).unwrap(), bytes); save(&path,&upgraded).unwrap();
         assert_eq!(fs::read(path.with_extension("json.bak")).unwrap(),bytes);
-        assert_eq!(load(&path).unwrap().droids[0].serial,"LEGACY_A");fs::remove_dir_all(dir).unwrap();
+        assert_eq!(load(&path).unwrap().droids[0].serial,"LEGACY_A");
+        let mut changed = upgraded.clone(); changed.brightness = 42; save(&path,&changed).unwrap();
+        assert_eq!(fs::read(path.with_extension("before-droid-profiles.json")).unwrap(),bytes);
+        fs::remove_dir_all(dir).unwrap();
     }
     #[test]
     fn oversized_profiles_do_not_replace_current_settings() {
