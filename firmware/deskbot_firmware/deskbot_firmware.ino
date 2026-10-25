@@ -34,7 +34,6 @@ static char last_reply[320] = {};
 static char board_id[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {};
 static uint32_t last_host_command = 0;
 static bool manual_off = false, oled_ready = false, fallback_shown = false;
-static uint8_t idle_stage = 0;
 static uint8_t contrast = 216;
 static bool usb_suspended = false;
 static bool standalone_active = false;
@@ -187,15 +186,6 @@ static void showFallback() {
   fallback_shown = true;
 }
 
-static void wakeDisplay() {
-  if (!manual_off && idle_stage >= 2) {
-    bool restored = oledContrast(contrast);
-    if (idle_stage >= 3) restored = oledPower(true) && restored;
-    oled_ready = restored && oled_ready;
-  }
-  idle_stage = 0;
-}
-
 // A saved playlist owns the display only while there is no desktop session.
 // USB wall chargers need neither USB enumeration nor an open serial port.
 static void playStandalone() {
@@ -205,7 +195,7 @@ static void playStandalone() {
   bool changed = false;
   if (!standalone_active) {
     standalone_active = true; standalone_index = 0; standalone_started = now;
-    manual_off = false; idle_stage = 0;
+    manual_off = false;
     contrast = (uint16_t(saved[6]) * 255 + 50) / 100;
     uint16_t orientation = read16(saved + 8);
     const uint8_t direction[] = {static_cast<uint8_t>(orientation ? 0xa0 : 0xa1),
@@ -258,11 +248,10 @@ static void processPacket(const uint8_t *packet, size_t size) {
   if (type == HELLO && id != 0 && sequence != 0 && length <= 160) {
     session = id; last_sequence = 0; last_request_crc = 0;
     standalone_active = false; DroidSaved::upload.cancel();
-    wakeDisplay();
     last_host_command = millis(); fallback_shown = false;
     char response[320];
     snprintf(response, sizeof(response),
-      "{\"firmware\":\"1.2.2\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5\",\"maxFps\":5,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
+      "{\"firmware\":\"1.2.3\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5\",\"maxFps\":5,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
       board_id, oled_ready ? "ready" : "i2c_error", DroidSaved::saved_length ? "true" : "false", DroidSaved::saved_length ? DroidSaved::saved[5] : 0);
     reply(HELLO_ACK, sequence, supplied_crc, response);
     return;
@@ -275,7 +264,6 @@ static void processPacket(const uint8_t *packet, size_t size) {
   if (sequence <= last_sequence) return;
   bool was_standalone = standalone_active;
   standalone_active = false;
-  wakeDisplay();
   last_host_command = millis();
   const uint8_t *payload = packet + 16;
   if (type == SAVED_BEGIN) {
@@ -340,7 +328,7 @@ static void processPacket(const uint8_t *packet, size_t size) {
     return;
   }
   if (type == PING) {
-    reply(ACK, sequence, supplied_crc, !oled_ready ? "{\"displayHealth\":\"i2c_error\"}" : was_standalone
+    reply(ACK, sequence, supplied_crc, !oled_ready ? "{\"displayHealth\":\"i2c_error\"}" : (was_standalone || fallback_shown)
       ? "{\"displayHealth\":\"ready\",\"hostFrameNeeded\":true}" : "{\"displayHealth\":\"ready\"}");
     return;
   }
@@ -365,13 +353,20 @@ void setup() {
 void loop() {
   watchdog_update();
   bool suspended = tud_suspended();
-  if (!DroidSaved::saved_length && suspended && !usb_suspended) {
-    oledPower(false); usb_suspended = true; session = 0;
+  if (suspended && !usb_suspended) {
+    // Sleep ends live desktop ownership, not screen power. Keep the same
+    // session so a resumed host can recover without a USB re-enumeration.
+    usb_suspended = true;
+    rx_length = 0; rx_discard = false;
+    DroidSaved::upload.cancel();
+    if (!DroidSaved::saved_length) showFallback();
   } else if (!suspended && usb_suspended) {
-    usb_suspended = false; last_host_command = millis(); idle_stage = 0;
-    if (!manual_off) { oled_ready = oledContrast(contrast) && oledPower(true) && oledFrame(screen); }
+    usb_suspended = false;
   }
-  if (usb_suspended && !DroidSaved::saved_length) { delay(1); return; }
+  if (suspended) {
+    if (DroidSaved::saved_length) playStandalone();
+    delay(1); return;
+  }
   uint32_t now = millis();
   if (rx_length && now - rx_started > 500) { rx_length = 0; rx_discard = false; }
   while (Serial.available()) {
@@ -389,15 +384,14 @@ void loop() {
       else { rx_length = 0; rx_discard = true; }
     }
   }
-  // Packet handling advances millis() and updates last_host_command. Using
-  // the earlier loop timestamp can underflow and falsely trigger all idle
-  // stages, including display-off, immediately after a valid command.
+  // Read the clock after processing packets to avoid unsigned underflow.
   uint32_t idle = millis() - last_host_command;
-  if (DroidSaved::saved_length && (!Serial.dtr() || suspended || idle >= 5000)) {
+  if (DroidSaved::saved_length && (!Serial.dtr() || idle >= 5000)) {
     playStandalone(); delay(1); return;
   }
-  if (idle >= 10000 && idle_stage < 1 && !manual_off) { showFallback(); idle_stage = 1; }
-  if (idle >= 60000 && idle_stage < 2 && oled_ready && !manual_off) { oledContrast(32); idle_stage = 2; }
-  if (idle >= 600000 && idle_stage < 3 && oled_ready && !manual_off) { oledPower(false); idle_stage = 3; }
+  // A charger, closed app, sleeping host or stalled connection all get a
+  // visible face. There is no idle dim/off timer. Explicit screen-off remains
+  // authoritative until the host turns it back on (or the board reboots).
+  if ((!Serial.dtr() || idle >= 5000) && !fallback_shown && !manual_off) showFallback();
   delay(1);
 }

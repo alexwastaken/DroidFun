@@ -74,7 +74,7 @@ int main() {
   assert(oled_ready && fallback_shown && !manual_off);
   assert(memcmp(screen, FALLBACK_FACE, FRAME_SIZE) == 0);
   receive(packet(HELLO, 1));
-  assert(session == 7 && strstr(last_reply, "\"firmware\":\"1.2.2\""));
+  assert(session == 7 && strstr(last_reply, "\"firmware\":\"1.2.3\""));
   const std::string originalId = board_id;
 
   // Reject malformed input, retain identity, and consume the next valid frame
