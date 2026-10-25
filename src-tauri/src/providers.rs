@@ -7,7 +7,7 @@ use std::{
     collections::HashMap,
     fs,
     io::{BufRead, BufReader, Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::{mpsc, Arc, Mutex},
     time::{Duration, Instant},
@@ -786,29 +786,58 @@ impl From<&UsageWindowStored> for UsageWindow {
         }
     }
 }
+#[cfg(any(target_os = "macos", test))]
+fn codex_app_paths(home: Option<&Path>) -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Some(home) = home {
+        roots.push(home.join("Applications"));
+    }
+    roots.push(PathBuf::from("/Applications"));
+    roots.into_iter().flat_map(|root| ["Codex.app", "ChatGPT.app"].map(|name|
+        root.join(name).join("Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")
+    )).collect()
+}
+
+fn codex_executable(path: &Path) -> bool {
+    if !path.is_file() { return false; }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        return path.metadata().is_ok_and(|m| m.permissions().mode() & 0o111 != 0);
+    }
+    #[cfg(not(unix))]
+    true
+}
+
 fn codex_path(explicit: &str) -> Result<PathBuf, String> {
     if !explicit.is_empty() {
         let p = PathBuf::from(explicit);
-        return if p.is_file() {
+        return if codex_executable(&p) {
             Ok(p)
         } else {
-            Err("The selected Codex CLI path does not exist".into())
+            Err("The selected Codex executable is missing or cannot be run".into())
         };
     }
     let name = if cfg!(windows) { "codex.exe" } else { "codex" };
-    let mut paths: Vec<PathBuf> = std::env::var_os("PATH")
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
+    let mut paths = Vec::new();
+    // Finder-launched apps do not inherit the shell's PATH. Prefer the current
+    // desktop app's bundled CLI, which shares its local Codex sign-in.
+    #[cfg(target_os = "macos")]
+    paths.extend(codex_app_paths(home.as_deref()));
+    paths.extend(std::env::var_os("PATH")
         .map(|v| std::env::split_paths(&v).map(|p| p.join(name)).collect())
-        .unwrap_or_default();
-    if let Some(home) = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }) {
-        paths.push(PathBuf::from(home).join(".local/bin").join(name));
+        .unwrap_or_else(Vec::<PathBuf>::new));
+    if let Some(home) = home {
+        paths.push(home.join(".local/bin").join(name));
     }
     if cfg!(target_os = "macos") {
-        paths.extend([PathBuf::from("/opt/homebrew/bin/codex"),PathBuf::from("/usr/local/bin/codex"),PathBuf::from("/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")]);
+        paths.extend([PathBuf::from("/opt/homebrew/bin/codex"),PathBuf::from("/usr/local/bin/codex")]);
     }
     paths
         .into_iter()
-        .find(|p| p.is_file())
-        .ok_or("Install the Codex CLI or choose its path in the editor".into())
+        .find(|p| codex_executable(p))
+        .ok_or("Codex was not found. Install and sign in to the Codex app or CLI, then choose Connect Codex again.".into())
 }
 struct ChildGuard(std::process::Child);
 impl Drop for ChildGuard {
@@ -954,6 +983,22 @@ fn read_codex(path: &str) -> Result<(Value, Value), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn codex_desktop_app_is_found_in_system_and_user_applications() {
+        let home = Path::new("/Users/test-person");
+        let candidates = codex_app_paths(Some(home));
+        assert_eq!(candidates[0], home.join("Applications/Codex.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"));
+        assert!(candidates.contains(&PathBuf::from("/Applications/Codex.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")));
+        assert!(candidates.contains(&PathBuf::from("/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex")));
+        assert_eq!(codex_app_paths(None).len(), 2);
+    }
+
+    #[test]
+    fn missing_codex_path_has_a_clear_error() {
+        assert!(codex_path("/not-a-codex-executable").unwrap_err().contains("missing or cannot be run"));
+        assert!(!codex_executable(Path::new("/not-a-codex-executable")));
+    }
     use crate::core::{Settings, SourceConfig};
     #[test]
     fn manual_provider_entrypoints_enforce_offline_and_bot_profile_before_work() {

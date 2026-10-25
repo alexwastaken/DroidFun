@@ -23,6 +23,11 @@
 .app-updates-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
 .settings-editor .app-updates-heading h3 { margin: 0; }
 .app-updates-heading span { color: var(--ui-muted); font-size: 12px; }
+.home-app-updates { margin: 16px 0 22px; padding: 14px 16px; }
+.home-app-updates h3 { margin: 0; font-size: 14px; }
+.home-app-updates p { font-size: 12px; line-height: 1.5; color: var(--ui-muted); margin: 9px 0 12px; }
+.home-app-updates button { border: 0; border-radius: 8px; padding: 9px 12px; background: var(--ui-accent); color: #fff; font-size: 12px; font-weight: 750; cursor: pointer; }
+.home-app-updates button:disabled { opacity: .55; cursor: default; }
 .app-update-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .app-update-actions a { color: var(--ui-accent); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .app-update-note { padding-left: 10px; border-left: 3px solid var(--ui-accent); }

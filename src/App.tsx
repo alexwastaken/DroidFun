@@ -7,7 +7,7 @@ import BotPicker, { botName, widgetOptions, widgetAllowed } from "./BotPicker";
 import Oled from "./Oled";
 import BotPreview, { BotAvatar } from "./BotPreview";
 import LinuxRobotAccess from "./LinuxRobotAccess";
-import { useAppUpdates } from "./AppUpdates";
+import AppUpdates, { useAppUpdates } from "./AppUpdates";
 
 type Playback = "running" | "paused" | "pinned";
 import SourceEditor, { type Widget, type SourceConfig } from "./SourceEditor";
@@ -235,7 +235,8 @@ export default function App() {
   }
 
   if (!state) return <main className="loading">Waking up DroidFun App…{error && <p role="alert">{error}</p>}</main>;
-  if (!botName(model) || choosingBot) return <BotPicker current={model} busy={busy} error={error} onCancel={botName(model) ? () => setChoosingBot(false) : undefined} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />;
+  const updatePanel = <AppUpdates home updates={appUpdates} offline={offline} pending={actionBusy || installing || savingToBot || Boolean(editor) || adding || settingsOpen} hasUnsavedSettings={false} beforeRestart={async () => {}} onResumeOnline={() => void act("set_offline_mode", { offline: false })}/>;
+  if (!botName(model) || choosingBot) return <BotPicker updates={updatePanel} current={model} busy={busy} error={error} onCancel={botName(model) ? () => setChoosingBot(false) : undefined} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />;
   const widgets = state.settings.widgets.filter(w => widgetAllowed(model, w.kind));
   const selectedWidget = widgets.find(w => w.id === selected);
   const current = widgets.find(w => w.id === state.currentId);
@@ -257,6 +258,7 @@ export default function App() {
 
   return <main className="app-shell">
     <div className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><span className="demo-pill">{testBoardId ? "DISPLAY TEST" : connection?.state === "connected" ? "ROBOT CONNECTED" : connection?.state === "display_error" ? "SCREEN NEEDS ATTENTION" : "PREVIEW MODE"}</span></div>
+    {updatePanel}
     <section className="intro"><div><div className="eyebrow">YOUR DROID, YOUR WAY</div><h1>{botName(model)}<br /><em>{model === "claw" ? "Keep usage in view." : "Make it yours."}</em></h1><p>{model === "claw" ? "Claude and Codex usage, right on your desk." : "Your words, favorite faces, and everyday updates."}</p></div></section>
     <section className="bot-controls" aria-label="Bot and connectivity"><div className="bot-control-row"><span className="bot-context"><BotAvatar model={model}/>{botName(model)}</span><button disabled={busy} onClick={() => setChoosingBot(true)}>Change bot</button></div><label className="offline-control"><span><strong>Pause online data</strong><small>{offline ? "Internet requests paused · USB available" : "Internet sources available"}</small></span><input type="checkbox" checked={offline} disabled={actionBusy || appUpdates.operation === "restart" || appUpdates.status?.phase === "restarting"} onChange={e => act("set_offline_mode", { offline: e.target.checked })}/></label>{offline && <p role="status">{model === "claw" ? "Live usage needs internet. Sample screens still work over USB." : "Text, faces, clocks, timers and computer stats work over USB. Live weather and stocks are paused."} Keep DroidFun App running and your bot connected.</p>}</section>
     {!state.settings.selectedDeviceSerial && !testBoardId && !["connected", "display_error"].includes(connection?.state ?? "") && <section className="robot-setup" aria-label="Connect your first bot"><h3>Connect your {botName(model)}</h3><p>Plug your bot into this computer with a USB data cable. Choose Connect when it appears below, or install its software here if prompted. Keep the case closed.</p><button className="primary-control" disabled={busy || scanning || installing} onClick={() => { document.getElementById("robot-connection")?.scrollIntoView({ block: "start" }); void scanPorts(); }}>Find my bot</button></section>}
