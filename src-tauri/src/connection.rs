@@ -48,7 +48,7 @@ fn unique_robots(mut candidates: Vec<RobotPort>) -> Vec<RobotPort> {
     // the callout endpoint and present one choice per physical board.
     candidates.sort_by_key(|port| (port.path.starts_with("/dev/tty."), port.path.clone()));
     let mut serials = HashSet::new();
-    candidates.retain(|port| serials.insert(port.serial.clone()));
+    candidates.retain(|port| serials.insert(port.serial.to_ascii_uppercase()));
     candidates
 }
 
@@ -456,7 +456,7 @@ mod tests {
             pid: WAVESHARE_PID,
         };
         let result = unique_robots(vec![
-            make("/dev/tty.usbmodem1101", "first"),
+            make("/dev/tty.usbmodem1101", "FIRST"),
             make("/dev/cu.usbmodem1101", "first"),
             make("/dev/cu.usbmodem1201", "second"),
         ]);

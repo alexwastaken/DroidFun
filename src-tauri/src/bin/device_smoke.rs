@@ -6,6 +6,8 @@ mod claude_account;
 mod connection;
 #[path = "../core.rs"]
 mod core;
+#[path = "../droids.rs"]
+mod droids;
 #[path = "../local_widgets.rs"]
 mod local_widgets;
 #[path = "../network.rs"]

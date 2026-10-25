@@ -357,6 +357,8 @@ impl Preferences {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
+    #[serde(default)]
+    pub droids: Vec<crate::droids::DroidProfile>,
     pub version: u8,
     pub widgets: Vec<Widget>,
     pub brightness: u8,
@@ -387,7 +389,8 @@ impl Default for Settings {
             config: SourceConfig::default(),
         };
         Self {
-            version: 1,
+            version: 2,
+            droids: Vec::new(),
             brightness: 85,
             selected_device_serial: None,
             preferences: Preferences::default(),
@@ -437,9 +440,10 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(&self) -> Result<(), String> {
-        if self.version != 1 || self.widgets.is_empty() || self.widgets.len() > 30 {
+        if self.version != 2 || self.widgets.is_empty() || self.widgets.len() > 30 {
             return Err("Unsupported settings version or playlist size".into());
         }
+        crate::droids::validate(&self.droids)?;
         self.preferences.validate()?;
         if self.brightness > 100 {
             return Err("Invalid brightness".into());
@@ -562,6 +566,16 @@ impl Engine {
             reduced_motion: false,
             local_second: 0,
         }
+    }
+
+    pub fn select_droid(&mut self, serial: Option<&str>, model: Option<&str>) -> Result<(), String> {
+        let next = crate::droids::select(&self.settings, serial, model)?;
+        if serial.is_none() { self.settings = next; return Ok(()); }
+        let reduced_motion = self.reduced_motion;
+        *self = Self::new(next, Instant::now());
+        self.reduced_motion = reduced_motion;
+        self.tick(Instant::now());
+        Ok(())
     }
 
     fn current_widget(&self) -> Option<&Widget> {

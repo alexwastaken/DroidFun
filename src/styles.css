@@ -38,3 +38,33 @@
 .app-settings-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 @keyframes usb-scan-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .usb-scan-spinner { animation: none; } }
+
+/* Plain-language connection and one-at-a-time droid selection. */
+.droid-status { padding: 18px; border-radius: 16px; background: var(--ui-tint); margin: 12px 0; }
+.droid-status > strong { display: block; font-size: 17px; }
+.droid-status p { margin: 8px 0; line-height: 1.6; }
+.droid-status small, .droid-card small { display: block; color: var(--ui-muted); line-height: 1.5; }
+.droid-status.is-ready { border: 1px solid var(--ui-accent); }
+.droid-list { display: grid; gap: 10px; margin: 14px 0; }
+.droid-card { padding: 14px; border: 1px solid var(--ui-border); border-radius: 14px; min-width: 0; }
+.droid-card.is-selected { border-color: var(--ui-accent); }
+.droid-card-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.droid-card-heading > div { flex: 1; min-width: 120px; overflow-wrap: anywhere; }
+.droid-card-heading svg { width: 36px; height: 40px; flex-shrink: 0; }
+.droid-rename { margin-top: 10px; font-size: 12px; }
+.droid-name, .droid-add { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 12px; }
+.droid-name label, .droid-add label { flex: 1; min-width: 170px; display: grid; gap: 6px; }
+.droid-name input, .droid-add select { width: 100%; min-width: 0; box-sizing: border-box; }
+.droid-setup-steps { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; padding: 0; margin: 15px 0; color: var(--ui-muted); font-size: 12px; }
+.droid-setup-steps .is-current { font-weight: 700; color: inherit; }
+.droid-setup-steps .is-complete { color: var(--ui-accent); }
+.droid-help { margin-top: 18px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.droid-help summary { cursor: pointer; padding: 8px 0; }
+.droid-help button { margin: 6px 8px 6px 0; }
+.usage-refresh-note { color: var(--ui-muted); font-size: 12px; line-height: 1.6; margin: 8px 0 16px; }
+.droid-card button, .droid-add button, .droid-help button { border: 1px solid var(--ui-border); background: var(--ui-panel); color: inherit; border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+.droid-card button:hover:not(:disabled), .droid-add button:hover:not(:disabled), .droid-help button:hover:not(:disabled) { border-color: var(--ui-accent); }
+.droid-card button:disabled, .droid-add button:disabled, .droid-help button:disabled { opacity: .5; cursor: default; }
+.droid-card .droid-rename { border: 0; padding: 4px 0; background: transparent; color: var(--ui-accent); }
+.droid-name input, .droid-add select { border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-panel); padding: 10px; color: inherit; font: inherit; }
+.droid-add .primary-control { width: auto; }
