@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -6,18 +6,14 @@ import SettingsPanel, { type Preferences } from "./Settings";
 import BotPicker, { botName, widgetOptions, widgetAllowed } from "./BotPicker";
 import Oled from "./Oled";
 import BotPreview, { BotAvatar } from "./BotPreview";
-import LinuxRobotAccess from "./LinuxRobotAccess";
+import BotConnection, { type Connection, type RobotPort, type SetupDrive, type DisplayTestReport, type DroidProfile } from "./BotConnection";
 import AppUpdates, { useAppUpdates } from "./AppUpdates";
 
 type Playback = "running" | "paused" | "pinned";
 import SourceEditor, { type Widget, type SourceConfig } from "./SourceEditor";
 type DataCard = { sourceId: string; state: string; detail: string; fetchedAt: number; observedAt: number; expiresAt: number; headline: string; footer: string };
-type Snapshot = { settings: { version: number; widgets: Widget[]; brightness: number; selectedDeviceSerial: string | null; preferences: Preferences; manualDisplayOff: boolean }; currentId: string; currentLabel: string; playback: Playback; remainingSec: number; totalSec: number; displayOn: boolean; temporary: boolean; displayReason: string; quietActive: boolean; quietOverrideUntil: number; frame: number[]; animationPhase: number; data: Record<string, DataCard> };
-type Connection = { state: string; detail: string; port: string | null; boardId: string | null; firmware: string | null; displayHealth: string | null; standaloneSupported: boolean; standaloneSaved: boolean; standaloneCount: number };
+type Snapshot = { settings: { version: number; widgets: Widget[]; brightness: number; selectedDeviceSerial: string | null; droids: DroidProfile[]; preferences: Preferences; manualDisplayOff: boolean }; currentId: string; currentLabel: string; playback: Playback; remainingSec: number; totalSec: number; displayOn: boolean; temporary: boolean; displayReason: string; quietActive: boolean; quietOverrideUntil: number; frame: number[]; animationPhase: number; data: Record<string, DataCard> };
 type StandaloneResult = { saved: boolean; count: number; message: string };
-type RobotPort = { path: string; serial: string; product: string; vid: number; pid: number };
-type SetupDrive = { path: string; name: string };
-type DisplayTestReport = { kind: string; version: number; boardId: string; uptime_ms: number; sda: number; scl: number; ack_3c: boolean; ack_3d: boolean; address: number | null; phase: string; write_ok: boolean; rgb_ready: boolean };
 type Editor = Widget;
 
 const icons: Record<string, string> = { text: "Aa", face: "◡", weather: "☀", stock: "↗", codex: "⌘", claude: "✦", clock:"◷", pomodoro:"◴", meeting:"▣", cpu:"▥", memory:"▤" };
@@ -56,6 +52,8 @@ export default function App() {
   const [setupDrives, setSetupDrives] = useState<SetupDrive[]>([]);
   const [installing, setInstalling] = useState(false);
   const [setupNotice, setSetupNotice] = useState("");
+  const [setupError, setSetupError] = useState("");
+  const autoConnectAttempt = useRef("");
   const [testBoardId, setTestBoardId] = useState(() => { try { return localStorage.getItem("droidfun-display-test-board") ?? ""; } catch { return ""; } });
   const [testReport, setTestReport] = useState<DisplayTestReport | null>(null);
   const [testIssue, setTestIssue] = useState("");
@@ -73,16 +71,16 @@ export default function App() {
   const offline = state?.settings.preferences.offlineMode ?? false;
   const standaloneDraftKey = JSON.stringify({ orientation: state?.settings.preferences.orientation, brightness: state?.settings.brightness, selectedDeviceSerial: state?.settings.selectedDeviceSerial, connectedBoard: connection?.boardId, connectedPort: connection?.port, widgets: state?.settings.widgets.filter(w => ["face", "text"].includes(w.kind)) });
   useEffect(() => { setSavedToBot(""); setSaveError(""); }, [standaloneDraftKey]);
-  useEffect(() => { setSelected(null); setEditor(null); setAdding(false); setAddKind(model === "claw" ? "codex" : "text"); setSavedToBot(""); setSaveError(""); }, [model]);
+  useEffect(() => { setSelected(null); setEditor(null); setAdding(false); setAddKind(model === "claw" ? "codex" : "text"); setSavedToBot(""); setSaveError(""); }, [model, state?.settings.selectedDeviceSerial]);
   const previewKey = selected ? JSON.stringify({ widget: state?.settings.widgets.find(w => w.id === selected), data: state?.data?.[selected] }) : "";
 
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | undefined;
     invoke<Snapshot>("get_state").then(value => { if (!disposed) setState(value); }).catch(e => setError(String(e)));
-    invoke<Connection>("get_connection").then(value => { if (!disposed) setConnection(value); }).catch(e => setError(String(e)));
-    invoke<RobotPort[]>("list_robot_ports").then(value => { if (!disposed) setPorts(value); }).catch(e => setError(String(e)));
-    invoke<SetupDrive[]>("list_setup_drives").then(value => { if (!disposed) setSetupDrives(value); }).catch(e => setError(String(e)));
+    invoke<Connection>("get_connection").then(value => { if (!disposed) setConnection(value); }).catch(e => setSetupError(String(e)));
+    invoke<RobotPort[]>("list_robot_ports").then(value => { if (!disposed) setPorts(value); }).catch(e => setSetupError(String(e)));
+    invoke<SetupDrive[]>("list_setup_drives").then(value => { if (!disposed) setSetupDrives(value); }).catch(e => setSetupError(String(e)));
     invoke<boolean>("supports_display_test").then(value => { if (!disposed) setSupportsDisplayTest(value); }).catch(() => { /* Keep the test action hidden when support cannot be confirmed. */ });
     listen<Snapshot>("deskbot-state", event => { if (!disposed) setState(event.payload); }).then(fn => { if (disposed) fn(); else unlisten = fn; });
     let unlistenConnection: (() => void) | undefined;
@@ -118,7 +116,7 @@ export default function App() {
 
   async function scanPorts() {
     if (scanning || installing) return;
-    setScanning(true); setScanFinished(false); setScanIssue(""); setError("");
+    setScanning(true); setScanFinished(false); setScanIssue(""); setSetupError("");
     try {
       // Keep the acknowledgement visible even when enumeration finishes instantly.
       const [[serial, setup]] = await Promise.all([
@@ -153,26 +151,45 @@ export default function App() {
     return () => { active = false; window.clearInterval(timer); };
   }, [installing, scanning]);
 
-  async function installRobot(path: string, expectedBoardId?: string) {
-    setInstalling(true); setBusy(true); setError("");
+  async function connectDroid(serial: string, botModel?: string) {
+    setBusy(true); setSetupError(""); setSetupNotice("");
+    try { setState(await invoke<Snapshot>("select_robot", {serial, botModel: botModel ?? null})); }
+    catch (e) { setSetupError(String(e)); }
+    finally { setBusy(false); }
+  }
+
+  useEffect(() => {
+    if (!ports.length) { autoConnectAttempt.current = ""; return; }
+    if (!state || busy || installing || scanning || testBoardId || state.settings.selectedDeviceSerial || ports.length !== 1 || !botName(model)) return;
+    const port = ports[0];
+    const profiles = state.settings.droids ?? [];
+    const known = profiles.find(d => d.serial.toLowerCase() === port.serial.toLowerCase());
+    if (!known && profiles.length) return;
+    if (autoConnectAttempt.current === port.serial) return;
+    autoConnectAttempt.current = port.serial;
+    void connectDroid(port.serial, known ? undefined : model);
+  }, [ports, state?.settings.selectedDeviceSerial, state?.settings.droids, model, busy, installing, scanning, testBoardId]);
+
+  async function installRobot(path: string, expectedBoardId?: string, botModel?: string) {
+    setInstalling(true); setBusy(true); setSetupError("");
     setSetupNotice("Installing your bot’s software… Keep the USB cable connected while it restarts.");
     try {
-      setState(await invoke<Snapshot>("install_robot_firmware", { path, expectedBoardId: expectedBoardId ?? null }));
+      setState(await invoke<Snapshot>("install_robot_firmware", { path, expectedBoardId: expectedBoardId ?? null, botModel: botModel ?? null }));
       setSetupDrives([]);
       setPorts(await invoke<RobotPort[]>("list_robot_ports").catch(() => []));
       setSetupNotice("Your bot restarted. Checking its connection…");
       rememberTestBoard(""); setTestReport(null); setTestIssue("");
-    } catch (e) { setSetupNotice(""); setError(String(e)); }
+    } catch (e) { setSetupNotice(""); setSetupError(String(e)); }
     finally { setInstalling(false); setBusy(false); }
   }
 
   async function updateRobot(serial?: string) {
-    setInstalling(true); setBusy(true); setError("");
+    setInstalling(true); setBusy(true); setSetupError("");
     setSetupNotice("Restarting your bot for its USB software update… Keep the case closed and USB connected.");
     try {
       const target = await invoke<{ path: string; boardId: string }>("prepare_robot_update", { serial: serial ?? null });
       await installRobot(target.path, target.boardId);
-    } catch (e) { setSetupNotice(""); setError(String(e)); }
+    } catch (e) { setSetupNotice(""); setSetupError(String(e)); }
     finally { setInstalling(false); setBusy(false); }
   }
 
@@ -243,8 +260,8 @@ export default function App() {
   const activeCount = widgets.filter(w => w.enabled).length;
   const starterWidget = model === "claw" ? widgets.find(w => w.kind === "codex") ?? widgets[0] : widgets.find(w => w.kind === "face");
   const sampleUsage = model === "claw" ? widgets.find(w => w.enabled && w.config.mode === "demo") : undefined;
-  const currentPortPresent = Boolean(connection?.boardId && connection.port && ports.some(port => port.path === connection.port && port.serial.toLowerCase() === connection.boardId?.toLowerCase()));
-  const reconfirmingConnection = ["connected", "display_error"].includes(connection?.state ?? "") && !currentPortPresent && !setupDrives.length;
+
+
   const standaloneCount = widgets.filter(w => w.enabled && ["face", "text"].includes(w.kind)).length;
   const idle = !selected && state.totalSec === 0 && state.playback !== "pinned" && !state.temporary;
   const screenTitle = selectedWidget?.label ?? (idle ? "Idle display" : current?.label ?? state.currentLabel);
@@ -260,33 +277,17 @@ export default function App() {
     <div className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><span className="demo-pill">{testBoardId ? "DISPLAY TEST" : connection?.state === "connected" ? "ROBOT CONNECTED" : connection?.state === "display_error" ? "SCREEN NEEDS ATTENTION" : "PREVIEW MODE"}</span></div>
     {updatePanel}
     <section className="intro"><div><div className="eyebrow">YOUR DROID, YOUR WAY</div><h1>{botName(model)}<br /><em>{model === "claw" ? "Keep usage in view." : "Make it yours."}</em></h1><p>{model === "claw" ? "Claude and Codex usage, right on your desk." : "Your words, favorite faces, and everyday updates."}</p></div></section>
-    <section className="bot-controls" aria-label="Bot and connectivity"><div className="bot-control-row"><span className="bot-context"><BotAvatar model={model}/>{botName(model)}</span><button disabled={busy} onClick={() => setChoosingBot(true)}>Change bot</button></div><label className="offline-control"><span><strong>Pause online data</strong><small>{offline ? "Internet requests paused · USB available" : "Internet sources available"}</small></span><input type="checkbox" checked={offline} disabled={actionBusy || appUpdates.operation === "restart" || appUpdates.status?.phase === "restarting"} onChange={e => act("set_offline_mode", { offline: e.target.checked })}/></label>{offline && <p role="status">{model === "claw" ? "Live usage needs internet. Sample screens still work over USB." : "Text, faces, clocks, timers and computer stats work over USB. Live weather and stocks are paused."} Keep DroidFun App running and your bot connected.</p>}</section>
-    {!state.settings.selectedDeviceSerial && !testBoardId && !["connected", "display_error"].includes(connection?.state ?? "") && <section className="robot-setup" aria-label="Connect your first bot"><h3>Connect your {botName(model)}</h3><p>Plug your bot into this computer with a USB data cable. Choose Connect when it appears below, or install its software here if prompted. Keep the case closed.</p><button className="primary-control" disabled={busy || scanning || installing} onClick={() => { document.getElementById("robot-connection")?.scrollIntoView({ block: "start" }); void scanPorts(); }}>Find my bot</button></section>}
+    <section className="bot-controls" aria-label="Bot and connectivity"><div className="bot-control-row"><span className="bot-context"><BotAvatar model={model}/>{botName(model)}</span><button disabled={busy} onClick={() => setChoosingBot(true)}>Change model</button></div><label className="offline-control"><span><strong>Pause online data</strong><small>{offline ? "Internet requests paused · USB available" : "Internet sources available"}</small></span><input type="checkbox" checked={offline} disabled={actionBusy || appUpdates.operation === "restart" || appUpdates.status?.phase === "restarting"} onChange={e => act("set_offline_mode", { offline: e.target.checked })}/></label>{offline && <p role="status">{model === "claw" ? "Live usage needs internet. Sample screens still work over USB." : "Text, faces, clocks, timers and computer stats work over USB. Live weather and stocks are paused."} Keep DroidFun App running and your bot connected.</p>}</section>
+    {!state.settings.selectedDeviceSerial && !testBoardId && !["connected", "display_error"].includes(connection?.state ?? "") && <section className="robot-setup" aria-label="Connect your first bot"><h3>Connect your {botName(model)}</h3><p>Plug your bot into this computer with a USB data cable. We’ll connect it automatically, or guide you through one quick setup. Keep the case closed.</p><button className="primary-control" disabled={busy || scanning || installing} onClick={() => { document.getElementById("robot-connection")?.scrollIntoView({ block: "start" }); void scanPorts(); }}>Find my bot</button></section>}
     {sampleUsage && <div className="display-test-card"><strong>A sample screen is ready</strong><p>These allowance numbers are demo data. Connect your account to show your own Codex or Claude usage.</p><button className="edit-button" disabled={busy} onClick={() => setEditor(sampleUsage)}>Set up live usage</button></div>}
     <BotPreview model={model}><Oled frame={visibleFrame} brightness={state.displayOn || selected ? state.settings.brightness : 0} orientation={state.settings.preferences.orientation} description={`${screenTitle} OLED preview. ${liveCard?.headline ?? visibleWidget?.headline ?? ""}. ${liveCard?.footer ?? visibleWidget?.footer ?? ""}. ${liveCard?.detail ?? visibleWidget?.config.faceExpression ?? ""}`} /></BotPreview>
     <div className="screen-caption"><div><div className="eyebrow">SCREEN PREVIEW {sourceLabel && <span className="demo-text">· {sourceLabel.toUpperCase().replaceAll("_", " ")}</span>}</div><h2>{screenTitle}</h2><span className="caption-sub">{selectedWidget ? "Local preview only — cycle continues" : `${status}${!idle && state.playback === "running" && state.displayOn ? ` · ${state.remainingSec}s left` : ""}`}</span></div><span className={`status-dot ${state.displayOn ? "" : "off"}`} /></div>
-    {visibleWidget?.config.mode === "live" && visibleWidget.kind !== "text" && visibleWidget.kind !== "face" && <div className="live-source-detail"><span>{offline && !isLocal ? "Live data is paused. Any preview values are saved data, not a current reading." : (liveCard?.detail ?? "Waiting for this source to be configured or refreshed.")}</span>{liveCard?.observedAt ? <small>{visibleWidget.kind === "stock" ? "Quote age" : "Report age"}: {reportAge(liveCard.observedAt)}</small> : null}{!isLocal && !offline && <button disabled={busy || offline} onClick={() => act("refresh_widget", { id: visibleWidget.id })}>Refresh within source limits</button>}</div>}
+    {visibleWidget?.config.mode === "live" && visibleWidget.kind !== "text" && visibleWidget.kind !== "face" && <div className="live-source-detail"><span>{offline && !isLocal ? "Live data is paused. Any preview values are saved data, not a current reading." : (liveCard?.detail ?? "Waiting for this source to be configured or refreshed.")}</span>{liveCard?.observedAt ? <small>{visibleWidget.kind === "stock" ? "Quote age" : "Report age"}: {reportAge(liveCard.observedAt)}</small> : null}{!isLocal && !offline && <button disabled={busy || offline} onClick={() => act("refresh_widget", { id: visibleWidget.id })}>{["codex", "claude"].includes(visibleWidget.kind) ? "Refresh usage" : "Refresh data"}</button>}</div>}
+    {visibleWidget?.config.mode === "live" && ["codex", "claude"].includes(visibleWidget.kind) && <p className="usage-refresh-note">{offline ? "Usage updates are paused. Turn off Pause online data to resume." : visibleWidget.kind === "claude" && visibleWidget.config.claudeSource !== "account" ? "Checks Claude Code’s latest report every 2 seconds. New usage appears when Claude Code writes a report." : "Usage updates automatically about every 5 minutes while the app is online. Checking again respects your account’s refresh limits."}</p>}
     {selected && <div className="preview-actions"><button onClick={() => setSelected(null)}>Back to live cycle</button><button disabled={!selectedWidget?.enabled || busy} onClick={() => act("show_now", { id: selected })}>Show now</button><button disabled={!selectedWidget?.enabled || busy} onClick={() => act("pin_widget", { id: selected })}>Pin</button></div>}
     {(state.quietActive || state.quietOverrideUntil > Date.now()/1000) && <div className="quiet-status" role="status"><span>{state.displayReason}</span>{state.quietActive && <button disabled={busy} onClick={() => act("override_quiet")}>Wake for 15 minutes</button>}</div>}
     <div className="playback-controls"><button className="primary-control" disabled={busy} onClick={() => act("toggle_pause")}>{state.playback === "running" ? "Ⅱ  Pause cycle" : "▶  Resume cycle"}</button><button className="secondary-control" disabled={busy} onClick={() => act("next_widget")}>Next  →</button></div>
-    <section id="robot-connection" className="robot-connection" aria-label="Robot connection"><div className="section-heading"><div><div className="eyebrow">USB ROBOT</div><h2>Connection</h2></div><button className="scan-button" aria-busy={scanning} disabled={scanning || installing} onClick={scanPorts}>{scanning && <span className="usb-scan-spinner" aria-hidden="true" />}{scanning ? "Scanning USB…" : scanFinished ? "Scan again" : "Scan USB"}</button></div>
-      {(scanning || scanFinished) && !installing && <div className={`usb-scan-result${scanIssue ? " has-issue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
-        <strong>{scanning ? "Looking for your bot…" : scanIssue ? "USB scan needs attention" : setupDrives.length ? "Bot found — ready for setup" : reconfirmingConnection ? "Reconfirming USB connection…" : ports.length ? `${ports.length === 1 ? "1 bot" : `${ports.length} bots`} found${connection?.state === "connected" && currentPortPresent ? " · Connected" : ""}` : "No bot found"}</strong>
-        <p>{scanning ? "Checking connected bots and boards that need setup. Keep the USB cable plugged in." : scanIssue ? `${ports.length ? "Your bot was detected, but part of the scan could not finish. " : ""}${scanIssue}` : setupDrives.length ? "Choose Install below to finish setup. You can keep the case closed." : reconfirmingConnection ? "Your bot recently responded. The USB device list is refreshing; keep its cable connected." : ports.length ? testBoardId ? "Your test board is on USB. Read its test result or restore normal software below." : connection?.state === "display_error" && currentPortPresent ? "USB is working. Your bot responds, but its screen needs attention." : connection?.state === "connected" && currentPortPresent ? "Your bot is ready. Choose what to display in Widgets below." : "Choose Connect below to check your bot." : "Check that the cable supports data and is connected at both ends. Try a direct USB port on your computer if needed."}</p>
-        {!scanning && !scanIssue && <small>{reconfirmingConnection ? "Connection status updates automatically." : "Checked USB · New connections are detected automatically."}</small>}
-      </div>}
-      <p className={`connection-state ${connection?.state ?? "preview"}`}>{installing ? "Installing software" : setupDrives.length ? "Ready for setup" : testBoardId ? "Display test" : connection?.state.replaceAll("_", " ") ?? "Preview only"}</p>
-      <p className="connection-detail">{setupDrives.length ? "Your bot is connected in USB setup mode." : testBoardId ? "The screen test runs on the board. Normal widgets resume after you restore its software." : connection?.detail ?? "Checking USB devices…"}</p>
-      {connection?.boardId && <p className="connection-detail">Board {connection.boardId} · Firmware {connection.firmware} · OLED {connection.displayHealth}</p>}
-      {setupDrives.map(drive => <div className="robot-setup" key={drive.path}><h3>Set up your {botName(model)}</h3><p>Your bot needs software before it can connect. Install it here with the case closed.</p><p>This replaces its current program. You can save your screens again afterward.</p><button className="primary-control" disabled={busy || installing} onClick={() => installRobot(drive.path)}>{installing ? "Installing…" : `Install ${botName(model)} software`}</button>{drive.path.startsWith("picoboot:") && <div className="display-test-card"><h3>Check the screen first</h3><p>Install a simple test that shows a filled screen and checkerboard. You can restore normal bot software here afterward.</p><button disabled={busy || installing} onClick={() => startDisplayTest(drive.path)}>Install display test</button>{!testBoardId && testIssue && <p role="alert">{testIssue}</p>}</div>}</div>)}
-      {setupNotice && <p role="status" className="source-notice">{setupNotice}</p>}
-      {!setupDrives.length && !testBoardId && connection?.boardId && <div className="robot-update"><p>{currentPortPresent ? "Install the latest bot software to keep a face visible when your computer sleeps. Keep USB connected during the update. Text and face screens can be saved again afterward." : "Waiting for your bot’s USB connection before updating its software."}</p><button disabled={busy || installing || !currentPortPresent} onClick={() => updateRobot()}>Update bot software</button></div>}
-      {supportsDisplayTest && !testBoardId && connection?.state === "display_error" && <div className="display-test-card"><h3>Try a screen test</h3><p>Install a simple test that shows a filled screen and checkerboard. It temporarily replaces normal bot software; you can restore it here afterward.</p><button disabled={busy || installing || !currentPortPresent} onClick={() => startDisplayTest()}>Run display test</button>{testIssue && <p role="alert">{testIssue}</p>}</div>}
-      {testBoardId && <div className="display-test-card"><h3>Display test tools</h3><p role="status">{readingTest ? "Reading the test board…" : testReport ? testReport.write_ok ? "The test board and screen are responding. Look for a filled screen or checkerboard on your bot." : testReport.ack_3c || testReport.ack_3d ? "The screen answered, but a test write failed. Check whether any pattern is visible." : "The test sketch is running, but the screen has not answered at either supported address." : "Read the board’s test result, or restore its normal software."}</p>{testReport && <small>Board running for {Math.floor(testReport.uptime_ms / 1000)} seconds · Screen {testReport.address === null ? "not detected" : `detected at 0x${testReport.address.toString(16).toUpperCase()}`}</small>}{testIssue && <p role="alert">{testIssue}</p>}<div className="display-test-actions"><button disabled={busy || installing || readingTest} onClick={() => readTestReport(testBoardId)}>Read test result</button><button disabled={busy || installing || readingTest} onClick={() => updateRobot(testBoardId)}>Restore normal software</button></div></div>}
-      {ports.length === 0 ? !setupDrives.length && !installing && !scanFinished && !scanning && <p className="connection-detail">Connect your bot with a USB data cable, then choose Scan USB. New boards in setup mode appear here too.</p> : ports.map(port => <div className="port-row" key={port.serial}><div><strong>{port.product}</strong><small>{port.path} · {port.serial}</small></div>{!testBoardId && <button disabled={busy} onClick={() => act("select_robot", { serial: port.serial })}>Connect</button>}{!testBoardId && connection?.state === "setup_needed" && <button disabled={busy || installing} onClick={() => updateRobot(port.serial)}>Restore normal software</button>}</div>)}
-      <LinuxRobotAccess permissionNeeded={connection?.state === "permission_needed"} onSetup={scanPorts} />
-      {connection?.state === "setup_needed" && <p className="connection-detail">This device has not answered the DroidFun App protocol. It may be running a diagnostic or another sketch; install the DroidFun App firmware to control it here.</p>}
-    </section>
+    <BotConnection model={model} selectedSerial={state.settings.selectedDeviceSerial} profiles={state.settings.droids ?? []} connection={connection} ports={ports} setupDrives={setupDrives} busy={busy} scanning={scanning} scanFinished={scanFinished} scanIssue={scanIssue} installing={installing} setupNotice={setupNotice} setupError={setupError} testBoardId={testBoardId} testReport={testReport} testIssue={testIssue} readingTest={readingTest} supportsDisplayTest={supportsDisplayTest} onScan={scanPorts} onConnect={(serial, botModel) => void connectDroid(serial, botModel)} onInstall={(path, botModel) => void installRobot(path, undefined, botModel)} onUpdate={serial => void updateRobot(serial)} onTest={path => void startDisplayTest(path)} onReadTest={serial => void readTestReport(serial)} onRename={(serial, name) => void act("rename_droid", {serial, name})}/>
     <section className="standalone-controls" aria-label="Use without a computer"><div className="section-heading"><div><div className="eyebrow">TAKE IT WITH YOU</div><h2>Use without a computer</h2></div></div><p>With the latest bot software, your bot keeps a face or its saved screens on while powered. When your computer wakes, the app reconnects automatically and resumes your widgets. Keep DroidFun App running in the background.</p>{model === "claw" ? <p>Live Claude and Codex usage needs DroidFun App running on your computer. Keep Claw Bot connected with a USB data cable.</p> : <><p>Save your enabled text and face screens to {botName(model)}, then plug it into a USB wall charger. The saved screens cycle on their own, even after you unplug and reconnect power.</p><p className="standalone-count">{standaloneCount} {standaloneCount === 1 ? "screen" : "screens"} ready to save · Text and faces only</p><p>Save up to 30 screens, each shown for 3–120 seconds. Faces save as still images. Clocks, weather, stocks and computer stats need the app running.</p>{connection?.state !== "connected" ? <p>Connect your bot by USB to save its screens.</p> : !connection.standaloneSupported ? <p>Update your bot’s firmware first. Under Connection, choose Update bot software, then reconnect.</p> : null}{connection?.state === "connected" && connection.standaloneSaved && !savedToBot && <p>{connection.standaloneCount} {connection.standaloneCount === 1 ? "screen is" : "screens are"} currently stored on your bot. Save again after making changes.</p>}<button className="primary-control" disabled={busy || savingToBot || connection?.state !== "connected" || !connection.standaloneSupported || !standaloneCount || standaloneCount > 30} onClick={saveToBot}>{savingToBot ? "Saving to your bot…" : "Save to bot"}</button>{savedToBot && <p role="status" className="source-notice">{savedToBot}</p>}{saveError && <p role="alert" className="source-error">{saveError}</p>}</>}</section>
     <section className="playlist"><div className="section-heading"><div><div className="eyebrow">YOUR PLAYLIST</div><h2>Widgets</h2></div><span className="count-pill">{activeCount} enabled</span></div>
       <p className="section-intro">Switch widgets on, change their order, and choose how long each appears.</p>

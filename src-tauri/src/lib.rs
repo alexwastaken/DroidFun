@@ -4,6 +4,7 @@ pub mod claude_bridge;
 mod connection;
 mod core;
 mod display_test;
+mod droids;
 mod firmware_setup;
 pub mod linux_usb;
 mod local_widgets;
@@ -113,6 +114,10 @@ where
         return Err(error);
     }
     if save {
+        if let Err(error) = droids::remember(&mut engine.settings) {
+            *engine = previous;
+            return Err(error);
+        }
         if let Err(error) = persistence::save(&state.settings_path, &engine.settings) {
             *engine = previous;
             return Err(format!("Could not save settings: {error}"));
@@ -125,7 +130,8 @@ where
     }
     // Update while holding the engine lock: request registration and result
     // application use the same lock, so no previous generation slips through.
-    let policy_changed = previous.settings.preferences.bot_model
+    let profile_changed = previous.settings.selected_device_serial != engine.settings.selected_device_serial;
+    let policy_changed = profile_changed || previous.settings.preferences.bot_model
         != engine.settings.preferences.bot_model
         || previous.settings.preferences.offline_mode != engine.settings.preferences.offline_mode;
     state.providers.set_policy(
@@ -150,6 +156,10 @@ where
                 }
             }
         }
+    }
+    if profile_changed {
+        let cached = state.providers.startup_cards(&engine.settings.widgets);
+        engine.restore_data(cached);
     }
     let snapshot = engine.snapshot();
     drop(engine);
@@ -210,6 +220,7 @@ fn list_robot_ports() -> Result<Vec<RobotPort>, String> {
 #[tauri::command]
 fn select_robot(
     serial: Option<String>,
+    bot_model: Option<String>,
     app: AppHandle,
     state: State<AppState>,
 ) -> Result<Snapshot, String> {
@@ -223,15 +234,25 @@ fn select_robot(
     if let Some(ref value) = serial {
         if !connection::robot_ports()?
             .iter()
-            .any(|port| port.serial == *value)
+            .any(|port| port.serial.eq_ignore_ascii_case(value))
         {
             return Err("That RP2040-Zero is not currently detected".into());
         }
     }
-    mutate(&app, state, true, |engine| {
-        engine.settings.selected_device_serial = serial;
-        engine.settings.validate()
-    })
+    let snapshot = mutate(&app, state, true, |engine| {
+        engine.select_droid(serial.as_deref(), bot_model.as_deref())
+    })?;
+    publish_connection(&app, ConnectionSnapshot {
+        state: if serial.is_some() { "connecting" } else { "preview" }.into(),
+        detail: if serial.is_some() { "Getting your droid ready…" } else { "Choose a droid to connect." }.into(),
+        ..ConnectionSnapshot::default()
+    });
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn rename_droid(serial: String, name: String, app: AppHandle, state: State<AppState>) -> Result<Snapshot, String> {
+    mutate(&app, state, true, |engine| droids::rename(&mut engine.settings, &serial, &name))
 }
 
 #[tauri::command]
@@ -1116,7 +1137,7 @@ async fn prepare_robot_update(
         .clone();
     let before = list_setup_drives().await?;
     // Stop the normal link worker before opening the selected serial port.
-    select_robot(None, app.clone(), app.state::<AppState>())?;
+    select_robot(None, None, app.clone(), app.state::<AppState>())?;
     let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let worker_cancel = cancel.clone();
     let worker_guard = preparation.clone();
@@ -1194,12 +1215,16 @@ async fn prepare_robot_update(
 async fn install_robot_firmware(
     path: String,
     expected_board_id: Option<String>,
+    bot_model: Option<String>,
     app: AppHandle,
 ) -> Result<Snapshot, String> {
+    if bot_model.as_deref().is_some_and(|model| !["boo", "meep", "claw"].contains(&model)) {
+        return Err("Choose Meep, Boo or Claw before setup.".into());
+    }
     let serial = install_image(path, expected_board_id, false, app.clone()).await?;
     // Persist the newly discovered board, replacing any old robot selection.
     // The link worker performs HELLO and OLED checks before saying connected.
-    select_robot(Some(serial), app.clone(), app.state::<AppState>())
+    select_robot(Some(serial), bot_model, app.clone(), app.state::<AppState>())
 }
 
 #[tauri::command]
@@ -1264,7 +1289,7 @@ async fn install_image(
         }
         // Persist the paused selection across app restarts. The diagnostic
         // sketch runs independently and reports JSON rather than app packets.
-        select_robot(None, app.clone(), app.state::<AppState>())?;
+        select_robot(None, None, app.clone(), app.state::<AppState>())?;
     }
     let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let worker_cancel = cancel.clone();
@@ -1396,7 +1421,7 @@ fn connection_worker(app: AppHandle) {
         };
         let candidate = connection::robot_ports()
             .ok()
-            .and_then(|ports| ports.into_iter().find(|port| port.serial == serial));
+            .and_then(|ports| ports.into_iter().find(|port| port.serial.eq_ignore_ascii_case(&serial)));
         let Some(candidate) = candidate else {
             publish_connection(
                 &app,
@@ -1796,6 +1821,7 @@ pub fn run() {
             linux_usb_status,
             setup_robot_access,
             select_robot,
+            rename_droid,
             preview_frame,
             set_enabled,
             move_widget,
