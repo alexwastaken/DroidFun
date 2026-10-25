@@ -32,6 +32,19 @@ fn main() -> Result<(), String> {
         );
         return Ok(());
     }
+    if std::env::args().nth(1).as_deref() == Some("--codex-assets") {
+        let now = Instant::now();
+        let mut engine = core::Engine::new(core::Settings::default(), now);
+        engine.set_enabled("codex", true)?;
+        engine.pin("codex")?;
+        let resting = engine.render_widget("codex");
+        engine.tick_at(now + Duration::from_millis(2300), 10000, 720);
+        println!(
+            "{}",
+            serde_json::json!({"resting":resting,"pulse":engine.render_widget("codex")})
+        );
+        return Ok(());
+    }
     let serial = std::env::args()
         .nth(1)
         .ok_or("Pass the robot USB serial number")?;
