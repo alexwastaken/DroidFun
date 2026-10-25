@@ -26,3 +26,5 @@ and implicit-zero bytes, malformed source blocks, and recovery into a valid
 full-size frame in the same serial batch. It also verifies that a fresh board
 boots into its fallback face, malformed input preserves the board identity, and
 all-zero/all-one frames and an explicit fallback request remain supported.
+
+The powered-standby test compiles the full shared firmware used by Meep, Boo and Claw. It checks panel power and face pixels during unenumerated wall power, USB suspend, long idle and timer rollover, then verifies same-session and new-session frame handoff. Explicit screen-off remains authoritative. Run it with the same sanitizer command as `packet_bounds_test`, replacing its name with `powered_standby_test`.

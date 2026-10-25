@@ -21,7 +21,7 @@ Cross-platform desktop software and RP2040 firmware for a USB robot with a 128 Ã
 
 DroidFun turns a small USB display into a desk companion. Build a playlist of faces, custom text, clocks, Pomodoro timers, meeting countdowns, CPU/memory stats, weather, stock quotes, or account-allowance screens. Preview the exact pixels, choose how long each screen stays, and send the playlist to your bot.
 
-The current release is **[DroidFun App 0.4.2](https://github.com/alexwastaken/DroidFun/releases/tag/v0.4.2)**, with embedded normal firmware **1.2.2**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
+The current release is **[DroidFun App 0.4.4](https://github.com/alexwastaken/DroidFun/releases/tag/v0.4.4)**, with embedded normal firmware **1.2.3**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
 
 - **Boo, Claw and Meep profiles** with matching controls, previews, and light/dark themes. Boo and Meep support everyday widgets; Claw focuses on Claude/Codex account allowance.
 - **A real screen editor:** reorder widgets, set their timing, adjust text layout, borders and inversion, and preview the 128 Ã— 64 result.

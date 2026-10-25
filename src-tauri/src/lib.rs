@@ -924,7 +924,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         let path = app
             .dialog()
             .file()
-            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.2.uf2")
+            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.3.uf2")
             .add_filter("RP2040 firmware", &["uf2"])
             .blocking_save_file();
         let Some(path) = path else {
@@ -932,7 +932,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         };
         fs::write(
             path.into_path().map_err(|_| "Choose a local file")?,
-            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.2.uf2"),
+            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.3.uf2"),
         )
         .map_err(|_| "Could not save firmware")?;
         Ok(true)
@@ -1402,7 +1402,7 @@ fn connection_worker(app: AppHandle) {
                 &app,
                 ConnectionSnapshot {
                     state: "reconnecting".into(),
-                    detail: "Selected robot is not present on USB".into(),
+                    detail: "Waiting for your bot. Reconnecting automatically when USB returns.".into(),
                     ..ConnectionSnapshot::default()
                 },
             );

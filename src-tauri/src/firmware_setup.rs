@@ -10,7 +10,7 @@ use std::{
 };
 
 const FIRMWARE: &[u8] =
-    include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.2.uf2");
+    include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.3.uf2");
 const DISPLAY_TEST_FIRMWARE: &[u8] =
     include_bytes!("../../firmware/releases/droidfun-display-test-v1.uf2");
 static INSTALLING: AtomicBool = AtomicBool::new(false);
@@ -242,7 +242,7 @@ fn install_image(
         return Err("USB setup canceled. Reconnect your bot and try again.".into());
     }
     report("Preparing the USB drive…");
-    let destination = Path::new(path).join("DroidFun-setup-v1.2.2.uf2");
+    let destination = Path::new(path).join("DroidFun-setup-v1.2.3.uf2");
     // Never follow or overwrite a pre-existing file on a removable drive.
     let mut file = fs::OpenOptions::new()
         .write(true)
@@ -373,7 +373,7 @@ mod tests {
         use sha2::{Digest, Sha256};
         assert_eq!(
             format!("{:x}", Sha256::digest(FIRMWARE)),
-            "40bbb6f2e2324d60f35b80ad4a8f316d68e6e458387217531f23fdbac6275850"
+            "35a8f85a4f63284d6cddb1728835e74c9dabf8c77855cea1bba18c8b76b1a9e1"
         );
     }
     #[test]
