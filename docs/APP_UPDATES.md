@@ -40,4 +40,21 @@ Tauri CLI 2.12.2 signs the app version in the signature's authenticated trusted 
    `--notes` is optional. The generator uses a read-only GitHub API request through `gh`. It requires the exact release to be published, all three updater package records to match passing tests/native verification and the source commit, and GitHub's published asset names, byte sizes, SHA-256 digests, and download URLs to match the locally reverified files. Missing platforms, draft releases, duplicate assets, changed signatures, and unsigned version metadata fail closed. The two Mac targets share the verified universal archive. Linux targets are omitted.
 4. Review and publish the generated `distribution/updater.json` on `main`. The generator only writes the local file; it never commits, pushes, publishes, or dispatches workflows. Update the feed only after the referenced assets are publicly downloadable.
 
-The first updater-enabled app must be installed normally. Later releases can then be offered in that app. Before claiming end-to-end update acceptance, install a signed newer-version package through the app and verify the restarted version and normal USB behavior. Unit tests and artifact verification alone do not establish that acceptance.
+The first updater-enabled app must be installed normally. Later releases can then be offered in that app. Verify an actual signed newer-version installation, the restarted version, settings preservation and normal USB behavior separately from unit tests and artifact checks. A completed desktop upgrade alone does not establish physical bot acceptance.
+
+## Recorded 0.4.2 acceptance
+
+The [public 0.4.2 release](https://github.com/alexwastaken/DroidFun/releases/tag/v0.4.2) was built from application commit `701a261bc26a66705b016cc85473a1cabf71b25a`. [Mac CI](https://github.com/alexwastaken/DroidFun/actions/runs/40215307155) passed 97 native tests; [Windows x64, Windows ARM64 and Linux x86_64 CI](https://github.com/alexwastaken/DroidFun/actions/runs/40215309478) passed 91 on each target. Each recorded zero failures and one intentionally ignored live-account test. Frontend and updater release-tooling checks passed, along with universal Mac package checks and Windows/Linux installed-package smoke checks. Mac and both Windows updater signatures were cryptographically verified for the exact 0.4.2 assets before upload.
+
+On October 25, 2026, a writable, user-owned Mac test copy at **0.4.2-rc.1** completed Settings → App → **Check → Download → Restart** against the public 0.4.2 feed. It installed the downloaded update and restarted automatically. Verification after restart confirmed:
+
+- The installed executable matched the published universal Mac executable.
+- Strict ad-hoc code-signature verification passed.
+- The saved settings file's SHA-256 was exactly unchanged.
+- A subsequent in-app check reported that the app was up to date.
+
+The physical board was absent during this upgrade check, so successful USB operation after the desktop upgrade remains unverified. A separate 90-second passive observation with the app closed and no DroidFun process recorded 46 valid samples, five USB registry IDs and the board absent after 24 seconds. The observed disappearance does not require an active app; its cause remains unresolved. Earlier firmware 1.2.2 installation and a readable screen were confirmed on this Meep, as recorded in the [USB acceptance history](USB_SETUP.md).
+
+This establishes the Mac desktop upgrade and settings-preservation flow. It does not establish a Windows in-app upgrade, sustained physical USB stability, saved-playlist wall-power behavior, or Intel Mac/macOS 13/Fedora runtime acceptance. Updater signatures are separate from platform trust: the Mac app remains ad-hoc signed without Developer ID notarization, and Windows installers lack platform code signing. Consumers still need hardware that has passed readable-screen and power-cycle acceptance.
+
+For a protected Mac installation, the pinned updater uses a graphical administrator authorization prompt after a permission-denied replacement; canceling or failing authorization returns an error and DroidFun does not restart. That path was reviewed in the updater source, but the recorded upgrade used a writable test bundle and did not exercise administrator authorization.
