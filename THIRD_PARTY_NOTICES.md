@@ -8,9 +8,26 @@ The exact JavaScript and Rust dependency versions are recorded in [`package-lock
 
 The desktop stack includes React, Tauri, Rust ecosystem crates and the font8x8 bitmap font. The copied font data and derived widget illustrations retain the existing [font8x8 MIT notice](docs/images/widget-ideas/FONT-LICENSE.txt), copyright 2017 Joaquin Rosales.
 
+## Bundled Mac USB helper
+
+App 0.4.2 includes universal arm64/x86_64 picotool 2.0.0 and dynamically linked libusb 1.0.27, built for macOS 13 or later. Their resources are in [`src-tauri/resources/picotool-macos-universal/`](src-tauri/resources/picotool-macos-universal/), including these notices and complete pinned source archives:
+
+| Component | Corresponding source | License copy |
+| --- | --- | --- |
+| picotool 2.0.0 | [Source archive](src-tauri/resources/picotool-macos-universal/picotool-2.0.0-source.tar.gz) | [BSD-3-Clause](src-tauri/resources/picotool-macos-universal/LICENSE-picotool.txt) |
+| Pico SDK 2.0.0, used by the helper build | [Source archive](src-tauri/resources/picotool-macos-universal/pico-sdk-2.0.0-source.tar.gz) | [BSD-3-Clause](src-tauri/resources/picotool-macos-universal/LICENSE-pico-sdk.txt) |
+| libusb 1.0.27 | [Source archive](src-tauri/resources/picotool-macos-universal/libusb-1.0.27-source.tar.bz2) | [LGPL-2.1-or-later](src-tauri/resources/picotool-macos-universal/LICENSE-libusb.txt) |
+| clipp, included in the pinned picotool archive | picotool source archive above | [MIT](src-tauri/resources/picotool-macos-universal/LICENSE-clipp.txt) |
+| nlohmann/json, included in the pinned picotool archive | picotool source archive above | [MIT](src-tauri/resources/picotool-macos-universal/LICENSE-nlohmann-json.txt) |
+| whereami, included in the pinned picotool archive | picotool source archive above | [MIT](src-tauri/resources/picotool-macos-universal/LICENSE-whereami.txt) |
+
+[`SOURCE_SHA256SUMS`](src-tauri/resources/picotool-macos-universal/SOURCE_SHA256SUMS) records the exact source inputs. The [offline build recipe](src-tauri/resources/picotool-macos-universal/build-helper.sh) and [helper build notes](src-tauri/resources/picotool-macos-universal/README.md) describe the build, dependency checks, load-path adjustment and signatures. These source versions are for the host helper; the firmware's separate core/SDK versions are listed below.
+
+Picotool dynamically loads the adjacent `@executable_path/libusb-1.0.0.dylib`; libusb is not statically linked and no Homebrew installation is required. A compatible rebuilt library can replace that file. Replacing it in a private signed app copy requires re-signing the replacement and enclosing app; ad-hoc signing is sufficient for local testing. Keep the source archives, recipe and notices with distributions of these helper binaries. The [firmware/helper rebuild guide](docs/FIRMWARE_SOURCE.md) provides the repository entry points. The remaining helper binary dependencies are Apple system libraries/frameworks.
+
 ## Firmware and UF2 binaries
 
-The `.ino` and project headers are original project source under the root MIT license. The `.uf2` files are compiled combinations containing third-party runtime/library code; **the entire binary is not MIT licensed**.
+The `.ino` and project headers are original project source under the root MIT license. App 0.4.2 embeds normal firmware 1.2.2 and a separate version-1 display diagnostic. The `.uf2` files are compiled combinations containing third-party runtime/library code; **the entire binary is not MIT licensed**.
 
 The documented firmware toolchain is Arduino CLI 1.5.1 with Arduino-Pico 6.3.0. The following references come from that core's pinned source tree:
 

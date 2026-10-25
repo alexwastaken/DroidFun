@@ -86,6 +86,31 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn upgrading_an_all_off_playlist_does_not_apply_new_bot_defaults() {
+        let dir = std::env::temp_dir().join(format!(
+            "droidfun-onboarding-upgrade-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        let mut existing = Settings::default();
+        for widget in &mut existing.widgets {
+            widget.enabled = false;
+        }
+        existing.brightness = 41;
+        existing.manual_display_off = true;
+        save(&path, &existing).unwrap();
+        let mut engine = crate::core::Engine::new(load(&path).unwrap(), std::time::Instant::now());
+        for model in ["claw", "boo", "meep"] {
+            engine.set_bot_model(model).unwrap();
+            assert!(engine.settings.widgets.iter().all(|w| !w.enabled));
+            assert_eq!(engine.settings.brightness, 41);
+            assert!(engine.settings.manual_display_off);
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn legacy_settings_require_bot_selection_and_preserve_all_existing_screens() {
         let dir = std::env::temp_dir().join(format!("droidfun-profiles-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();

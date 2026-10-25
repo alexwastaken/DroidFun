@@ -777,12 +777,13 @@ dependencies = [
 
 [[package]]
 name = "deskbot"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "chrono",
  "chrono-tz",
  "font8x8",
  "libc",
+ "plist",
  "reqwest 0.12.28",
  "serde",
  "serde_json",

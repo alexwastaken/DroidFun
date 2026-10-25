@@ -10,7 +10,7 @@ on:
         required: true
         default: main
       upload_to_draft:
-        description: Upload verified packages to an existing private draft instead of Actions artifacts
+        description: Upload verified packages to an existing draft instead of Actions artifacts
         type: boolean
         default: false
       release_tag:
@@ -144,7 +144,7 @@ jobs:
           path: packages/
           if-no-files-found: error
           retention-days: 14
-      - name: Upload verified packages to existing private draft
+      - name: Upload verified packages to existing draft
         if: ${{ inputs.upload_to_draft }}
         env:
           GH_TOKEN: ${{ github.token }}

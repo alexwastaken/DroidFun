@@ -1,6 +1,12 @@
 # DroidFun firmware builds
 
-Use **droidfun-rp2040-zero-gp4-gp5-v1.2.0.uf2** for the connected RP2040-Zero / SSD1306 profile: SDA GP4, SCL GP5, OLED 0x3C, 128×64.
+Use **droidfun-rp2040-zero-gp4-gp5-v1.2.2.uf2** for the RP2040-Zero / SSD1306 profile: SDA GP4, SCL GP5, 128×64. Version 1.2.2 fixes a one-byte buffer overflow when decoding an oversized, malformed COBS packet. It checks capacity for both copied bytes and implicit zero separators, preserving the board identity and allowing the next valid packet to be handled. Host regression tests cover the original failure, maximum-size frames, and the fresh-board fallback face. This change does not establish or claim a fix for intermittent USB re-enumeration observed on a physical board.
+
+Version 1.2.1 added checks for both standard OLED addresses, 0x3C and 0x3D, without changing the GPIO wiring. Those checks remain in 1.2.2. An unresponsive display remains a display error even when USB works.
+
+DroidFun App detects mounted RPI-RP2 setup drives under Connection and installs the embedded firmware. A running DroidFun board can enter setup mode using **Update bot software**, which uses the Arduino-Pico 1200-baud USB restart. Neither path requires opening a working assembled bot. Corrupt firmware that exposes neither serial nor the ROM drive still needs hardware recovery; software cannot guarantee recovery from every hardware fault.
+
+`droidfun-display-test-v1.uf2` is the temporary standalone screen diagnostic, not the normal robot firmware. It runs low-contrast all-pixel and checkerboard tests and reports its fixed GP4/GP5 I2C results over USB. Its source and report format are in `../display_test/README.md`. Restore the current normal firmware after testing.
 
 Version 1.2.0 adds persistent saved text/face playlists for wall USB power. The app exports this embedded UF2 through Settings → Robot. It reserves 256 KiB of flash for two checksummed playlist slots; an incomplete upload leaves the current slot intact. Only an explicit save can write flash. The firmware never automatically formats a nonblank filesystem. This build has compiled successfully and is covered by host-side protocol/storage tests; physical unplug/reboot/wall-charger acceptance still needs checking on a bot.
 

@@ -3,3 +3,21 @@
 @import "./themes/shared.css";
 /* Automatic bot palettes override the shared control styles. */
 @import "./themes/bots.css";
+.robot-setup { margin-block: 16px; padding: 18px; border: 1px solid currentColor; border-radius: 16px; }
+.robot-setup h3 { margin-top: 0; }
+.robot-setup .connection-detail { overflow-wrap: anywhere; }
+.robot-setup .primary-control { width: 100%; }
+.scan-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 110px; }
+.usb-scan-spinner { width: 12px; height: 12px; flex: none; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: usb-scan-spin .7s linear infinite; }
+.usb-scan-result { margin: 12px 0 16px; padding: 14px 16px; border: 1px solid var(--ui-border); border-radius: 12px; background: var(--ui-tint); }
+.usb-scan-result strong { display: block; font-size: 14px; line-height: 1.4; }
+.usb-scan-result p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--ui-muted); overflow-wrap: anywhere; }
+.usb-scan-result small { display: block; margin-top: 10px; font-size: 11px; color: var(--ui-muted); }
+.usb-scan-result.has-issue { border-style: dashed; }
+.display-test-card { padding: 16px; margin: 16px 0; border: 1px solid var(--ui-border); border-radius: 12px; background: var(--ui-panel); }
+.display-test-card h3 { margin: 0; font-size: 15px; }
+.display-test-card p, .display-test-card small { font-size: 13px; line-height: 1.5; color: var(--ui-muted); overflow-wrap: anywhere; }
+.display-test-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.display-test-card button, .robot-update button { border: 0; border-radius: 8px; padding: 9px 12px; background: var(--ui-tint); color: var(--ui-accent); font-size: 12px; font-weight: 750; }
+@keyframes usb-scan-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .usb-scan-spinner { animation: none; } }

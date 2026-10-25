@@ -10,7 +10,7 @@ on:
         required: true
         default: main
       upload_to_draft:
-        description: Upload verified packages to an existing private draft instead of Actions artifacts
+        description: Upload verified packages to an existing draft instead of Actions artifacts
         type: boolean
         default: false
 
@@ -49,6 +49,14 @@ jobs:
         run: npm ci
       - name: Check frontend
         run: npm run check
+      - name: Check firmware behavior with sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in standalone_test standalone_lifecycle_test oled_address_test packet_bounds_test; do
+            clang++ -std=c++17 -Wall -Wextra -Werror -Wno-unused-function -fsanitize=address,undefined -Ifirmware/tests/mocks "firmware/tests/${test}.cpp" -o "$RUNNER_TEMP/droidfun-${test}"
+            "$RUNNER_TEMP/droidfun-${test}"
+          done
       - name: Run native behavior tests
         shell: bash
         run: |
@@ -76,7 +84,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: scripts/upload-draft-packages.cjs
           sparse-checkout-cone-mode: false
-      - name: Upload verified packages to existing private draft
+      - name: Upload verified packages to existing draft
         if: ${{ inputs.upload_to_draft }}
         env:
           GH_TOKEN: ${{ github.token }}

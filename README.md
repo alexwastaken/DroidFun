@@ -21,14 +21,18 @@ Cross-platform desktop software and RP2040 firmware for a USB robot with a 128 �
 
 DroidFun turns a small USB display into a desk companion. Build a playlist of faces, custom text, clocks, Pomodoro timers, meeting countdowns, CPU/memory stats, weather, stock quotes, or account-allowance screens. Preview the exact pixels, choose how long each screen stays, and send the playlist to your bot.
 
+The current source targets **DroidFun App 0.4.2**, with embedded normal firmware **1.2.2**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
+
 - **Boo, Claw and Meep profiles** with matching controls, previews, and light/dark themes. Boo and Meep support everyday widgets; Claw focuses on Claude/Codex account allowance.
 - **A real screen editor:** reorder widgets, set their timing, adjust text layout, borders and inversion, and preview the 128 × 64 result.
 - **Desktop playback:** Show now, Pin, Pause, Next and Resume share one playback state; closing the controls leaves the tray app running.
 - **Local operation:** text, faces, clocks, timers and system stats work without internet. Pause online data cancels network work while local screens and USB continue.
-- **Saved text and faces:** firmware 1.2.0 supports up to 30 stored screens for USB wall power. Host storage/lifecycle tests pass; physical unplug-and-reboot acceptance remains open.
+- **Setup with the case closed:** detect a new board, explicitly install its firmware, or update a running bot through the app. Mac builds include a universal direct USB helper for macOS 13+; Windows and Linux use the validated RP2040 setup drive.
+- **Screen diagnostics on supported Macs:** install a temporary standalone test, read its identity-checked result, and restore normal firmware. The physical screen remains part of acceptance.
+- **Saved text and faces:** firmware 1.2.2 retains support for up to 30 stored screens for USB wall power, introduced in 1.2.0. Host storage/lifecycle tests pass; physical unplug-and-reboot acceptance remains open.
 - **Optional online sources:** Open-Meteo weather, Yahoo Finance quotes, and existing Codex/Claude Code sign-ins. Allowance widgets show percentages, not token counts.
 
-See [screen setup](docs/SCREENS.md), [local widgets](LOCAL_WIDGETS.md), and [Linux USB setup](docs/LINUX_USB_ACCESS.md).
+See [screen setup](docs/SCREENS.md), [USB setup and diagnostics](docs/USB_SETUP.md), [local widgets](LOCAL_WIDGETS.md), and [Linux USB setup](docs/LINUX_USB_ACCESS.md).
 
 ## How it works
 
@@ -50,6 +54,7 @@ The interesting work is at the boundaries:
 | --- | --- |
 | [Framed packets, CRC32, session IDs and sequence numbers](src-tauri/src/protocol.rs) | Rejects malformed or stale serial traffic and lets the decoder recover for the next packet. |
 | [Bounded connection handling](src-tauri/src/connection.rs) | Reconnects to the selected device and separates transport acknowledgments from display health. |
+| [Explicit USB setup](src-tauri/src/firmware_setup.rs) and [Mac ROM transport](src-tauri/src/picoboot.rs) | Checks the selected board, verifies direct USB writes, and waits for runtime identity before reconnecting. |
 | [Cancellable provider requests](src-tauri/src/network.rs) | Stops work after a source, bot or online-data setting changes; shares cached responses and bounds retries. |
 | [Version-aware settings storage](src-tauri/src/persistence.rs) | Writes through a temporary file, keeps a usable backup and preserves unknown future schemas. |
 | [Checksummed, two-slot firmware storage](firmware/deskbot_firmware/standalone_storage.h) | Validates the whole upload before committing a saved playlist; an incomplete upload leaves the prior slot intact. |
@@ -68,7 +73,7 @@ npm ci
 npm run tauri -- dev
 ```
 
-You can configure screens and use the preview without hardware. A physical bot uses an **RP2040-Zero + SSD1306 128 × 64 OLED**, with **SDA GPIO 4, SCL GPIO 5, address 0x3C**. See the [firmware builds and setup](firmware/releases/README.md) before connecting or flashing a board.
+You can configure screens and use the preview without hardware. A physical bot uses an **RP2040-Zero + SSD1306 128 × 64 OLED**, with **SDA GPIO 4, SCL GPIO 5, address 0x3C or 0x3D**. See the [firmware builds](firmware/releases/README.md) and [in-app USB setup](docs/USB_SETUP.md) before connecting or flashing a board.
 
 ```sh
 npm run check
@@ -80,13 +85,19 @@ The [firmware host tests](firmware/tests/README.md) compile the production stora
 
 For installers, use the [native build guide](docs/NATIVE_BUILDS.md). Packaging runs on the target OS; publishing and website updates are separate manual steps.
 
+The universal Mac USB helper and replaceable libusb library ship with their [source archives, notices and offline rebuild recipe](src-tauri/resources/picotool-macos-universal/README.md). The [firmware/helper source guide](docs/FIRMWARE_SOURCE.md) explains rebuilding those components without flashing a device.
+
 ## Tested and still to test
 
 The repository keeps [versioned release evidence](docs/verification/0.4.1/README.md), not just screenshots. Recorded 0.4.1 results include 61 passing native tests on macOS and 64 on each Windows architecture and Linux. Those are release records, not a claim that every platform was rerun for this public-source update.
 
 For the October 21, 2026 publication review, TypeScript checking, the frontend production build, and both firmware host-test executables passed. Native Rust tests and hardware acceptance were not rerun; see the [review record](docs/verification/publication-2026-10-21.json).
 
-Current limits are explicit: physical Save to bot / wall-power reboot validation is pending; macOS downloads are ad-hoc signed and not notarized; Windows installers are unsigned; Intel Mac and Fedora runtime checks remain open. The detailed [acceptance record](SPEC_COMPLETION.md) and [reliability notes](RELIABILITY_TESTS.md) preserve the other release gates.
+For the 0.4.2 source, the final local Mac app run recorded **88 passing tests, zero failures and one intentionally ignored live-account test**. TypeScript checking and the production frontend build passed. Firmware 1.2.2 compiles, and all four firmware host-test executables pass with AddressSanitizer and UndefinedBehaviorSanitizer. New coverage checks malformed-packet bounds, recovery into the next valid frame, identity preservation, the default face on a fresh board, and USB-operation cancellation. The local Mac package passed ad-hoc signature/helper-version checks, and its Scan USB feedback was checked in the app. The helper's two architecture slices and macOS 13 minimum load commands were inspected; its version/help ran on Apple Silicon. These local checks do not certify final native CI or hardware acceptance.
+
+On October 25, a second Meep received the standalone display test through the app and its owner confirmed the checkerboard was visible. The app restored normal firmware 1.2.1, and the owner then confirmed its happy face. This establishes that unit's display worked with 1.2.1; it does not establish hardware acceptance for 1.2.2. Repeated OS-level USB removal/re-enumeration was also observed, and its cause remains unresolved. The [USB acceptance history](docs/USB_SETUP.md) distinguishes this working-screen unit from an earlier board whose OLED did not respond.
+
+Current limits are explicit: final 0.4.2 native CI/package checks and firmware 1.2.2 hardware acceptance are separate release gates; physical Save to bot / wall-power reboot validation is pending; macOS packages use ad-hoc signing without Developer ID notarization; Windows installers are unsigned; Intel Mac, macOS 13 and Fedora runtime checks remain open. A consumer unit still needs a physical screen and power-cycle check before assembly acceptance. The detailed [acceptance record](SPEC_COMPLETION.md) and [reliability notes](RELIABILITY_TESTS.md) preserve the other release gates.
 
 ## Project map
 
