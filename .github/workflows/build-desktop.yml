@@ -121,12 +121,17 @@ jobs:
         run: npm ci
       - name: Check frontend
         run: npm run check
+      - name: Check updater release tooling
+        run: node --test ../pipeline/scripts/updater-release.test.cjs
       - name: Run native behavior tests
         run: node ../pipeline/scripts/native-package-evidence.cjs test
       - name: Build native installer packages
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ runner.os == 'Windows' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         run: |
           node ../pipeline/scripts/native-package-evidence.cjs prepare
-          npm run release -- --target ${{ matrix.target }}
+          npm run release -- --target ${{ matrix.target }} ${{ runner.os == 'Windows' && '--updater' || '' }}
       - name: Install and launch Windows package
         if: runner.os == 'Windows'
         shell: pwsh

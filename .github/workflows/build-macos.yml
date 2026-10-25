@@ -49,6 +49,8 @@ jobs:
         run: npm ci
       - name: Check frontend
         run: npm run check
+      - name: Check updater release tooling
+        run: node --test scripts/updater-release.test.cjs
       - name: Check firmware behavior with sanitizers
         shell: bash
         run: |
@@ -64,7 +66,10 @@ jobs:
           mkdir -p packages
           cargo test --release --locked --manifest-path src-tauri/Cargo.toml --lib 2>&1 | tee packages/native-tests-macOS.txt
       - name: Build universal app and disk image
-        run: npm run release -- --target universal-apple-darwin
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: npm run release -- --target universal-apple-darwin --updater
       - name: Verify and collect Mac packages
         run: node scripts/mac-package-evidence.cjs
       - name: Upload packages for installation verification
@@ -82,7 +87,9 @@ jobs:
           ref: ${{ github.sha }}
           path: .release-pipeline
           persist-credentials: false
-          sparse-checkout: scripts/upload-draft-packages.cjs
+          sparse-checkout: |
+            scripts/upload-draft-packages.cjs
+            scripts/updater-assets.cjs
           sparse-checkout-cone-mode: false
       - name: Upload verified packages to existing draft
         if: ${{ inputs.upload_to_draft }}

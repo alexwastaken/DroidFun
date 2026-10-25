@@ -36,6 +36,7 @@ sha2 = "=0.10.9"
 libc = "=0.2.190"
 tauri-plugin-autostart = "=2.7.0"
 tauri-plugin-dialog = "=2.8.2"
+tauri-plugin-updater = { version = "=2.14.0", default-features = false, features = ["rustls-tls", "system-proxy"] }
 
 
 tokio = { version = "=1.53.2", features = ["rt-multi-thread", "time", "macros"] }

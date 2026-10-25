@@ -45,5 +45,17 @@
     "homepage": "https://droidfun.io",
     "shortDescription": "Your Droid Fun desktop companion",
     "longDescription": "Choose faces, weather, stocks, timers and AI usage widgets for your USB-powered Droid Fun bot."
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4NDBFOEI5NzAyOTc0MEQKUldRTmRDbHd1ZWhBK0xWa3BHUVJ5aVltTEVVYm9OS3ExK0pHajF3R1kvT2NteGphREpFSXpxQmkK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/updater.json"
+      ],
+      "requireSignedVersion": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

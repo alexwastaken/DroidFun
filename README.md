@@ -8,7 +8,7 @@ Cross-platform desktop software and RP2040 firmware for a USB robot with a 128 �
 
 **Rust · Tauri 2 · React · TypeScript · C++ · RP2040**
 
-[Download the app](https://droidfun.io/downloads) · [Get started](#run-locally) · [Architecture](#how-it-works) · [Verification](#tested-and-still-to-test) · [MIT source](LICENSE)
+[Download the app](https://github.com/alexwastaken/DroidFun/releases) · [Get started](#run-locally) · [Architecture](#how-it-works) · [Verification](#tested-and-still-to-test) · [MIT source](LICENSE)
 
 <img src="docs/verification/0.4.1/meep-dark.png" width="270" alt="DroidFun Meep desktop preview with a mint robot and a happy OLED face">
 <img src="docs/verification/0.4.1/boo-light.png" width="270" alt="DroidFun Boo desktop preview in the light theme">
@@ -29,6 +29,7 @@ The current source targets **DroidFun App 0.4.2**, with embedded normal firmware
 - **Local operation:** text, faces, clocks, timers and system stats work without internet. Pause online data cancels network work while local screens and USB continue.
 - **Setup with the case closed:** detect a new board, explicitly install its firmware, or update a running bot through the app. Mac builds include a universal direct USB helper for macOS 13+; Windows and Linux use the validated RP2040 setup drive.
 - **Screen diagnostics on supported Macs:** install a temporary standalone test, read its identity-checked result, and restore normal firmware. The physical screen remains part of acceptance.
+- **App updates:** on Mac and Windows, use Settings → App to check, download a signed update and explicitly restart to install it. Install the first updater-enabled release normally; Linux packages remain manual. See [app update releases](docs/APP_UPDATES.md).
 - **Saved text and faces:** firmware 1.2.2 retains support for up to 30 stored screens for USB wall power, introduced in 1.2.0. Host storage/lifecycle tests pass; physical unplug-and-reboot acceptance remains open.
 - **Optional online sources:** Open-Meteo weather, Yahoo Finance quotes, and existing Codex/Claude Code sign-ins. Allowance widgets show percentages, not token counts.
 
@@ -93,7 +94,7 @@ The repository keeps [versioned release evidence](docs/verification/0.4.1/README
 
 For the October 21, 2026 publication review, TypeScript checking, the frontend production build, and both firmware host-test executables passed. Native Rust tests and hardware acceptance were not rerun; see the [review record](docs/verification/publication-2026-10-21.json).
 
-For the 0.4.2 source, the final local Mac app run recorded **88 passing tests, zero failures and one intentionally ignored live-account test**. TypeScript checking and the production frontend build passed. Firmware 1.2.2 compiles, and all four firmware host-test executables pass with AddressSanitizer and UndefinedBehaviorSanitizer. New coverage checks malformed-packet bounds, recovery into the next valid frame, identity preservation, the default face on a fresh board, and USB-operation cancellation. The local Mac package passed ad-hoc signature/helper-version checks, and its Scan USB feedback was checked in the app. The helper's two architecture slices and macOS 13 minimum load commands were inspected; its version/help ran on Apple Silicon. These local checks do not certify final native CI or hardware acceptance.
+For the 0.4.2 source, the final local Mac app run recorded **97 passing tests, zero failures and one intentionally ignored live-account test**. TypeScript checking and the production frontend build passed. Firmware 1.2.2 compiles, and all four firmware host-test executables pass with AddressSanitizer and UndefinedBehaviorSanitizer. New coverage checks malformed-packet bounds, recovery into the next valid frame, identity preservation, the default face on a fresh board, and USB-operation cancellation. The local Mac package passed ad-hoc signature/helper-version checks, and its Scan USB feedback was checked in the app. The helper's two architecture slices and macOS 13 minimum load commands were inspected; its version/help ran on Apple Silicon. The updater also has six release-tooling tests for package/signature tampering, signed versions and exact published assets. These local checks do not certify final native CI or an actual in-app upgrade.
 
 On October 25, a second Meep received the standalone display test through the app and its owner confirmed the checkerboard was visible. The app restored normal firmware 1.2.1, and the owner then confirmed its happy face. The rebuilt app then updated the same Meep to 1.2.2 with the case closed, verified its returning identity and OLED-ready handshake, and the owner confirmed a readable physical face or usage screen. Repeated OS-level USB removal/re-enumeration was also observed, and its cause remains unresolved. The [USB acceptance history](docs/USB_SETUP.md) distinguishes this working-screen unit from an earlier board whose OLED did not respond.
 

@@ -14,7 +14,7 @@ DroidFun App 0.4.2 embeds `firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.2
 
 Firmware 1.2.2 retains saved playlists and the 1.2.1 OLED address compatibility check. It fixes a decoded-packet capacity error that allowed an implicit COBS zero to overwrite one byte beyond the receive buffer. Its host regression test covers the malformed input, board identity, recovery into the next valid frame, full-size frame boundaries and a fresh-board fallback face. This is not a claim that the change fixes physical USB re-enumeration.
 
-Firmware 1.2.0 entered the project in [commit `2da685d`](https://github.com/alexwastaken/DroidFun/tree/2da685d/firmware/deskbot_firmware). The current source and UF2 are retained in this repository. Historical versions and diagnostics have separate records under `firmware/archives/` and `firmware/releases/`; they should not be substituted for the current build. See [USB setup acceptance](USB_SETUP.md) for the separate 1.2.1 hardware observations and the uncompleted 1.2.2 hardware check.
+Firmware 1.2.0 entered the project in [commit `2da685d`](https://github.com/alexwastaken/DroidFun/tree/2da685d/firmware/deskbot_firmware). The current source and UF2 are retained in this repository. Historical versions and diagnostics have separate records under `firmware/archives/` and `firmware/releases/`; they should not be substituted for the current build. See [USB setup acceptance](USB_SETUP.md) for the 1.2.1 diagnostic history, confirmed 1.2.2 in-app update and physical screen, and remaining USB stability checks.
 
 ## Obtain the pinned core and library source
 

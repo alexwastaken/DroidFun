@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
+const {collectUpdater,digest} = require('./updater-assets.cjs');
 const out = process.env.DESKBOT_ARTIFACT_DIR;
 if (!out) throw new Error('DESKBOT_ARTIFACT_DIR must be set');
 fs.mkdirSync(out, { recursive: true });
@@ -46,20 +47,26 @@ if (process.argv[2] === 'prepare') {
   if (!platform.endsWith(architecture)) throw new Error('Binary architecture differs from requested package');
   const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]);
   const extensions = process.platform === 'win32' ? ['.exe'] : ['.deb', '.rpm'];
+  let updater;
   const assets = extensions.map(ext => {
     const matches = walk(path.join(release, 'bundle')).filter(f => path.extname(f) === ext);
     if (matches.length !== 1) throw new Error(`Expected one ${ext} package, found ${matches.length}`);
     const name = `DroidFun-App-${version}-${platform}${ext === '.exe' ? '-setup' : ''}${ext}`;
     fs.copyFileSync(matches[0], path.join(out, name));
+    if(ext === '.exe'){
+      const config = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json','utf8'));
+      updater = collectUpdater(matches[0],out,version,platform,config.plugins?.updater?.pubkey);
+    }
     const data = fs.readFileSync(path.join(out, name));
     return { name, bytes: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') };
   });
+  if(updater)assets.push(digest(path.join(out,updater.signatureName)));
   const testLog = fs.readFileSync(path.join(out, 'native-tests.txt'), 'utf8');
   const passed = Number(testLog.match(/test result: ok\. (\d+) passed; 0 failed/)?.[1]);
   if (!(passed > 0)) throw new Error('Native tests did not pass');
   const smoke = JSON.parse(fs.readFileSync(path.join(out, 'native-smoke.json'), 'utf8').replace(/^\uFEFF/, ''));
   if (smoke.result !== 'passed') throw new Error('Installed package launch check did not pass');
-  const evidence = { version, platform, target, applicationCommit: run('git', ['rev-parse', 'HEAD']), pipelineCommit: process.env.GITHUB_SHA, runUrl: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`, runner: { os: process.env.RUNNER_OS, architecture: process.env.RUNNER_ARCH, image: process.env.ImageVersion }, rust: run('rustc', ['--version']), node: process.version, tests: { passed, failed: 0 }, architecture, smoke, signed: false, assets, remaining: ['Physical robot USB behavior', 'Live account sign-in and usage on this OS', 'Human tray and window interaction', 'Installation/upgrade/uninstall acceptance beyond recorded checks', 'Code signing'] };
+  const evidence = { version, platform, target, applicationCommit: run('git', ['rev-parse', 'HEAD']), pipelineCommit: process.env.GITHUB_SHA, runUrl: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`, runner: { os: process.env.RUNNER_OS, architecture: process.env.RUNNER_ARCH, image: process.env.ImageVersion }, rust: run('rustc', ['--version']), node: process.version, tests: { passed, failed: 0 }, architecture, smoke, signed: false, updater, assets, remaining: ['Physical robot USB behavior', 'Live account sign-in and usage on this OS', 'Human tray and window interaction', 'Installation/upgrade/uninstall acceptance beyond recorded checks', 'Code signing'] };
   fs.writeFileSync(path.join(out, `verification-${version}-${platform}.json`), JSON.stringify(evidence, null, 2) + '\n');
   fs.renameSync(path.join(out, 'native-tests.txt'), path.join(out, `native-tests-${platform}.txt`));
   fs.renameSync(path.join(out, 'native-smoke.json'), path.join(out, `native-smoke-${platform}.json`));

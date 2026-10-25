@@ -1,3 +1,4 @@
+mod app_update;
 pub mod claude_account;
 pub mod claude_bridge;
 mod connection;
@@ -50,6 +51,9 @@ struct AppState {
     save_generation: std::sync::atomic::AtomicU64,
 }
 struct StandaloneRequest {
+    // The request owns the lock while queued and throughout the USB flash
+    // transaction, even if its caller times out or closes the webview.
+    _operation: Arc<UsbOperationGuard>,
     generation: u64,
     settings: Vec<u8>,
     serial: String,
@@ -317,7 +321,9 @@ async fn save_to_bot(state: State<'_, AppState>) -> Result<serde_json::Value, St
         if pending.is_some() {
             return Err("A save is already waiting. Please wait for it to finish.".into());
         }
+        let operation = UsbOperationGuard::acquire()?;
         *pending = Some(StandaloneRequest {
+            _operation: operation,
             generation: state
                 .save_generation
                 .load(std::sync::atomic::Ordering::Acquire),
@@ -955,10 +961,10 @@ struct PreparedUpdate {
 
 static USB_OPERATION: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-struct UsbOperationGuard;
+pub(crate) struct UsbOperationGuard;
 
 impl UsbOperationGuard {
-    fn acquire() -> Result<Arc<Self>, String> {
+    pub(crate) fn acquire() -> Result<Arc<Self>, String> {
         USB_OPERATION
             .compare_exchange(
                 false,
@@ -967,7 +973,7 @@ impl UsbOperationGuard {
                 std::sync::atomic::Ordering::SeqCst,
             )
             .map_err(|_| {
-                "A USB operation is still running. Reconnect the cable and wait for it to finish before trying again."
+                "An app update or USB operation is still running. Wait for it to finish before trying again."
                     .to_string()
             })?;
         Ok(Arc::new(Self))
@@ -1598,6 +1604,7 @@ pub fn run() {
             show_window(app)
         }))
         .setup(|app| {
+            app_update::initialize(app.handle());
             let settings_path = app.path().app_config_dir()?.join("settings.json");
             // An already enabled integration follows app updates without changing Claude settings.
             let bridge = app.path().app_config_dir()?.join("claude-bridge");
@@ -1750,6 +1757,10 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            app_update::get_app_update_status,
+            app_update::check_app_update,
+            app_update::install_app_update,
+            app_update::restart_app_after_update,
             set_preferences,
             set_bot_model,
             set_offline_mode,
@@ -1802,9 +1813,15 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("DroidFun App could not start")
         .run(|app, event| {
-            if let tauri::RunEvent::ExitRequested { code: None, api, .. } = event {
+            if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
+                // Ordinary Quit cannot stop a bundle replacement halfway
+                // through. The explicit updater restart remains permitted.
+                if app_update::installing(app) && code != Some(tauri::RESTART_EXIT_CODE) {
+                    api.prevent_exit();
+                    return;
+                }
                 let state = app.state::<AppState>();
-                if state.platform.tray_available {
+                if code.is_none() && state.platform.tray_available {
                     // Last control window closed; explicit Quit uses exit(0).
                     api.prevent_exit();
                 }
@@ -1816,6 +1833,9 @@ pub fn run() {
 mod usb_restart_tests {
     use super::*;
     use std::sync::atomic::{AtomicBool, Ordering};
+
+    // Only tests exercising the real process-wide guard need serialization.
+    static GUARD_TEST: Mutex<()> = Mutex::new(());
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum Action {
@@ -1943,6 +1963,7 @@ mod usb_restart_tests {
 
     #[tokio::test]
     async fn timeout_does_not_release_usb_operation_guard_until_blocking_worker_exits() {
+        let _test = GUARD_TEST.lock().unwrap();
         let caller = UsbOperationGuard::acquire().unwrap();
         let worker = caller.clone();
         let (release, wait) = std::sync::mpsc::channel();
@@ -1961,6 +1982,46 @@ mod usb_restart_tests {
         done.recv_timeout(Duration::from_secs(2)).unwrap();
         let completed = UsbOperationGuard::acquire().unwrap();
         drop(completed);
+    }
+
+    #[test]
+    fn queued_and_active_saves_hold_guard_until_completion_even_after_caller_leaves() {
+        let _test = GUARD_TEST.lock().unwrap();
+        for disconnect_caller in [false, true] {
+            let (response, rx) = std::sync::mpsc::sync_channel(1);
+            let mut queue = Some(StandaloneRequest {
+                _operation: UsbOperationGuard::acquire().unwrap(),
+                generation: 0,
+                settings: Vec::new(),
+                serial: "test-board".into(),
+                playlist: protocol::StandalonePlaylist {
+                    frames: Vec::new(),
+                    brightness: 1,
+                    orientation: 0,
+                },
+                cancel: Arc::new(AtomicBool::new(false)),
+                response,
+            });
+            // Restart and another firmware operation must both be refused
+            // before the connection worker has even dequeued this save.
+            assert!(UsbOperationGuard::acquire().is_err());
+            let active = queue.take().unwrap();
+            assert!(UsbOperationGuard::acquire().is_err());
+            if disconnect_caller {
+                drop(rx);
+                active.cancel.store(true, Ordering::Release);
+                assert!(UsbOperationGuard::acquire().is_err());
+                assert!(active.response.send(Err("Save canceled".into())).is_err());
+            } else {
+                active.response.send(Ok(1)).unwrap();
+                assert_eq!(rx.recv().unwrap().unwrap(), 1);
+            }
+            // Sending a response is not the end of the native operation's
+            // ownership; release only when the worker drops the request.
+            assert!(UsbOperationGuard::acquire().is_err());
+            drop(active);
+            drop(UsbOperationGuard::acquire().unwrap());
+        }
     }
 }
 
