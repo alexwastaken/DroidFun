@@ -1,9 +1,9 @@
 # Codex OLED mark
 
-The reference vector is the Codex mark from the installed official Codex app, `webview/assets/codex_new-f14177b03534.svg`. It identifies the Codex account-usage screen; it is not DroidFun branding.
+The source vector is the Codex mark from the installed official Codex app, `webview/assets/codex_new-f14177b03534.svg`. It identifies Codex account usage; it is not DroidFun branding.
 
-`core.rs` uses a 24 × 24, one-bit rendering of this vector (alpha threshold 128), placed at (94, 4). The visible shape begins at row 6. The header moves from y=2 to y=7 in both information layouts. A short cursor extension changes only two pixels; the outline, usage value and bar remain stationary. Reduced motion, animation off and pause keep the resting frame.
+The 24 x 24 one-bit mark rests at (94, 4), leaving six clear pixel rows above the visible shape. It bobs downward by up to two pixels, then returns, so it never rises behind the housing lip. The title is at y=9 in Classic and Minimal layouts, two pixels below the previous Codex header. Usage values, bar and footer stay fixed. Reduced motion, animation off and pause restore the resting frame. Speed follows the existing animation speed setting.
 
 ![Exact renderer preview with sample usage](preview.gif)
 
-The development-only `device_smoke --codex-assets` command exports the exact resting and pulse frames without opening USB. The preview uses sample usage.
+The development-only `device_smoke --usage-assets` command exports both logos' production frames without opening USB. `--codex-assets` remains an alias. The GIF uses sample usage and the default Lively animation speed.

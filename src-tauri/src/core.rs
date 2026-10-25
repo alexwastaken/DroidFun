@@ -16,6 +16,13 @@ const CODEX_MARK: [u32; 24] = [
     0x070070, 0x0307e0, 0x01ff80, 0x00f800, 0x000000, 0x000000,
 ];
 
+// Monochrome Claude mark from the official desktop app tray asset; see docs/images/claude-display.
+const CLAUDE_MARK: [u32; 24] = [
+    0x000000, 0x000000, 0x000180, 0x006180, 0x002380, 0x073300, 0x073730, 0x03b670, 0x01fee0,
+    0x00ff80, 0x3eff00, 0x1ffe78, 0x01fff8, 0x1ffe00, 0x18ff80, 0x01fcc0, 0x03d670, 0x04db00,
+    0x099980, 0x011880, 0x000800, 0x000800, 0x000000, 0x000000,
+];
+
 const WIDGET_KINDS: &[&str] = &[
     "face", "text", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu",
     "memory",
@@ -697,6 +704,7 @@ impl Engine {
             Some(w) if w.kind == "face" => {
                 let mut pose = self.animation_state();
                 pose.closed = self.face_closed(w);
+                pose.logo_offset = 0;
                 pose
             }
             Some(w)
@@ -704,7 +712,16 @@ impl Engine {
                     && w.config.display_companion
                     && w.kind != "text" =>
             {
-                self.animation_state()
+                let mut pose = self.animation_state();
+                if matches!(w.kind.as_str(), "codex" | "claude") {
+                    CompanionPose {
+                        logo_offset: pose.logo_offset,
+                        ..CompanionPose::default()
+                    }
+                } else {
+                    pose.logo_offset = 0;
+                    pose
+                }
             }
             _ => CompanionPose::default(),
         }
@@ -1374,6 +1391,7 @@ struct CompanionPose {
     glance: i8,
     mouth: u8,
     bounce: bool,
+    logo_offset: u8,
 }
 impl CompanionPose {
     fn at(ms: u64, speed: &str, glances: bool, mouths: bool) -> Self {
@@ -1409,6 +1427,8 @@ impl CompanionPose {
                 }
             },
             bounce: (4200..4400).contains(&phase),
+            logo_offset: [0, 0, 0, 1, 2, 2, 1, 0]
+                [((ms % blink_period) * 8 / blink_period) as usize],
         }
     }
 }
@@ -1535,13 +1555,17 @@ fn render_minimal(
     f.text(
         context,
         4,
-        if widget.kind == "codex" { 7 } else { 2 },
+        if matches!(widget.kind.as_str(), "codex" | "claude") {
+            9
+        } else {
+            2
+        },
         1,
         if companion.is_some() { 10 } else { 15 },
     );
     if let Some(pose) = companion {
-        if widget.kind == "codex" {
-            f.codex_mark(pose);
+        if matches!(widget.kind.as_str(), "codex" | "claude") {
+            f.usage_mark(&widget.kind, pose);
         } else {
             f.companion(pose);
         }
@@ -1741,20 +1765,20 @@ impl Frame {
             }
         }
     }
-    fn codex_mark(&mut self, pose: CompanionPose) {
-        // Leave six clear pixel rows above the visible mark for the housing lip.
-        for (y, row) in CODEX_MARK.iter().enumerate() {
+    fn usage_mark(&mut self, kind: &str, pose: CompanionPose) {
+        let rows = if kind == "claude" {
+            &CLAUDE_MARK
+        } else {
+            &CODEX_MARK
+        };
+        // A two-pixel downward bob is visible without lifting the logo behind
+        // the housing lip or touching the reading that starts below row 27.
+        for (y, row) in rows.iter().enumerate() {
             for x in 0..24 {
                 if row & (1 << x) != 0 {
-                    self.pixel(94 + x, 4 + y as i32);
+                    self.pixel(94 + x, 4 + y as i32 + i32::from(pose.logo_offset));
                 }
             }
-        }
-        // Extend only the terminal cursor by two pixels for the brief pulse.
-        // The mark never moves; reduced motion/pause already supplies the resting pose.
-        if pose.closed {
-            self.pixel(111, 18);
-            self.pixel(112, 18);
         }
     }
     fn companion(&mut self, pose: CompanionPose) {
@@ -1814,13 +1838,17 @@ fn render_card(
     frame.text(
         title,
         4,
-        if kind == "codex" { 7 } else { 2 },
+        if matches!(kind, "codex" | "claude") {
+            9
+        } else {
+            2
+        },
         1,
         if companion.is_some() { 10 } else { 15 },
     );
     if let Some(pose) = companion {
-        if kind == "codex" {
-            frame.codex_mark(pose);
+        if matches!(kind, "codex" | "claude") {
+            frame.usage_mark(kind, pose);
         } else {
             frame.companion(pose);
         }
@@ -2322,7 +2350,7 @@ mod tests {
     fn companion_animation_preserves_every_data_pixel_and_can_be_disabled() {
         let now = Instant::now();
         let mut engine = Engine::new(Settings::default(), now);
-        for kind in ["weather", "stock", "claude"] {
+        for kind in ["weather", "stock"] {
             let w = engine
                 .settings
                 .widgets
@@ -2377,51 +2405,58 @@ mod tests {
     }
 
     #[test]
-    fn codex_mark_has_a_safe_top_inset_and_only_its_cursor_animates() {
+    fn usage_logos_bob_visibly_below_the_lip_without_moving_data_or_labels() {
         let pixel =
             |frame: &[u8], x: usize, y: usize| frame[(y / 8) * WIDTH + x] & (1 << (y % 8)) != 0;
-        for layout in ["classic", "minimal"] {
-            let now = Instant::now();
-            let mut e = Engine::new(Settings::default(), now);
-            let w = e
-                .settings
-                .widgets
-                .iter_mut()
-                .find(|w| w.kind == "codex")
-                .unwrap();
-            w.enabled = true;
-            w.config.display_layout = layout.into();
-            e.current_id = "codex".into();
-            e.playback = Playback::Pinned;
-            let resting = e.render_widget("codex");
-            assert!((0..6).all(|y| (0..WIDTH).all(|x| !pixel(&resting, x, y))));
-            assert!((7..15).any(|y| (4..44).any(|x| pixel(&resting, x, y))));
-            assert!((6..26).any(|y| (96..116).any(|x| pixel(&resting, x, y))));
-            assert!(e.tick_at(now + Duration::from_millis(2300), 10000, 720));
-            let pulse = e.render_widget("codex");
-            let changes: Vec<_> = (0..HEIGHT)
-                .flat_map(|y| (0..WIDTH).map(move |x| (x, y)))
-                .filter(|&(x, y)| pixel(&resting, x, y) != pixel(&pulse, x, y))
-                .collect();
-            assert_eq!(changes, vec![(111, 18), (112, 18)]);
-            e.set_reduced_motion(true);
-            assert_eq!(resting, e.render_widget("codex"));
-            e.set_reduced_motion(false);
-            e.settings.preferences.companion_animation = false;
-            assert_eq!(resting, e.render_widget("codex"));
-            e.settings.preferences.companion_animation = true;
-            e.playback = Playback::Paused;
-            assert_eq!(resting, e.render_widget("codex"));
-            e.settings
-                .widgets
-                .iter_mut()
-                .find(|w| w.kind == "codex")
-                .unwrap()
-                .config
-                .display_companion = false;
-            let no_mark = e.render_widget("codex");
-            assert!((0..6).all(|y| (0..WIDTH).all(|x| !pixel(&no_mark, x, y))));
-            assert!((4..26).all(|y| (94..118).all(|x| !pixel(&no_mark, x, y))));
+        for kind in ["codex", "claude"] {
+            for layout in ["classic", "minimal"] {
+                let now = Instant::now();
+                let mut e = Engine::new(Settings::default(), now);
+                let w = e
+                    .settings
+                    .widgets
+                    .iter_mut()
+                    .find(|w| w.kind == kind)
+                    .unwrap();
+                w.enabled = true;
+                w.config.display_layout = layout.into();
+                e.current_id = kind.into();
+                e.playback = Playback::Pinned;
+                let resting = e.render_widget(kind);
+                assert!((0..6).all(|y| (0..WIDTH).all(|x| !pixel(&resting, x, y))));
+                assert!((0..9).all(|y| (4..84).all(|x| !pixel(&resting, x, y))));
+                assert!((9..17).any(|y| (4..84).any(|x| pixel(&resting, x, y))));
+                for ms in [900, 1200, 1800] {
+                    assert!(e.tick_at(now + Duration::from_millis(ms), 10000, 720));
+                    let moving = e.render_widget(kind);
+                    let changes: Vec<_> = (0..HEIGHT)
+                        .flat_map(|y| (0..WIDTH).map(move |x| (x, y)))
+                        .filter(|&(x, y)| pixel(&resting, x, y) != pixel(&moving, x, y))
+                        .collect();
+                    assert!(changes.len() > 30, "{kind}: motion should be visible");
+                    assert!(changes
+                        .iter()
+                        .all(|&(x, y)| (94..118).contains(&x) && (6..28).contains(&y)));
+                }
+                e.set_reduced_motion(true);
+                assert_eq!(resting, e.render_widget(kind));
+                e.set_reduced_motion(false);
+                e.settings.preferences.companion_animation = false;
+                assert_eq!(resting, e.render_widget(kind));
+                e.settings.preferences.companion_animation = true;
+                e.playback = Playback::Paused;
+                assert_eq!(resting, e.render_widget(kind));
+                e.settings
+                    .widgets
+                    .iter_mut()
+                    .find(|w| w.kind == kind)
+                    .unwrap()
+                    .config
+                    .display_companion = false;
+                let no_mark = e.render_widget(kind);
+                // With the logo hidden, the longer Claude header may use this corner.
+                assert!((17..28).all(|y| (94..118).all(|x| !pixel(&no_mark, x, y))));
+            }
         }
     }
 

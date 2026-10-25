@@ -32,17 +32,24 @@ fn main() -> Result<(), String> {
         );
         return Ok(());
     }
-    if std::env::args().nth(1).as_deref() == Some("--codex-assets") {
-        let now = Instant::now();
-        let mut engine = core::Engine::new(core::Settings::default(), now);
-        engine.set_enabled("codex", true)?;
-        engine.pin("codex")?;
-        let resting = engine.render_widget("codex");
-        engine.tick_at(now + Duration::from_millis(2300), 10000, 720);
-        println!(
-            "{}",
-            serde_json::json!({"resting":resting,"pulse":engine.render_widget("codex")})
-        );
+    if matches!(
+        std::env::args().nth(1).as_deref(),
+        Some("--usage-assets" | "--codex-assets")
+    ) {
+        let mut screens = serde_json::Map::new();
+        for kind in ["codex", "claude"] {
+            let now = Instant::now();
+            let mut engine = core::Engine::new(core::Settings::default(), now);
+            engine.set_enabled(kind, true)?;
+            engine.pin(kind)?;
+            let mut frames = Vec::new();
+            for ms in [0, 900, 1200, 1800, 2100] {
+                engine.tick_at(now + Duration::from_millis(ms), 10000, 720);
+                frames.push(engine.render_widget(kind));
+            }
+            screens.insert(kind.into(), serde_json::json!(frames));
+        }
+        println!("{}", serde_json::Value::Object(screens));
         return Ok(());
     }
     let serial = std::env::args()
