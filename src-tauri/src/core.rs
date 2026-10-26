@@ -511,6 +511,7 @@ pub struct Snapshot {
     pub remaining_sec: u16,
     pub total_sec: u32,
     pub display_on: bool,
+    pub host_display_asleep: bool,
     pub temporary: bool,
     pub display_reason: String,
     pub quiet_active: bool,
@@ -534,6 +535,7 @@ pub struct Engine {
     remaining_ms: u64,
     playback: Playback,
     display_on: bool,
+    host_display_asleep: bool,
     temporary: Option<Temporary>,
     last_tick: Instant,
     data: HashMap<String, DataCard>,
@@ -571,6 +573,7 @@ impl Engine {
             remaining_ms,
             playback: Playback::Running,
             display_on,
+            host_display_asleep: false,
             temporary: None,
             last_tick: now,
             data: HashMap::new(),
@@ -586,8 +589,10 @@ impl Engine {
         let next = crate::droids::select(&self.settings, serial, model)?;
         if serial.is_none() { self.settings = next; return Ok(()); }
         let reduced_motion = self.reduced_motion;
+        let host_display_asleep = self.host_display_asleep;
         *self = Self::new(next, Instant::now());
         self.reduced_motion = reduced_motion;
+        self.host_display_asleep = host_display_asleep;
         self.tick(Instant::now());
         Ok(())
     }
@@ -673,7 +678,8 @@ impl Engine {
         self.set_preferences(preferences)
     }
     fn animation_state(&self) -> CompanionPose {
-        if self.reduced_motion
+        if self.host_display_asleep
+            || self.reduced_motion
             || !self.settings.preferences.companion_animation
             || self.playback == Playback::Paused
             || self.quiet_active
@@ -1027,11 +1033,15 @@ impl Engine {
         self.last_tick = now;
         if elapsed > 60000 {
             self.phase_ms = 0;
-        } else if !self.quiet_active && self.display_on && self.playback != Playback::Paused {
+        } else if !self.host_display_asleep
+            && !self.quiet_active
+            && self.display_on
+            && self.playback != Playback::Paused
+        {
             self.phase_ms = self.phase_ms.wrapping_add(elapsed);
         }
         let animation_changed = prior_animation != self.current_animation_state();
-        if self.quiet_active {
+        if self.quiet_active || self.host_display_asleep {
             return policy_changed || local_changed;
         }
         if self.current_id != "face" && !self.enabled(&self.current_id) {
@@ -1081,6 +1091,12 @@ impl Engine {
             || elapsed >= old_remaining
     }
 
+    pub fn set_host_display_asleep(&mut self, asleep: bool) -> bool {
+        let changed = self.host_display_asleep != asleep;
+        self.host_display_asleep = asleep;
+        changed
+    }
+
     pub fn snapshot(&self) -> Snapshot {
         let current = self.current_widget();
         Snapshot {
@@ -1099,10 +1115,13 @@ impl Engine {
                 .map(|w| w.duration_sec as u32)
                 .sum(),
             display_on: self.display_on && !self.quiet_active,
+            host_display_asleep: self.host_display_asleep,
             display_reason: if !self.display_on {
                 "Manually off"
             } else if self.quiet_active {
                 "Quiet hours"
+            } else if self.host_display_asleep {
+                "Computer display asleep"
             } else if self.quiet_override_until > unix_now() {
                 "Quiet hours overridden for 15 minutes"
             } else {
@@ -1112,7 +1131,11 @@ impl Engine {
             quiet_active: self.quiet_active,
             quiet_override_until: self.quiet_override_until,
             temporary: self.temporary.is_some(),
-            frame: self.render_current(&self.current_id, self.display_on && !self.quiet_active),
+            frame: if self.host_display_asleep && self.display_on && !self.quiet_active {
+                render(None, true)
+            } else {
+                self.render_current(&self.current_id, self.display_on && !self.quiet_active)
+            },
             animation_phase: self.phase_ms,
             data: self
                 .data
@@ -2458,6 +2481,71 @@ mod tests {
                 assert!((17..28).all(|y| (94..118).all(|x| !pixel(&no_mark, x, y))));
             }
         }
+    }
+
+    #[test]
+    fn sleeping_computer_display_shows_a_smile_then_resumes_without_changing_settings() {
+        for model in ["boo", "meep", "claw"] {
+            for playback in [Playback::Running, Playback::Paused, Playback::Pinned] {
+                let now = Instant::now();
+                let mut e = Engine::new(Settings::default(), now);
+                e.set_bot_model(model).unwrap();
+                let kind = if model == "claw" { "codex" } else { "weather" };
+                // Use a visible configured screen, including a manual/pinned selection.
+                let w = e
+                    .settings
+                    .widgets
+                    .iter_mut()
+                    .find(|w| w.kind == kind)
+                    .unwrap();
+                w.enabled = true;
+                e.current_id = w.id.clone();
+                e.playback = playback;
+                let before = e.snapshot();
+                let settings = serde_json::to_value(&e.settings).unwrap();
+                assert!(e.set_host_display_asleep(true));
+                assert!(!e.set_host_display_asleep(true));
+                e.tick_at(now + Duration::from_secs(30), 10030, 720);
+                let asleep = e.snapshot();
+                assert_eq!(asleep.frame, render(None, true));
+                assert!(asleep.display_on && asleep.host_display_asleep);
+                assert_eq!(asleep.display_reason, "Computer display asleep");
+                assert_eq!(asleep.current_id, before.current_id);
+                assert_eq!(asleep.playback, playback);
+                assert_eq!(asleep.remaining_sec, before.remaining_sec);
+                assert_eq!(serde_json::to_value(&e.settings).unwrap(), settings);
+                assert!(e.set_host_display_asleep(false));
+                let awake = e.snapshot();
+                assert_eq!(awake.frame, before.frame);
+                assert!(!awake.host_display_asleep);
+                assert_eq!(awake.remaining_sec, before.remaining_sec);
+            }
+        }
+    }
+
+    #[test]
+    fn display_sleep_respects_manual_off_quiet_hours_and_droid_switching() {
+        let now = Instant::now();
+        let mut e = Engine::new(Settings::default(), now);
+        e.set_host_display_asleep(true);
+        e.set_display_on(false);
+        assert!(e.snapshot().frame.iter().all(|b| *b == 0));
+        assert_eq!(e.snapshot().display_reason, "Manually off");
+        e.set_display_on(true);
+        e.settings.preferences.quiet_hours = QuietHours {
+            enabled: true,
+            start_minute: 0,
+            end_minute: 60,
+        };
+        e.tick_at(now + Duration::from_secs(1), 10001, 30);
+        assert!(!e.snapshot().display_on);
+        assert!(e.snapshot().frame.iter().all(|b| *b == 0));
+        assert_eq!(e.snapshot().display_reason, "Quiet hours");
+        e.settings.preferences.quiet_hours.enabled = false;
+        e.select_droid(Some("STANDBY_TEST_BOARD"), Some("claw"))
+            .unwrap();
+        assert!(e.snapshot().host_display_asleep);
+        assert_eq!(e.snapshot().frame, render(None, true));
     }
 
     #[test]

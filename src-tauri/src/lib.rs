@@ -6,6 +6,7 @@ mod core;
 mod display_test;
 mod droids;
 mod firmware_setup;
+mod host_display;
 pub mod linux_usb;
 mod local_widgets;
 mod network;
@@ -1639,6 +1640,7 @@ pub fn run() {
             let settings = persistence::load(&settings_path).map_err(std::io::Error::other)?;
             let background = std::env::args().any(|a| a == "--background");
             let mut engine = Engine::new(settings, Instant::now());
+            engine.set_host_display_asleep(host_display::asleep());
             engine.tick(Instant::now());
             let providers = Arc::new(
                 Providers::new(app.path().app_config_dir()?.join("providers"))
@@ -1717,21 +1719,26 @@ pub fn run() {
             }
 
             let handle = app.handle().clone();
-            std::thread::spawn(move || loop {
-                std::thread::sleep(Duration::from_millis(200));
-                let state = handle.state::<AppState>();
-                let snapshot = {
-                    let Ok(mut engine) = state.engine.lock() else {
-                        continue;
-                    };
-                    if engine.tick(Instant::now()) {
-                        Some(engine.snapshot())
-                    } else {
-                        None
+            std::thread::spawn(move || {
+                let mut next_display_check = Instant::now();
+                let mut display_asleep = false;
+                loop {
+                    std::thread::sleep(Duration::from_millis(200));
+                    let now = Instant::now();
+                    if now >= next_display_check {
+                        display_asleep = host_display::asleep();
+                        next_display_check = now + Duration::from_secs(1);
                     }
-                };
-                if let Some(snapshot) = snapshot {
-                    publish(&handle, &snapshot);
+                    let state = handle.state::<AppState>();
+                    let snapshot = {
+                        let Ok(mut engine) = state.engine.lock() else { continue; };
+                        let power_changed = engine.set_host_display_asleep(display_asleep);
+                        let changed = engine.tick(now);
+                        (power_changed || changed).then(|| engine.snapshot())
+                    };
+                    if let Some(snapshot) = snapshot {
+                        publish(&handle, &snapshot);
+                    }
                 }
             });
             let connection_handle = app.handle().clone();

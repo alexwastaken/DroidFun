@@ -8,6 +8,8 @@ mod connection;
 mod core;
 #[path = "../droids.rs"]
 mod droids;
+#[path = "../host_display.rs"]
+mod host_display;
 #[path = "../local_widgets.rs"]
 mod local_widgets;
 #[path = "../network.rs"]
@@ -25,6 +27,13 @@ use std::{
 };
 
 fn main() -> Result<(), String> {
+    if std::env::args().nth(1).as_deref() == Some("--display-power") {
+        println!(
+            "{}",
+            serde_json::json!({"hostDisplayAsleep": host_display::state()})
+        );
+        return Ok(());
+    }
     if std::env::args().nth(1).as_deref() == Some("--face-assets") {
         println!(
             "{}",
