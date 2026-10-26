@@ -12,7 +12,7 @@ import AppUpdates, { useAppUpdates } from "./AppUpdates";
 type Playback = "running" | "paused" | "pinned";
 import SourceEditor, { type Widget, type SourceConfig } from "./SourceEditor";
 type DataCard = { sourceId: string; state: string; detail: string; fetchedAt: number; observedAt: number; expiresAt: number; headline: string; footer: string };
-type Snapshot = { settings: { version: number; widgets: Widget[]; brightness: number; selectedDeviceSerial: string | null; droids: DroidProfile[]; preferences: Preferences; manualDisplayOff: boolean }; currentId: string; currentLabel: string; playback: Playback; remainingSec: number; totalSec: number; displayOn: boolean; temporary: boolean; displayReason: string; quietActive: boolean; quietOverrideUntil: number; frame: number[]; animationPhase: number; data: Record<string, DataCard> };
+type Snapshot = { settings: { version: number; widgets: Widget[]; brightness: number; selectedDeviceSerial: string | null; droids: DroidProfile[]; preferences: Preferences; manualDisplayOff: boolean }; currentId: string; currentLabel: string; playback: Playback; remainingSec: number; totalSec: number; displayOn: boolean; hostDisplayAsleep: boolean; temporary: boolean; displayReason: string; quietActive: boolean; quietOverrideUntil: number; frame: number[]; animationPhase: number; data: Record<string, DataCard> };
 type StandaloneResult = { saved: boolean; count: number; message: string };
 type Editor = Widget;
 
@@ -264,11 +264,12 @@ export default function App() {
 
   const standaloneCount = widgets.filter(w => w.enabled && ["face", "text"].includes(w.kind)).length;
   const idle = !selected && state.totalSec === 0 && state.playback !== "pinned" && !state.temporary;
-  const screenTitle = selectedWidget?.label ?? (idle ? "Idle display" : current?.label ?? state.currentLabel);
+  const standby = state.hostDisplayAsleep && state.displayOn;
+  const screenTitle = selectedWidget?.label ?? (standby ? "Happy face" : idle ? "Idle display" : current?.label ?? state.currentLabel);
   const idleStatus = activeCount > 0 ? "Waiting for an available screen" : model === "claw" ? "Enable a Claude or Codex widget to begin" : "Enable a widget to begin";
-  const status = !state.displayOn ? state.displayReason : idle ? idleStatus : state.playback === "pinned" ? "Pinned" : state.playback === "paused" ? "Paused" : state.temporary ? "Showing now" : "Cycling";
+  const status = !state.displayOn ? state.displayReason : standby ? "Your computer’s display is asleep" : idle ? idleStatus : state.playback === "pinned" ? "Pinned" : state.playback === "paused" ? "Paused" : state.temporary ? "Showing now" : "Cycling";
   const visibleFrame = selected && preview ? preview : state.frame;
-  const visibleWidget = selectedWidget ?? current;
+  const visibleWidget = selectedWidget ?? (standby ? undefined : current);
   const liveCard = visibleWidget ? state.data?.[visibleWidget.id] : undefined;
   const isLocal = visibleWidget && ["text","clock","pomodoro","meeting","cpu","memory"].includes(visibleWidget.kind);
   const sourceLabel = !visibleWidget ? "" : offline && !isLocal && visibleWidget?.kind !== "face" && visibleWidget?.config.mode === "live" ? "paused offline" : visibleWidget?.kind === "face" ? "" : isLocal ? "local" : visibleWidget?.config.mode === "live" ? (liveCard?.state ?? "waiting") : "demo";
