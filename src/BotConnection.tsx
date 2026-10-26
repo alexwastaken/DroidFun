@@ -19,7 +19,7 @@ type Props = {
 const same = (a: string | null | undefined, b: string | null | undefined) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
 function needsUpdate(version: string | null | undefined) {
   const parts = version?.match(/^(\d+)\.(\d+)\.(\d+)$/)?.slice(1).map(Number);
-  return parts && (parts[0] < 1 || parts[0] === 1 && (parts[1] < 2 || parts[1] === 2 && parts[2] < 3));
+  return parts && (parts[0] < 1 || parts[0] === 1 && (parts[1] < 2 || parts[1] === 2 && parts[2] < 4));
 }
 function SetupChoice({ initial, name, disabled, onChoose }: { initial: string; name: string; disabled: boolean; onChoose: (model: string) => void }) {
   const [model, setModel] = useState(initial);
@@ -52,7 +52,7 @@ export default function BotConnection(p: Props) {
     })}</div>
     {available.map((port, i) => <div className="robot-setup" key={port.serial}><h3>{available.length > 1 ? `New droid ${i + 1}` : "Your droid was found"}</h3><p>{p.profiles.length ? "Add it once, then we’ll remember it for next time. To tell identical droids apart during first setup, connect one new droid at a time." : "Choose your droid and we’ll connect it for you."}</p><SetupChoice initial={p.profiles.length ? "" : p.model} name="Connect droid" disabled={p.busy || p.installing} onChoose={model => p.onConnect(port.serial, model)}/></div>)}
     {p.setupDrives.map((drive, i) => <div className="robot-setup" key={drive.path}><h3>{p.setupDrives.length > 1 ? `New droid ${i + 1}` : "Set up your droid"}</h3><p>We’ll put the DroidFun software on this droid and reconnect it. Keep it plugged in until setup finishes.</p>{p.setupDrives.length > 1 ? <p>For first setup, connect one new droid at a time so we prepare the right one.</p> : <SetupChoice initial={p.profiles.length ? "" : p.model} name="Set up droid" disabled={p.busy || p.installing} onChoose={model => p.onInstall(drive.path, model)}/>}</div>)}
-    {!p.installing && !p.testBoardId && selectedPresent && same(p.connection?.boardId, p.selectedSerial) && needsUpdate(p.connection?.firmware) && <div className="robot-update"><p>A droid update is ready. It keeps a face visible while your computer sleeps.</p><button disabled={p.busy} onClick={() => p.onUpdate()}>Update droid</button></div>}
+    {!p.installing && !p.testBoardId && selectedPresent && same(p.connection?.boardId, p.selectedSerial) && needsUpdate(p.connection?.firmware) && <div className="robot-update"><p>A droid update is ready. It makes screen animations smoother and keeps a face visible while your computer sleeps.</p><button disabled={p.busy} onClick={() => p.onUpdate()}>Update droid</button></div>}
     {p.testBoardId && <div className="display-test-card"><p>{p.readingTest ? "Checking your droid’s screen…" : p.testReport?.write_ok ? "Your screen is responding. Check that its pattern is visible." : "Check whether a pattern is visible on your droid’s screen."}</p><button disabled={p.busy || p.installing || p.readingTest} onClick={() => p.onUpdate(p.testBoardId)}>Finish setup</button></div>}
     {p.connection?.state === "setup_needed" && selectedPresent && !p.testBoardId && <div className="robot-update"><p>Your droid needs a quick setup before the app can control it. This installs DroidFun software on the selected droid.</p><button disabled={p.busy || p.installing} onClick={() => p.onUpdate(p.selectedSerial ?? undefined)}>Finish setup</button></div>}
     <LinuxRobotAccess permissionNeeded={p.connection?.state === "permission_needed"} onSetup={p.onScan}/>

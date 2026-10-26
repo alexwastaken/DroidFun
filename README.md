@@ -127,7 +127,7 @@ The main connection flow uses plain setup states; board IDs, versions, paths and
 
 Settings schema 2 migrates existing screens and display settings without changing them and backs up schema 1 on first save. Older apps refuse the newer schema. Saves exceeding the existing 256 KiB limit leave the prior file intact. Profile isolation and migration tests pass; physical multi-droid switching remains pending. Bot firmware remains 1.2.3, and unexplained physical USB disappearance is not claimed fixed by this release.
 
-Codex usage refreshes about every minute and Claude account usage about every five minutes while active and online; local Claude Code reports are checked every two seconds and reflect new reports written by Claude Code. Rate limits and source errors can delay refreshes. The display cycle and animation do not represent source polling frequency.
+Codex usage refreshes about every minute and Claude account usage about every five minutes while active and online; local Claude Code reports are checked every two seconds and reflect new reports written by Claude Code. Rate limits and source errors can delay refreshes. The display cycle and animation do not represent source polling frequency. Firmware 1.2.4 targets up to 30 FPS over the faster screen connection; older firmware and screens that need the slower connection keep their 5 FPS limit. Static pixels are sent only when they change.
 
 The current product lineup is Meep and Claw. Boo is retired from new setup; its archived artwork and legacy settings remain readable so updating does not erase existing files. The private owner programmer is distributed separately and is never included in customer downloads.
 

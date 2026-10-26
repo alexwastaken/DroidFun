@@ -718,6 +718,7 @@ impl Engine {
                 let mut pose = self.animation_state();
                 pose.closed = self.face_closed(w);
                 pose.logo_offset = 0;
+                pose.logo_phase = 0;
                 pose
             }
             Some(w)
@@ -729,10 +730,12 @@ impl Engine {
                 if matches!(w.kind.as_str(), "codex" | "claude") {
                     CompanionPose {
                         logo_offset: pose.logo_offset,
+                        logo_phase: pose.logo_phase,
                         ..CompanionPose::default()
                     }
                 } else {
                     pose.logo_offset = 0;
+                    pose.logo_phase = 0;
                     pose
                 }
             }
@@ -1037,7 +1040,8 @@ impl Engine {
         }
         let prior_animation = self.current_animation_state();
         let elapsed = now.saturating_duration_since(self.last_tick).as_millis() as u64;
-        self.last_tick = now;
+        // Keep fractional milliseconds so frequent render ticks do not slow timers.
+        self.last_tick += std::time::Duration::from_millis(elapsed);
         if elapsed > 60000 {
             self.phase_ms = 0;
         } else if !self.host_display_asleep
@@ -1422,6 +1426,7 @@ struct CompanionPose {
     mouth: u8,
     bounce: bool,
     logo_offset: u8,
+    logo_phase: u8,
 }
 impl CompanionPose {
     fn at(ms: u64, speed: &str, glances: bool, mouths: bool) -> Self {
@@ -1457,6 +1462,7 @@ impl CompanionPose {
                 }
             },
             bounce: (4200..4400).contains(&phase),
+            logo_phase: (((ms * if speed == "slow" { 20 } else { 30 } + 500) / 1000) % 64) as u8,
             logo_offset: [0, 0, 0, 1, 2, 2, 1, 0]
                 [((ms % blink_period) * 8 / blink_period) as usize],
         }
@@ -1808,6 +1814,18 @@ impl Frame {
                 if row & (1 << x) != 0 {
                     self.pixel(94 + x, 4 + y as i32 + i32::from(pose.logo_offset));
                 }
+            }
+        }
+        // A short orbit makes the faster cadence visible without moving labels
+        // or using grayscale flicker on this monochrome panel. Phase zero is
+        // the unchanged resting mark used by pause and reduced-motion settings.
+        if pose.logo_phase != 0 {
+            for trail in 0..3 {
+                let phase = (i32::from(pose.logo_phase) - trail).rem_euclid(64);
+                let angle = phase as f32 * std::f32::consts::TAU / 64.0;
+                let x = (105.5 + 16.5 * angle.cos()).round() as i32;
+                let y = (16.5 + 10.5 * angle.sin()).round() as i32;
+                self.pixel(x, y);
             }
         }
     }
@@ -2435,6 +2453,47 @@ mod tests {
     }
 
     #[test]
+    fn fast_render_ticks_preserve_fractional_time_for_animation_and_dwell() {
+        let now = Instant::now();
+        let mut e = Engine::new(Settings::default(), now);
+        e.current_id = "face".into();
+        e.remaining_ms = 12_000;
+        for tick in 1..=60 {
+            e.tick_at(now + Duration::from_nanos(tick * 16_666_667), 10000, 720);
+        }
+        assert_eq!(e.phase_ms, 1000);
+        assert_eq!(e.remaining_ms, 11_000);
+    }
+
+    #[test]
+    fn usage_logo_motion_has_frequent_distinct_frames_and_stays_in_its_corner() {
+        let pixel = |f: &[u8], x: usize, y: usize| f[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
+        for kind in ["codex", "claude"] {
+            let now = Instant::now();
+            let mut e = Engine::new(Settings::default(), now);
+            e.set_enabled(kind, true).unwrap();
+            e.pin(kind).unwrap();
+            let resting = e.render_widget(kind);
+            let mut unique = std::collections::HashSet::new();
+            for tick in 1..=30 {
+                e.tick_at(now + Duration::from_nanos(tick * 33_333_334), 10000, 720);
+                let frame = e.render_widget(kind);
+                for y in 0..HEIGHT {
+                    for x in 0..WIDTH {
+                        if !(89..123).contains(&x) || !(6..28).contains(&y) {
+                            assert_eq!(pixel(&resting, x, y), pixel(&frame, x, y));
+                        }
+                    }
+                }
+                unique.insert(frame);
+            }
+            assert!(unique.len() >= 24, "{kind}: only {} distinct frames", unique.len());
+            e.set_reduced_motion(true);
+            assert_eq!(e.render_widget(kind), resting);
+        }
+    }
+
+    #[test]
     fn usage_logos_bob_visibly_below_the_lip_without_moving_data_or_labels() {
         let pixel =
             |frame: &[u8], x: usize, y: usize| frame[(y / 8) * WIDTH + x] & (1 << (y % 8)) != 0;
@@ -2466,7 +2525,7 @@ mod tests {
                     assert!(changes.len() > 30, "{kind}: motion should be visible");
                     assert!(changes
                         .iter()
-                        .all(|&(x, y)| (94..118).contains(&x) && (6..28).contains(&y)));
+                        .all(|&(x, y)| (89..123).contains(&x) && (6..28).contains(&y)));
                 }
                 e.set_reduced_motion(true);
                 assert_eq!(resting, e.render_widget(kind));
