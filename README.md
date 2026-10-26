@@ -20,7 +20,7 @@ Cross-platform desktop software and RP2040 firmware for a USB robot with a 128 Ã
 
 DroidFun turns a small USB display into a desk companion. Build a playlist of faces, custom text, clocks, Pomodoro timers, meeting countdowns, CPU/memory stats, weather, stock quotes, or account-allowance screens. Preview the exact pixels, choose how long each screen stays, and send the playlist to your bot.
 
-The current release is **[DroidFun App 0.5.1](https://github.com/alexwastaken/DroidFun/releases/tag/v0.5.1)**, with embedded normal firmware **1.2.3**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
+The current release is **[DroidFun App 0.5.2](https://github.com/alexwastaken/DroidFun/releases/tag/v0.5.2)**, with embedded normal firmware **1.2.3**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
 
 - **Meep and Claw profiles** with matching controls, previews, and light/dark themes. Meep supports everyday widgets; Claw focuses on Claude/Codex account allowance.
 - **A real screen editor:** reorder widgets, set their timing, adjust text layout, borders and inversion, and preview the 128 Ã— 64 result.
@@ -127,7 +127,7 @@ The main connection flow uses plain setup states; board IDs, versions, paths and
 
 Settings schema 2 migrates existing screens and display settings without changing them and backs up schema 1 on first save. Older apps refuse the newer schema. Saves exceeding the existing 256 KiB limit leave the prior file intact. Profile isolation and migration tests pass; physical multi-droid switching remains pending. Bot firmware remains 1.2.3, and unexplained physical USB disappearance is not claimed fixed by this release.
 
-Codex and Claude account usage refresh about every five minutes while active and online; local Claude Code reports are checked every two seconds and reflect new reports written by Claude Code. Rate limits and source errors can delay refreshes. The display cycle and animation do not represent source polling frequency.
+Codex usage refreshes about every minute and Claude account usage about every five minutes while active and online; local Claude Code reports are checked every two seconds and reflect new reports written by Claude Code. Rate limits and source errors can delay refreshes. The display cycle and animation do not represent source polling frequency.
 
 The current product lineup is Meep and Claw. Boo is retired from new setup; its archived artwork and legacy settings remain readable so updating does not erase existing files. The private owner programmer is distributed separately and is never included in customer downloads.
 
