@@ -13,6 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+const CODEX_REFRESH_SECONDS: u64 = 60;
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageWindow {
@@ -488,17 +490,24 @@ impl Providers {
         self.codex_read(path).map(|v| v.windows)
     }
     fn codex_read(&self, path: &str) -> Result<CodexSnapshot, String> {
+        self.codex_read_at(path, unix_now(), || read_codex(path))
+    }
+    fn codex_read_at(
+        &self,
+        path: &str,
+        now: u64,
+        read: impl FnOnce() -> Result<(Value, Value), String>,
+    ) -> Result<CodexSnapshot, String> {
         let mut cache = crate::network::lock_cancellable(&self.codex)?;
         crate::network::ensure_allowed()?;
         let key = (crate::network::generation(), path.to_string());
-        let now = unix_now();
         if let Some(v) = cache
             .get(&key)
-            .filter(|v| now.saturating_sub(v.fetched) < 300)
+            .filter(|v| now.saturating_sub(v.fetched) < CODEX_REFRESH_SECONDS)
         {
             return Ok(v.clone());
         }
-        let (account, limits) = read_codex(path)?;
+        let (account, limits) = read()?;
         if account["account"]["type"].as_str() != Some("chatgpt") {
             return Err(
                 "Sign in to the Codex CLI with a ChatGPT account to read allowance windows".into(),
@@ -641,7 +650,7 @@ impl Providers {
                         300
                     }
                 }
-                "codex" => 300,
+                "codex" => CODEX_REFRESH_SECONDS,
                 "claude" => {
                     if widget.config.claude_source == "account" {
                         300
@@ -652,6 +661,11 @@ impl Providers {
                 _ => 300,
             }
         };
+        // Multiple Codex widgets share one account reading. Expire this card
+        // with that reading, so a later-added widget cannot extend its age.
+        if !failed && widget.kind == "codex" {
+            wait = wait.min(card.observed_at.saturating_add(CODEX_REFRESH_SECONDS).saturating_sub(now).max(1));
+        }
         // A known account-window reset can precede the five-minute poll.
         // Re-fetch at its expiry instead of caching an unusable percentage.
         if !failed && widget.kind == "claude" && widget.config.claude_source == "account" {
@@ -1033,6 +1047,56 @@ mod tests {
         assert_eq!(providers.fetch(&widget).state, "unavailable");
         fs::remove_dir_all(dir).unwrap();
     }
+    #[test]
+    fn codex_widgets_share_one_account_read_per_minute_and_failures_do_not_replace_it() {
+        let dir = std::env::temp_dir().join(format!("codex-minute-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let providers = Providers::new(dir.clone()).unwrap();
+        providers.set_policy("claw", false);
+        let ticket = providers.request_ticket("codex").unwrap();
+        let _guard = ticket.enter();
+        let calls = std::cell::Cell::new(0);
+        let read = || {
+            calls.set(calls.get() + 1);
+            Ok((json!({"account":{"type":"chatgpt"}}), json!({"rateLimits":{"primary":{"usedPercent":87,"windowDurationMins":10080,"resetsAt":10000}}})))
+        };
+        assert_eq!(providers.codex_read_at("fixture", 1000, &read).unwrap().windows[0].used_percent, 87.0);
+        assert_eq!(providers.codex_read_at("fixture", 1059, &read).unwrap().fetched, 1000);
+        assert_eq!(calls.get(), 1);
+        let updated = providers.codex_read_at("fixture", 1060, || {
+            calls.set(calls.get()+1);
+            Ok((json!({"account":{"type":"chatgpt"}}), json!({"rateLimits":{"primary":{"usedPercent":88,"windowDurationMins":10080,"resetsAt":10000}}})))
+        }).unwrap();
+        assert_eq!(updated.windows[0].used_percent, 88.0);
+        assert_eq!(calls.get(), 2);
+        assert!(providers.codex_read_at("fixture", 1120, || Err("HTTP 429".into())).is_err());
+        assert_eq!(providers.codex.lock().unwrap().values().next().unwrap().fetched, 1060);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn later_codex_widget_expires_with_its_shared_account_reading() {
+        let dir = std::env::temp_dir().join(format!("codex-shared-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let providers = Providers::new(dir.clone()).unwrap();
+        providers.set_policy("claw", false);
+        let ticket = providers.request_ticket("codex").unwrap();
+        let _guard = ticket.enter();
+        let now = unix_now();
+        providers.codex.lock().unwrap().insert((crate::network::generation(), String::new()), CodexSnapshot {
+            fetched: now-50,
+            scope:"test".into(),
+            windows:vec![UsageWindow {bucket:"codex".into(),slot:"primary".into(),label:"Codex".into(),used_percent:88.0,minutes:10080,resets_at:now+10000}],
+        });
+        let mut widget = Settings::default().widgets.into_iter().find(|w| w.kind=="codex").unwrap();
+        widget.config.mode="live".into();
+        assert_eq!(providers.fetch(&widget).headline,"12%");
+        let cache=providers.cache.lock().unwrap();
+        let (_,next,card)=cache.cards.values().next().unwrap();
+        assert_eq!(card.observed_at,now-50);
+        assert!(*next <= now+10, "a later widget must not add a second cache delay");
+        drop(cache);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
     #[test]
     fn codex_windows_keep_buckets_nulls_and_actual_durations_separate() {
         let v = json!({"rateLimits":{"primary":{"usedPercent":99,"windowDurationMins":300,"resetsAt":2000}},"rateLimitsByLimitId":{"codex":{"primary":{"usedPercent":25,"windowDurationMins":10080,"resetsAt":2000},"secondary":null},"other":{"limitName":"Other","primary":{"usedPercent":42,"windowDurationMins":60,"resetsAt":3000},"secondary":{"usedPercent":null,"windowDurationMins":300,"resetsAt":3000}}}});
