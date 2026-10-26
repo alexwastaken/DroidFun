@@ -1037,7 +1037,8 @@ impl Engine {
         }
         let prior_animation = self.current_animation_state();
         let elapsed = now.saturating_duration_since(self.last_tick).as_millis() as u64;
-        self.last_tick = now;
+        // Keep fractional milliseconds so frequent render ticks do not slow timers.
+        self.last_tick += std::time::Duration::from_millis(elapsed);
         if elapsed > 60000 {
             self.phase_ms = 0;
         } else if !self.host_display_asleep
@@ -2432,6 +2433,19 @@ mod tests {
             assert!(engine.snapshot().frame.iter().all(|b| *b == 0));
             engine.set_display_on(true);
         }
+    }
+
+    #[test]
+    fn fast_render_ticks_preserve_fractional_time_for_animation_and_dwell() {
+        let now = Instant::now();
+        let mut e = Engine::new(Settings::default(), now);
+        e.current_id = "face".into();
+        e.remaining_ms = 12_000;
+        for tick in 1..=60 {
+            e.tick_at(now + Duration::from_nanos(tick * 16_666_667), 10000, 720);
+        }
+        assert_eq!(e.phase_ms, 1000);
+        assert_eq!(e.remaining_ms, 11_000);
     }
 
     #[test]

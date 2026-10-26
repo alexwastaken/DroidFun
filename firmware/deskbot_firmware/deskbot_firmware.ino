@@ -7,11 +7,16 @@
 #include "fallback_face.h"
 #include "standalone_storage.h"
 
-// User-supplied wiring: GP4=SDA, GP5=SCL. Bus ACKs at 0x3C;
-// visible output and the controller model are still being commissioned.
+// Shared Meep / Claw SSD1306 wiring: GP4=SDA, GP5=SCL.
 static constexpr uint SDA_PIN = 4;
 static constexpr uint SCL_PIN = 5;
 static uint8_t oled_address = 0x3C;
+static bool oled_fast = true;
+static unsigned oledMaxFps() { return oled_fast ? 30 : 5; }
+static void oledSlowBus() {
+  oled_fast = false;
+  i2c_set_baudrate(i2c0, 100000);
+}
 static constexpr size_t FRAME_SIZE = 1024;
 static constexpr size_t MAX_PACKET = 1044;
 static constexpr size_t RX_STORAGE = 1100;
@@ -141,7 +146,7 @@ static bool oledContrast(uint8_t value) {
   return oledCommands(commands, sizeof(commands));
 }
 
-static bool oledFrame(const uint8_t *bitmap) {
+static bool oledFrameOnce(const uint8_t *bitmap) {
   const uint8_t mode[] = {0x20, 0x02};
   if (!oledCommands(mode, sizeof(mode))) return false;
   uint8_t chunk[17];
@@ -158,7 +163,15 @@ static bool oledFrame(const uint8_t *bitmap) {
   return true;
 }
 
-static bool oledInit() {
+static bool oledFrame(const uint8_t *bitmap) {
+  if (oledFrameOnce(bitmap)) return true;
+  if (!oled_fast) return false;
+  // A partially written frame must restart at page zero on the slower bus.
+  oledSlowBus();
+  return oledFrameOnce(bitmap);
+}
+
+static bool oledInitOnce() {
   const uint8_t commands[] = {
     0xae, 0xd5, 0x80, 0xa8, 0x3f, 0xd3, 0x00, 0x40,
     0x8d, 0x14, 0x20, 0x02, 0xa1, 0xc8, 0xda, 0x12,
@@ -171,6 +184,13 @@ static bool oledInit() {
     if (oledCommands(commands, sizeof(commands))) return true;
   }
   return false;
+}
+
+static bool oledInit() {
+  if (oledInitOnce()) return true;
+  if (!oled_fast) return false;
+  oledSlowBus();
+  return oledInitOnce();
 }
 
 static void pixel(int x, int y) {
@@ -251,8 +271,8 @@ static void processPacket(const uint8_t *packet, size_t size) {
     last_host_command = millis(); fallback_shown = false;
     char response[320];
     snprintf(response, sizeof(response),
-      "{\"firmware\":\"1.2.3\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5\",\"maxFps\":5,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
-      board_id, oled_ready ? "ready" : "i2c_error", DroidSaved::saved_length ? "true" : "false", DroidSaved::saved_length ? DroidSaved::saved[5] : 0);
+      "{\"firmware\":\"1.2.4\",\"boardId\":\"%s\",\"width\":128,\"height\":64,\"profile\":\"GP4-GP5\",\"maxFps\":%u,\"displayHealth\":\"%s\",\"standaloneSupported\":true,\"standaloneSaved\":%s,\"standaloneCount\":%u}",
+      board_id, oledMaxFps(), oled_ready ? "ready" : "i2c_error", DroidSaved::saved_length ? "true" : "false", DroidSaved::saved_length ? DroidSaved::saved[5] : 0);
     reply(HELLO_ACK, sequence, supplied_crc, response);
     return;
   }
@@ -300,8 +320,8 @@ static void processPacket(const uint8_t *packet, size_t size) {
     uint16_t nonzero = 0;
     for (size_t i = 0; i < FRAME_SIZE; ++i) if (payload[i]) ++nonzero;
     char response[100];
-    snprintf(response, sizeof(response), "{\"displayHealth\":\"ready\",\"frameCrc\":%lu,\"nonzeroBytes\":%u}",
-             static_cast<unsigned long>(frame_crc), nonzero);
+    snprintf(response, sizeof(response), "{\"displayHealth\":\"ready\",\"frameCrc\":%lu,\"nonzeroBytes\":%u,\"maxFps\":%u}",
+             static_cast<unsigned long>(frame_crc), nonzero, oledMaxFps());
     reply(ACK, sequence, supplied_crc, response);
     return;
   }
@@ -339,7 +359,7 @@ void setup() {
   Serial.begin(115200);
   delay(250);
   pico_get_unique_board_id_string(board_id, sizeof(board_id));
-  i2c_init(i2c0, 100000);
+  i2c_init(i2c0, 400000);
   gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
   gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
   gpio_pull_up(SDA_PIN); gpio_pull_up(SCL_PIN);

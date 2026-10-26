@@ -100,6 +100,21 @@ struct HelloAck {
     standalone_count: u8,
 }
 
+// Older boards advertise 5 FPS. Never outrun their slower display bus.
+fn frame_interval(max_fps: u16) -> Duration {
+    let fps = if max_fps == 0 { 5 } else { max_fps.min(30) };
+    Duration::from_nanos(1_000_000_000u64.div_ceil(u64::from(fps)))
+}
+
+fn poll_delay(interval: Duration, elapsed: Duration) -> Duration {
+    let remaining = interval.saturating_sub(elapsed);
+    if remaining.is_zero() {
+        Duration::from_micros(16_667)
+    } else {
+        remaining.min(Duration::from_micros(16_667)).max(Duration::from_millis(1))
+    }
+}
+
 fn session_id() -> u32 {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -249,13 +264,7 @@ impl Link {
             last_command: Instant::now(),
             last_frame: Vec::new(),
             last_frame_at: Instant::now() - Duration::from_secs(1),
-            frame_interval: Duration::from_millis(
-                1000 / if ack.max_fps == 0 {
-                    5
-                } else {
-                    ack.max_fps.min(5)
-                } as u64,
-            ),
+            frame_interval: frame_interval(ack.max_fps),
             last_display: None,
             metrics: LinkMetrics::default(),
             status: ConnectionSnapshot {
@@ -296,6 +305,9 @@ impl Link {
         if kind == protocol::FRAME {
             self.metrics.last_frame_crc = Some(validate_frame_ack(&packet.payload, &health)?);
             self.metrics.frame_acks += 1;
+            if let Some(fps) = health.get("maxFps").and_then(|value| value.as_u64()) {
+                self.frame_interval = frame_interval(fps.min(u16::MAX as u64) as u16);
+            }
         }
         self.metrics.command_acks += 1;
         self.metrics.last_ack_at = crate::core::unix_now();
@@ -357,6 +369,10 @@ impl Link {
         Ok(())
     }
 
+    pub fn next_poll_delay(&self) -> Duration {
+        poll_delay(self.frame_interval, self.last_frame_at.elapsed())
+    }
+
     pub fn update(
         &mut self,
         frame: &[u8],
@@ -389,9 +405,11 @@ impl Link {
             if frame.len() != protocol::MAX_PAYLOAD {
                 return Err("Renderer supplied an invalid frame".into());
             }
+            let started = Instant::now();
             self.command(protocol::FRAME, frame.to_vec())?;
             self.last_frame = frame.to_vec();
-            self.last_frame_at = Instant::now();
+            // Count OLED transfer time inside the frame budget, not on top of it.
+            self.last_frame_at = started;
             changed = true;
         }
         if self.last_command.elapsed() >= Duration::from_secs(2) {
@@ -405,6 +423,18 @@ impl Link {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn frame_pacing_honors_old_boards_and_includes_transfer_time() {
+        assert_eq!(frame_interval(0), Duration::from_millis(200));
+        assert_eq!(frame_interval(5), Duration::from_millis(200));
+        assert_eq!(frame_interval(1), Duration::from_secs(1));
+        assert_eq!(frame_interval(60), frame_interval(30));
+        assert!(frame_interval(30) >= Duration::from_secs_f64(1.0 / 30.0));
+        assert_eq!(poll_delay(frame_interval(30), Duration::from_millis(26)),
+            frame_interval(30) - Duration::from_millis(26));
+        assert!(poll_delay(frame_interval(5), Duration::from_millis(100)) <= Duration::from_millis(17));
+        assert!(!poll_delay(frame_interval(30), Duration::from_secs(1)).is_zero());
+    }
     #[test]
     fn save_ack_requires_matching_persistent_playlist() {
         assert!(validate_saved_ack(

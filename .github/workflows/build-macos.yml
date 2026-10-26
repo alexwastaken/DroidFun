@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for test in standalone_test standalone_lifecycle_test oled_address_test packet_bounds_test powered_standby_test; do
+          for test in standalone_test standalone_lifecycle_test oled_address_test packet_bounds_test powered_standby_test display_speed_test; do
             clang++ -std=c++17 -Wall -Wextra -Werror -Wno-unused-function -fsanitize=address,undefined -Ifirmware/tests/mocks "firmware/tests/${test}.cpp" -o "$RUNNER_TEMP/droidfun-${test}"
             "$RUNNER_TEMP/droidfun-${test}"
           done

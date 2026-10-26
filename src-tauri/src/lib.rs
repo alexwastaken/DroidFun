@@ -946,7 +946,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         let path = app
             .dialog()
             .file()
-            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.3.uf2")
+            .set_file_name("DroidFun-RP2040-Zero-firmware-v1.2.4.uf2")
             .add_filter("RP2040 firmware", &["uf2"])
             .blocking_save_file();
         let Some(path) = path else {
@@ -954,7 +954,7 @@ async fn export_firmware(app: AppHandle) -> Result<bool, String> {
         };
         fs::write(
             path.into_path().map_err(|_| "Choose a local file")?,
-            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.3.uf2"),
+            include_bytes!("../../firmware/releases/droidfun-rp2040-zero-gp4-gp5-v1.2.4.uf2"),
         )
         .map_err(|_| "Could not save firmware")?;
         Ok(true)
@@ -1520,7 +1520,7 @@ fn connection_worker(app: AppHandle) {
                     if let Ok(mut metrics) = app.state::<AppState>().link_metrics.lock() {
                         *metrics = link.metrics.clone();
                     }
-                    std::thread::sleep(Duration::from_millis(100));
+                    std::thread::sleep(link.next_poll_delay());
                 }
             }
             Err(error) => {
@@ -1726,7 +1726,7 @@ pub fn run() {
                 let mut next_display_check = Instant::now();
                 let mut display_asleep = false;
                 loop {
-                    std::thread::sleep(Duration::from_millis(200));
+                    std::thread::sleep(Duration::from_micros(16_667));
                     let now = Instant::now();
                     if now >= next_display_check {
                         display_asleep = host_display::asleep();
