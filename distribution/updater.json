@@ -1,23 +1,23 @@
 {
-  "version": "0.5.2",
-  "notes": "Codex usage now refreshes about once a minute while DroidFun is active and online.\n\n- Claw’s Codex percentage checks for new account usage every 60 seconds, instead of every five minutes.\n- Multiple Codex screens share one account read. A later-added screen cannot hold an older reading for an extra minute.\n- Existing rate-limit, retry and offline protections remain. Codex may still take time to report new usage.\n- Claude account usage remains on its five-minute schedule; local Claude Code reports are checked every two seconds.\n\nNo firmware update or screen reset is needed. Your droids, screens, account connections and saved settings are retained.\n\nMac packages remain ad-hoc signed without Apple notarization; Windows publisher signing is not configured. Linux updates use your package manager.\n",
-  "pub_date": "2026-10-26T03:34:20Z",
+  "version": "0.5.3",
+  "notes": "Screen animations are smoother on Meep and Claw, with a small moving accent around the Codex and Claude logos. Text and usage readings stay still and readable.\n\n- Update DroidFun App, then choose **Update droid** on the home screen to install the included droid software.\n- The new firmware targets up to 30 animation updates per second. A physical Claw test measured 29.4 FPS, compared with 4.94 FPS before, with 882 verified frames over 30 seconds. Full-screen changes may run slower.\n- Screens that need the slower connection fall back automatically. Older droid firmware keeps its supported speed until updated.\n- Powered standby faces, saved screens, display preferences and account settings are retained.\n- Codex usage still refreshes about once a minute; animation speed is separate from account polling.\n\nMac packages remain ad-hoc signed without Apple notarization; Windows publisher signing is not configured. Linux updates use your package manager.\n",
+  "pub_date": "2026-10-26T19:12:35Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.2/DroidFun-App-0.5.2-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0dJaC90VmpMaVYyN2w1OHM1b0lIemVFM2dhdUNsditYc3NEUHBiZ0c3dGY5MGdqcWFHaVZmM09vN0FybEpueENWSnlmTUUxdDUrbjkyYjluQitPY1FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyOTg1NTY3CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuMgprV0xBaXI4K0JSZlBXc1c2cU9sZVdzb0RuTzhORWlUOHJtY2ZkckZsN0tGc0V4ZUhjTkFaejgvZ3cxWWVvVFVnY3VGaE9wUVlFWGt3ZUxuaTN6S0xDUT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.3/DroidFun-App-0.5.3-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NPenZjZjJzZDRKQnRZY0VwNWtHRWF5Wnh2WHhXVHBQR1dZQXR6ek85eEZIbVhadXVoUTVVSlpWNndacEFHdXUxaVdZOE5IZ2RDWHdpZk80QkVIVVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMDQxNjE0CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuMwo2NEFYMXp0dTNiR1RCUUQ3V29OSGdUb01saEdrcUQ1RHJQWGVlNW5PWmlHR0hac1Q1bUw1bUhNTjVxSk40cWZYUmhRSVg2bVYyaE9XeHF0RUREb2ZEUT09Cg=="
     },
     "darwin-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.2/DroidFun-App-0.5.2-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0dJaC90VmpMaVYyN2w1OHM1b0lIemVFM2dhdUNsditYc3NEUHBiZ0c3dGY5MGdqcWFHaVZmM09vN0FybEpueENWSnlmTUUxdDUrbjkyYjluQitPY1FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyOTg1NTY3CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuMgprV0xBaXI4K0JSZlBXc1c2cU9sZVdzb0RuTzhORWlUOHJtY2ZkckZsN0tGc0V4ZUhjTkFaejgvZ3cxWWVvVFVnY3VGaE9wUVlFWGt3ZUxuaTN6S0xDUT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.3/DroidFun-App-0.5.3-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NPenZjZjJzZDRKQnRZY0VwNWtHRWF5Wnh2WHhXVHBQR1dZQXR6ek85eEZIbVhadXVoUTVVSlpWNndacEFHdXUxaVdZOE5IZ2RDWHdpZk80QkVIVVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMDQxNjE0CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuMwo2NEFYMXp0dTNiR1RCUUQ3V29OSGdUb01saEdrcUQ1RHJQWGVlNW5PWmlHR0hac1Q1bUw1bUhNTjVxSk40cWZYUmhRSVg2bVYyaE9XeHF0RUREb2ZEUT09Cg=="
     },
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.2/DroidFun-App-0.5.2-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0RJMlB6Q3p2dHZXdWt0OFFDQ244ZTR1cTdCNnhtN3VWRFp2ZWxKMkxBUHFpVmYwYlBoVmRxQnFTQ1JmdFlmYlIwNEduVFpLalFoNzM3ZTBIOGhOR2dBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyOTg1MTg1CWZpbGU6RHJvaWRGdW4gQXBwXzAuNS4yX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjUuMgpzQksyUEdPbWQ2UEZxdjRSVXlnWXlMWUx1WUwvUXdnM1BrMVlmQkpXdlo4amRNUlpjUmFJdFc1YWV4RlF2R3V6dG0zRWFtSUt1SnZ5Q1hUUmc5alNEZz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.3/DroidFun-App-0.5.3-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0JWUU1qKzcrZUgxOVBLUGpTZ2lpMEJsU0JiWm5xVEFCSEVmdVhOYlRBTlFWVkRoZ0Z6bUNPYWhTK01DNUtNOUtXaGJkaGxTQ1Rzb1l0NC9JV3VCT0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMDQwNzc5CWZpbGU6RHJvaWRGdW4gQXBwXzAuNS4zX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjUuMwpHdTNGdTZWc3piTEdkbkQzZmdBbWVzR2c5U1Jnem9YeTM0WU4ybkxTdldyY1Baemtidkp5bEIrdVBrcXlmWHVjSHUxblovVTRuQUVBRGdSZ28rMExBdz09Cg=="
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.2/DroidFun-App-0.5.2-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09VSllDMzVjanNiSGh0T1BvY3B0V090dmpteGU4cWtvM2hiTGRKdUQzMFJWbnBoNG42bWFkRVJYUEVUZE1rVkJnK05zUDZuK3ZrMFhCQXBiQUhkb2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyOTg1MjAwCWZpbGU6RHJvaWRGdW4gQXBwXzAuNS4yX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNS4yCjZKSGJHdlJrS1dZdU5zWUNhT0lYeVhQNGRCWXBOWUZ6Qk1mZnRCY3d0THl1a0dsVkYrTWV5T2I5cEhZbTRZOXIyOW9hRGJSbzh3NTVqTWxnSFdHWEJnPT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.3/DroidFun-App-0.5.3-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0FVUWo3ejhDV1p6VlZ4NGF0RDBLVDRuMWhweFJqZFk5RkFrT2xwczhML0MvZExkWE9EZkZHNWxtK1RlOGJrb0doYm1aeTRVRzdDN0VFOGppTXZ3SVFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMDQwODIzCWZpbGU6RHJvaWRGdW4gQXBwXzAuNS4zX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNS4zCmo3TmJibUxYaXRzVTZibkczTjRVb0JFNExYOStDSnBhNEJHMXgrU21TRzBrL2Ruemwzd3dKSzR3QkdyT3dqU3ZHZ2Z1OFlhbi82VTJ4NzZwMjB0NUNBPT0K"
     }
   }
 }
