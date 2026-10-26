@@ -1,9 +1,12 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 inline int i2c0 = 0;
 inline int mock_oled_address = 0x3C;
 inline bool mock_oled_on = false;
+inline uint8_t mock_panel[1024] = {};
+inline size_t mock_page = 0, mock_column = 0;
 inline unsigned int mock_i2c_hz = 100000;
 inline bool mock_fail_fast = false;
 inline size_t mock_display_bytes = 0;
@@ -18,8 +21,16 @@ inline int i2c_write_timeout_us(int, uint8_t address, const uint8_t *data, size_
   }
   if (address != mock_oled_address) return -1;
   if (n > 1 && data[0] == 0x40) {
+    for (size_t i = 1; i < n; ++i) {
+      if (mock_page < 8 && mock_column < 128) mock_panel[mock_page * 128 + mock_column] = data[i];
+      ++mock_column;
+    }
     mock_display_bytes += n - 1;
     if (mock_i2c_hz == 100000) mock_slow_display_bytes += n - 1;
+  }
+  if (n == 4 && data[0] == 0x00 && (data[1] & 0xf8) == 0xb0) {
+    mock_page = data[1] & 7;
+    mock_column = (data[2] & 0x0f) | ((data[3] & 0x0f) << 4);
   }
   if (n >= 2 && data[0] == 0x00) {
     if (n == 2 && data[1] == 0xae) mock_oled_on = false;

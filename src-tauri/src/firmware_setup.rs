@@ -373,7 +373,7 @@ mod tests {
         use sha2::{Digest, Sha256};
         assert_eq!(
             format!("{:x}", Sha256::digest(FIRMWARE)),
-            "b250689c741fc35984015724e90d0f248ac8ae37e88263264eee4f006f669923"
+            "483d44da0d730157dd86e18e0a8826149521b324e28fb175737ebce975635e22"
         );
     }
     #[test]

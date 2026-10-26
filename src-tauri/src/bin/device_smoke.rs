@@ -82,15 +82,23 @@ fn main() -> Result<(), String> {
         let base = core::render(None, true);
         let started = Instant::now();
         let mut ack_times = Vec::new();
+        let mut transfer_ms = Vec::new();
+        let mut sleep_ms = Vec::new();
         while started.elapsed() < Duration::from_secs(hold_seconds) {
             let mut frame = base.clone();
             // A small moving footer leaves the face visible; no full-screen flashing.
             let x = (link.metrics.frame_acks as usize * 3) % 120;
             for col in x..x + 8 { frame[7 * 128 + col] |= 0xc0; }
             let previous = link.metrics.frame_acks;
+            let transfer_started = Instant::now();
             link.update(&frame, true, 85, 0)?;
-            if link.metrics.frame_acks > previous { ack_times.push(started.elapsed().as_secs_f64()); }
-            thread::sleep(link.next_poll_delay());
+            if link.metrics.frame_acks > previous {
+                ack_times.push(started.elapsed().as_secs_f64());
+                transfer_ms.push(transfer_started.elapsed().as_secs_f64() * 1000.0);
+            }
+            let delay = link.next_poll_delay();
+            sleep_ms.push(delay.as_secs_f64() * 1000.0);
+            thread::sleep(delay);
         }
         let fps = if ack_times.len() > 1 {
             (ack_times.len() - 1) as f64 / (ack_times.last().unwrap() - ack_times[0])
@@ -98,6 +106,8 @@ fn main() -> Result<(), String> {
         println!("BENCHMARK {}", serde_json::json!({
             "firmware": link.status.firmware, "seconds": started.elapsed().as_secs_f64(),
             "verifiedFrames": ack_times.len(), "measuredFps": fps,
+            "meanTransferMs": transfer_ms.iter().sum::<f64>() / transfer_ms.len().max(1) as f64,
+            "meanSleepMs": sleep_ms.iter().sum::<f64>() / sleep_ms.len().max(1) as f64,
             "maxFrameGapMs": ack_times.windows(2).map(|w| (w[1]-w[0])*1000.0).fold(0.0f64, f64::max),
             "displayHealth": link.status.display_health,
         }));

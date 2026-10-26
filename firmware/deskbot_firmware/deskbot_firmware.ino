@@ -30,6 +30,8 @@ static uint8_t rx[RX_STORAGE];
 static uint8_t decoded[MAX_PACKET];
 static uint8_t transmit[MAX_PACKET + 8];
 static uint8_t screen[FRAME_SIZE];
+static uint8_t oled_shadow[FRAME_SIZE];
+static bool oled_shadow_valid = false;
 static uint16_t rx_length = 0;
 static bool rx_discard = false;
 static uint32_t rx_started = 0;
@@ -152,19 +154,32 @@ static bool oledFrameOnce(const uint8_t *bitmap) {
   uint8_t chunk[17];
   chunk[0] = 0x40;
   for (uint8_t page = 0; page < 8; ++page) {
-    const uint8_t position[] = {static_cast<uint8_t>(0xb0 | page), 0x00, 0x10};
-    if (!oledCommands(position, sizeof(position))) return false;
+    bool positioned = false;
     for (size_t column = 0; column < 128; column += 16) {
-      memcpy(chunk + 1, bitmap + page * 128 + column, 16);
+      const size_t offset = page * 128 + column;
+      if (oled_shadow_valid && memcmp(bitmap + offset, oled_shadow + offset, 16) == 0) {
+        positioned = false;
+        continue;
+      }
+      if (!positioned) {
+        const uint8_t position[] = {static_cast<uint8_t>(0xb0 | page),
+          static_cast<uint8_t>(column & 0x0f), static_cast<uint8_t>(0x10 | (column >> 4))};
+        if (!oledCommands(position, sizeof(position))) return false;
+        positioned = true;
+      }
+      memcpy(chunk + 1, bitmap + offset, 16);
       if (!writeI2c(chunk, sizeof(chunk))) return false;
       watchdog_update();
     }
   }
+  memcpy(oled_shadow, bitmap, FRAME_SIZE);
+  oled_shadow_valid = true;
   return true;
 }
 
 static bool oledFrame(const uint8_t *bitmap) {
   if (oledFrameOnce(bitmap)) return true;
+  oled_shadow_valid = false;
   if (!oled_fast) return false;
   // A partially written frame must restart at page zero on the slower bus.
   oledSlowBus();
@@ -172,6 +187,7 @@ static bool oledFrame(const uint8_t *bitmap) {
 }
 
 static bool oledInitOnce() {
+  oled_shadow_valid = false;
   const uint8_t commands[] = {
     0xae, 0xd5, 0x80, 0xa8, 0x3f, 0xd3, 0x00, 0x40,
     0x8d, 0x14, 0x20, 0x02, 0xa1, 0xc8, 0xda, 0x12,
