@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { botName } from "./BotPicker";
+import { botName, botModels } from "./BotPicker";
 import { BotAvatar } from "./BotPreview";
 import LinuxRobotAccess from "./LinuxRobotAccess";
 
@@ -23,7 +23,7 @@ function needsUpdate(version: string | null | undefined) {
 }
 function SetupChoice({ initial, name, disabled, onChoose }: { initial: string; name: string; disabled: boolean; onChoose: (model: string) => void }) {
   const [model, setModel] = useState(initial);
-  return <div className="droid-add"><label>Which droid is this?<select value={model} disabled={disabled} onChange={e => setModel(e.target.value)}><option value="">Choose your droid</option>{["meep", "boo", "claw"].map(m => <option key={m} value={m}>{botName(m)}</option>)}</select></label><button className="primary-control" disabled={disabled || !model} onClick={() => onChoose(model)}>{name}</button></div>;
+  return <div className="droid-add"><label>Which droid is this?<select value={model} disabled={disabled} onChange={e => setModel(e.target.value)}><option value="">Choose your droid</option>{botModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select></label><button className="primary-control" disabled={disabled || !model} onClick={() => onChoose(model)}>{name}</button></div>;
 }
 function Rename({ profile, busy, onRename }: { profile: DroidProfile; busy: boolean; onRename: Props["onRename"] }) {
   const [editing, setEditing] = useState(false);

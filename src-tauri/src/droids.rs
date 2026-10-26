@@ -151,11 +151,12 @@ pub fn select(
         .find(|p| p.serial.eq_ignore_ascii_case(serial))
         .cloned();
     if let Some(profile) = existing {
+        if profile.model == "boo" { return Err("This model has been retired. Choose Meep or Claw.".into()); }
         profile.apply(&mut next);
     } else {
         let chosen = model.unwrap_or(&current.preferences.bot_model);
-        if !["boo", "meep", "claw"].contains(&chosen) {
-            return Err("Choose Meep, Boo or Claw to finish adding this droid.".into());
+        if !["meep", "claw"].contains(&chosen) {
+            return Err("Choose Meep or Claw to finish adding this droid.".into());
         }
         if !next.droids.is_empty() && model.is_none() {
             return Err("Choose the new droid’s model before connecting it.".into());
@@ -243,13 +244,33 @@ mod tests {
         assert_eq!(restored.brightness, 92);
         assert_eq!(restored.droids[0].name, "Office Claw");
         assert!(select(&restored, Some("B"), None).is_err());
-        let second = select(&restored, Some("B"), Some("boo")).unwrap();
-        assert_eq!(second.preferences.bot_model, "boo");
+        let second = select(&restored, Some("B"), Some("meep")).unwrap();
+        assert_eq!(second.preferences.bot_model, "meep");
         assert!(second.widgets[0].enabled);
         let back = select(&second, Some("A"), None).unwrap();
         assert_eq!(back.preferences.bot_model, "claw");
         assert_eq!(back.droids[0].name, "Office Claw");
     }
+    #[test]
+    fn retired_model_is_preserved_but_cannot_be_selected_or_created() {
+        let mut settings = Settings::default();
+        settings.preferences.bot_model = "boo".into();
+        settings.selected_device_serial = Some("LEGACY_BOARD".into());
+        settings.widgets[0].label = "Keep my old face".into();
+        remember(&mut settings).unwrap();
+        settings.validate().unwrap();
+        let original = serde_json::to_value(&settings).unwrap();
+        assert!(select(&settings, Some("LEGACY_BOARD"), None).is_err());
+        assert!(select(&settings, Some("NEW_BOARD"), Some("boo")).is_err());
+        assert_eq!(serde_json::to_value(&settings).unwrap(), original);
+        let mut engine = Engine::new(settings, Instant::now());
+        assert!(engine.set_bot_model("boo").is_err());
+        engine.set_bot_model("meep").unwrap();
+        assert!(engine.settings.selected_device_serial.is_none());
+        assert_eq!(engine.settings.droids[0].model, "boo");
+        assert_eq!(engine.settings.droids[0].widgets[0].label, "Keep my old face");
+    }
+
     #[test]
     fn profiles_reject_duplicate_identity_invalid_names_and_invalid_playlists() {
         let mut s = Settings::default();

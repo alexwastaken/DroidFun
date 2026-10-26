@@ -270,7 +270,7 @@ fn preview_frame(id: String, state: State<AppState>) -> Result<Vec<u8>, String> 
 
 fn standalone_playlist(engine: &Engine) -> Result<protocol::StandalonePlaylist, String> {
     if !["boo", "meep"].contains(&engine.settings.preferences.bot_model.as_str()) {
-        return Err("Saving screens to the bot is available for Boo Bot and Meep Bot. Claw Bot needs a computer for live account usage.".into());
+        return Err("Saving screens to the bot is available for Meep Bot. Claw Bot needs a computer for live account usage.".into());
     }
     let widgets: Vec<_> = engine
         .settings
@@ -1219,8 +1219,8 @@ async fn install_robot_firmware(
     bot_model: Option<String>,
     app: AppHandle,
 ) -> Result<Snapshot, String> {
-    if bot_model.as_deref().is_some_and(|model| !["boo", "meep", "claw"].contains(&model)) {
-        return Err("Choose Meep, Boo or Claw before setup.".into());
+    if bot_model.as_deref().is_some_and(|model| !["meep", "claw"].contains(&model)) {
+        return Err("Choose Meep or Claw before setup.".into());
     }
     let serial = install_image(path, expected_board_id, false, app.clone()).await?;
     // Persist the newly discovered board, replacing any old robot selection.
@@ -1278,8 +1278,8 @@ async fn install_image(
     {
         let state = app.state::<AppState>();
         let engine = state.engine.lock().map_err(|_| "State unavailable")?;
-        if !["boo", "meep", "claw"].contains(&engine.settings.preferences.bot_model.as_str()) {
-            return Err("Choose Boo, Meep or Claw before installing its software.".into());
+        if !["meep", "claw"].contains(&engine.settings.preferences.bot_model.as_str()) {
+            return Err("Choose Meep or Claw before installing its software.".into());
         }
     }
     if test {
@@ -1402,7 +1402,10 @@ fn connection_worker(app: AppHandle) {
                 .engine
                 .lock()
                 .ok()
-                .and_then(|engine| engine.settings.selected_device_serial.clone())
+                .and_then(|engine| {
+                    ["meep", "claw"].contains(&engine.settings.preferences.bot_model.as_str())
+                        .then(|| engine.settings.selected_device_serial.clone()).flatten()
+                })
         };
         let Some(serial) = selected else {
             let detected = connection::robot_ports().unwrap_or_default().len();
@@ -2145,7 +2148,7 @@ mod offline_tests {
     #[test]
     fn wall_power_save_requires_a_supported_bot_and_at_least_one_static_screen() {
         let mut engine = Engine::new(Settings::default(), Instant::now());
-        assert!(standalone_playlist(&engine).unwrap_err().contains("Boo"));
+        assert!(standalone_playlist(&engine).unwrap_err().contains("Meep"));
         engine.set_bot_model("claw").unwrap();
         assert!(standalone_playlist(&engine).unwrap_err().contains("Claw"));
         engine.set_bot_model("meep").unwrap();

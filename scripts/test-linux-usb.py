@@ -124,7 +124,7 @@ def ui():
         driver.wait('window.__TAURI_INTERNALS__ && (document.querySelector(".bot-picker") || document.querySelector(".bot-controls"))')
         if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
             driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => ["Change model", "Change bot"].includes(b.textContent.trim())).click();')
-        driver.wait('document.querySelectorAll(".bot-choice").length === 3 && !document.documentElement.hasAttribute("data-bot")')
+        driver.wait('document.querySelectorAll(".bot-choice").length === 2 && !document.documentElement.hasAttribute("data-bot")')
         if capture_chooser: driver.capture('linux-bot-chooser.png')
         selector = '.bot-choice[data-bot="'+model+'"]'
         driver.js('document.querySelector('+json.dumps(selector)+').click();')
@@ -152,7 +152,7 @@ def ui():
         # The mandatory first-run chooser is the actual entry point now. Do not
         # bypass it by setting the old setupComplete flag: that no longer selects
         # a bot and would leave all USB controls hidden behind the chooser.
-        choose_bot('boo', capture_chooser=True)
+        choose_bot('meep', capture_chooser=True)
         # Headless CI has no active physical desktop. Explicit test-only polkit
         # authorization exercises real pkexec/helper IPC without a password.
         # Production policy defaults are separately checked; this rule is never shipped.

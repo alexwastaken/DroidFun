@@ -11,7 +11,7 @@ const names: Record<BotModel, string> = {
 };
 
 function botModel(model: string): BotModel {
-  return model === "claw" || model === "meep" ? model : "boo";
+  return model === "claw" ? "claw" : "meep";
 }
 
 /** The housing is decorative; the real OLED canvas supplies its own accessible label. */
