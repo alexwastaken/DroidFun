@@ -149,7 +149,7 @@ mod tests {
         existing.manual_display_off = true;
         save(&path, &existing).unwrap();
         let mut engine = crate::core::Engine::new(load(&path).unwrap(), std::time::Instant::now());
-        for model in ["claw", "boo", "meep"] {
+        for model in ["claw", "meep"] {
             engine.set_bot_model(model).unwrap();
             assert!(engine.settings.widgets.iter().all(|w| !w.enabled));
             assert_eq!(engine.settings.brightness, 41);
@@ -195,7 +195,7 @@ mod tests {
             serde_json::to_value(&expected.widgets).unwrap()
         );
         let mut engine = crate::core::Engine::new(loaded, std::time::Instant::now());
-        for model in ["claw", "boo", "meep"] {
+        for model in ["claw", "meep"] {
             engine.set_bot_model(model).unwrap();
             save(&path, &engine.settings).unwrap();
             let reopened = load(&path).unwrap();

@@ -649,6 +649,13 @@ impl Engine {
         }
     }
     pub fn set_bot_model(&mut self, model: &str) -> Result<(), String> {
+        if !["meep", "claw"].contains(&model) {
+            return Err("Choose Meep or Claw.".into());
+        }
+        if self.settings.preferences.bot_model == "boo" {
+            crate::droids::remember(&mut self.settings)?;
+            self.settings.selected_device_serial = None;
+        }
         let mut preferences = self.settings.preferences.clone();
         preferences.bot_model = model.into();
         if !model.is_empty() {
@@ -2003,7 +2010,7 @@ mod tests {
 
     #[test]
     fn fresh_bot_profiles_start_with_visible_ready_screens() {
-        for (model, expected) in [("boo", "face"), ("meep", "face"), ("claw", "codex")] {
+        for (model, expected) in [("meep", "face"), ("claw", "codex")] {
             let mut engine = Engine::new(Settings::default(), Instant::now());
             engine.set_bot_model(model).unwrap();
             let snapshot = engine.snapshot();
@@ -2035,7 +2042,7 @@ mod tests {
         engine.set_bot_model("meep").unwrap();
         engine.set_enabled("face", false).unwrap();
         let widgets = serde_json::to_value(&engine.settings.widgets).unwrap();
-        for model in ["claw", "boo", "meep"] {
+        for model in ["claw", "meep"] {
             engine.set_bot_model(model).unwrap();
             assert_eq!(
                 serde_json::to_value(&engine.settings.widgets).unwrap(),
@@ -2051,7 +2058,7 @@ mod tests {
         e.set_enabled("weather", true).unwrap();
         e.set_enabled("codex", true).unwrap();
         let saved = serde_json::to_value(&e.settings.widgets).unwrap();
-        e.set_bot_model("boo").unwrap();
+        e.set_bot_model("meep").unwrap();
         e.pin("weather").unwrap();
         e.show_now("face").unwrap();
         e.set_bot_model("claw").unwrap();
@@ -2084,7 +2091,7 @@ mod tests {
     #[test]
     fn offline_skips_live_sources_without_erasing_enabled_flags_or_local_screens() {
         let mut e = Engine::new(Settings::default(), Instant::now());
-        e.set_bot_model("boo").unwrap();
+        e.set_bot_model("meep").unwrap();
         e.configure_source(
             "weather",
             "Weather".into(),
@@ -2197,7 +2204,7 @@ mod tests {
     #[test]
     fn draft_preview_is_actual_text_without_demo_data_and_does_not_mutate() {
         let mut e = Engine::new(Settings::default(), Instant::now());
-        e.set_bot_model("boo").unwrap();
+        e.set_bot_model("meep").unwrap();
         e.add_widget("text").unwrap();
         let mut draft = e.settings.widgets.last().unwrap().clone();
         let before = serde_json::to_value(e.snapshot()).unwrap();
@@ -2235,7 +2242,7 @@ mod tests {
     #[test]
     fn visible_reorder_skips_other_bots_and_unrelated_preferences_keep_temporary_playback() {
         let mut e = Engine::new(Settings::default(), Instant::now());
-        e.set_bot_model("boo").unwrap();
+        e.set_bot_model("meep").unwrap();
         e.add_widget("text").unwrap();
         let id = e.settings.widgets.last().unwrap().id.clone();
         let original = serde_json::to_value(&e.settings.widgets).unwrap();
@@ -2244,7 +2251,7 @@ mod tests {
             .settings
             .widgets
             .iter()
-            .filter(|w| kind_allowed("boo", &w.kind))
+            .filter(|w| kind_allowed("meep", &w.kind))
             .map(|w| w.kind.as_str())
             .collect();
         assert_eq!(visible, ["face", "weather", "text", "stock"]);
@@ -2268,7 +2275,7 @@ mod tests {
     #[test]
     fn additional_faces_keep_independent_expressions_and_base_face_is_preserved() {
         let mut e = Engine::new(Settings::default(), Instant::now());
-        e.set_bot_model("boo").unwrap();
+        e.set_bot_model("meep").unwrap();
         e.add_widget("face").unwrap();
         let id = e.settings.widgets.last().unwrap().id.clone();
         assert_ne!(id, "face");
@@ -2485,7 +2492,7 @@ mod tests {
 
     #[test]
     fn sleeping_computer_display_shows_a_smile_then_resumes_without_changing_settings() {
-        for model in ["boo", "meep", "claw"] {
+        for model in ["meep", "claw"] {
             for playback in [Playback::Running, Playback::Paused, Playback::Pinned] {
                 let now = Instant::now();
                 let mut e = Engine::new(Settings::default(), now);
