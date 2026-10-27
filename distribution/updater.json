@@ -1,23 +1,23 @@
 {
-  "version": "0.5.4",
-  "notes": "Nimbus and Boo join Meep and Claw in DroidFun App.\n\n- Choose Nimbus Bot or Boo Bot during setup and in Your droids.\n- Nimbus has a cloud preview and blue light/dark themes, with weather, faces, clocks, custom text and the everyday screen options available on Meep.\n- Existing Boo profiles can be selected again, with saved settings preserved. Every USB board keeps its own screens and preferences.\n- Claw keeps its dedicated Codex and Claude allowance screens. Firmware remains 1.2.4; this app update does not require a new firmware install.\n\nMac builds are ad-hoc signed; Apple notarization and Windows publisher signing remain unavailable. Linux updates are manual.\n",
-  "pub_date": "2026-10-27T20:25:08Z",
+  "version": "0.5.5",
+  "notes": "Information screens use simpler layouts with lower text and no companion face overlays. Weather, clocks, stocks, timers, stats, and usage screens show their information more clearly on supported droids.\n\nFace screens and custom text remain unchanged. Existing saved screen settings and per-droid profiles remain supported. Customer firmware remains 1.2.4.\n",
+  "pub_date": "2026-10-27T21:26:21Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.4/DroidFun-App-0.5.4-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0o1bkVVQ0ZkMi96c2lsQmRNTnkwZ29LNC9rSFhBc2lFVk1NVU5ZZU5NdUhlQUozcWhaREVTVWFYVENRdnF5Rm1Rb0FXQlNienhvL0Fvb3dHMXFDZndFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTMyMjEwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuNApvbVdLS04rcG5WVm9ObVFJTFlNUnIrTDFEaEExZUxPQnNxUVJwYjMzU3Z2c0FrZEk2L1Y4TXhwbmJqUXFCc0tCeDRybXp3THdSaUxYaVFBNndIa0dBUT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.5/DroidFun-App-0.5.5-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09ra3N6NFRjdjV3WTFVTDY4aWptL2FNeGFhVktRcEJ0ZWk4bk1tZzVqODEyZFg3bXRvVTIrMm5oRnpwZmx1ZVk1TEhoSVZJSVNpTk13a1lGSkhVaGdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTM2MzE1CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuNQpoNW5nRURPT3hOZzhsMHB1MlJIMmxIQXNiblk5VVl1UlpvVVZYTis0S24rVGNHUUJ4am5WdzQxS2FCam9zWWVFWmp0clJubDYxMFYrZ0ZNelk3SkpEQT09Cg=="
     },
     "darwin-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.4/DroidFun-App-0.5.4-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0o1bkVVQ0ZkMi96c2lsQmRNTnkwZ29LNC9rSFhBc2lFVk1NVU5ZZU5NdUhlQUozcWhaREVTVWFYVENRdnF5Rm1Rb0FXQlNienhvL0Fvb3dHMXFDZndFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTMyMjEwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuNApvbVdLS04rcG5WVm9ObVFJTFlNUnIrTDFEaEExZUxPQnNxUVJwYjMzU3Z2c0FrZEk2L1Y4TXhwbmJqUXFCc0tCeDRybXp3THdSaUxYaVFBNndIa0dBUT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.5/DroidFun-App-0.5.5-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09ra3N6NFRjdjV3WTFVTDY4aWptL2FNeGFhVktRcEJ0ZWk4bk1tZzVqODEyZFg3bXRvVTIrMm5oRnpwZmx1ZVk1TEhoSVZJSVNpTk13a1lGSkhVaGdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTM2MzE1CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjUuNQpoNW5nRURPT3hOZzhsMHB1MlJIMmxIQXNiblk5VVl1UlpvVVZYTis0S24rVGNHUUJ4am5WdzQxS2FCam9zWWVFWmp0clJubDYxMFYrZ0ZNelk3SkpEQT09Cg=="
     },
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.4/DroidFun-App-0.5.4-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK01TcXpRRnhDWEpvM3AyRkJ3cEtWVUdXa3NPZWhNVG1KVWplSnBFTHZJN3hrdXVSbjdSTytTdm8xcTU5QWk3d29YQ29rR0VPLzI5Q0hXYWVzTzNVNHdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTMxNzEzCWZpbGU6RHJvaWRGdW4gQXBwXzAuNS40X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjUuNApxcVgrNHdvYk5OWHFxWWhTSjkwNjFHOFFnZ3hzMVBjb1Bpdkx0RDVpajB5K20xakJQT1c5Q21MRTczOHRiMC9IbnpwL29wejFXNnhQcEJ1T3B3K3hCdz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.5/DroidFun-App-0.5.5-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0JZTlJkSzNqbEE5cUZCRDV3OEZWckJDREhWQnd0alNMQXl6NFZ3T2c4d2lPRTlwaTF5OUVEdGUvR2d3VURMTkhXZlFDcUFQVEFyRTF2Y2hDUUpFOWd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTM1MzgzCWZpbGU6RHJvaWRGdW4gQXBwXzAuNS41X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjUuNQpucnlkQlA1T0gzMTU3enBwTEYvSHoxaUVLQWxYSUpHVHUyWUE4TXdEOHVzSnFrQ29RK0pnNk9NbVZjeXBhalF4WU9jdzU2dW0rYkx0REluVGJJN0ZEQT09Cg=="
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.4/DroidFun-App-0.5.4-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0Z2cmpPY0pBWkdXMkNZRE94OFdkd0VoRUJkbVJWa2ZLc3VkZlVaK2VMUFFleG54V2FmTGR3WFBFcFU4T3BjZTJsRWNDNEdDd0pjVktuU3QxRzJ4T2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTMxNjk5CWZpbGU6RHJvaWRGdW4gQXBwXzAuNS40X2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNS40CndIR25pZjVaVVprVUJ5cU5hVFJ6TEgvalcrRHhZOWdXWE16UXVvUDAzNzl0c3NRNVVyMk9DQlkxckdRNlRLd3AraHJFMEowNk1pN3BqdHVFemRQYkNBPT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.5.5/DroidFun-App-0.5.5-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0U1RTQwLy9HT3g3Vytvb20yOVNINzY3cjJyNGd3UWo3R0RabXQvWEJXZWRyczJhdUJ2bFV5MjVaNE5oREg2SkhFUDJiN08yKzRZVjc2bEFxaUxCUEFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTM1NDEwCWZpbGU6RHJvaWRGdW4gQXBwXzAuNS41X2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNS41CkYzTnJIQnpaajJZQmV5SWhoQng5V1hWbHRzNjlSU2lVZm1FSTArd3gvTkozVnJ0aFd3dFhlNG40ZkNLbEJvWlJidTcwb0FVV1YzRTVWcklCeGJVdUFRPT0K"
     }
   }
 }
