@@ -30,6 +30,7 @@ fn valid_serial(serial: &str) -> bool {
 fn model_name(model: &str) -> &'static str {
     match model {
         "boo" => "Boo",
+        "nimbus" => "Nimbus",
         "meep" => "Meep",
         "claw" => "Claw",
         _ => "Droid",
@@ -74,7 +75,7 @@ impl DroidProfile {
             || self.name.trim().is_empty()
             || self.name.chars().count() > 40
             || self.name.chars().any(char::is_control)
-            || !["boo", "meep", "claw"].contains(&self.model.as_str())
+            || !["boo", "meep", "claw", "nimbus"].contains(&self.model.as_str())
         {
             return Err("Choose a droid name of 1–40 characters and a supported model.".into());
         }
@@ -106,7 +107,7 @@ pub fn remember(settings: &mut Settings) -> Result<(), String> {
     if !valid_serial(&serial) {
         return Err("This droid has an invalid identity.".into());
     }
-    if !["boo", "meep", "claw"].contains(&settings.preferences.bot_model.as_str()) {
+    if !["boo", "meep", "claw", "nimbus"].contains(&settings.preferences.bot_model.as_str()) {
         return Ok(());
     }
     let index = settings
@@ -151,12 +152,11 @@ pub fn select(
         .find(|p| p.serial.eq_ignore_ascii_case(serial))
         .cloned();
     if let Some(profile) = existing {
-        if profile.model == "boo" { return Err("This model has been retired. Choose Meep or Claw.".into()); }
         profile.apply(&mut next);
     } else {
         let chosen = model.unwrap_or(&current.preferences.bot_model);
-        if !["meep", "claw"].contains(&chosen) {
-            return Err("Choose Meep or Claw to finish adding this droid.".into());
+        if !["boo", "meep", "claw", "nimbus"].contains(&chosen) {
+            return Err("Choose Nimbus, Boo, Meep or Claw to finish adding this droid.".into());
         }
         if !next.droids.is_empty() && model.is_none() {
             return Err("Choose the new droid’s model before connecting it.".into());
@@ -252,23 +252,22 @@ mod tests {
         assert_eq!(back.droids[0].name, "Office Claw");
     }
     #[test]
-    fn retired_model_is_preserved_but_cannot_be_selected_or_created() {
-        let mut settings = Settings::default();
-        settings.preferences.bot_model = "boo".into();
-        settings.selected_device_serial = Some("LEGACY_BOARD".into());
-        settings.widgets[0].label = "Keep my old face".into();
-        remember(&mut settings).unwrap();
-        settings.validate().unwrap();
-        let original = serde_json::to_value(&settings).unwrap();
-        assert!(select(&settings, Some("LEGACY_BOARD"), None).is_err());
-        assert!(select(&settings, Some("NEW_BOARD"), Some("boo")).is_err());
-        assert_eq!(serde_json::to_value(&settings).unwrap(), original);
-        let mut engine = Engine::new(settings, Instant::now());
-        assert!(engine.set_bot_model("boo").is_err());
-        engine.set_bot_model("meep").unwrap();
-        assert!(engine.settings.selected_device_serial.is_none());
-        assert_eq!(engine.settings.droids[0].model, "boo");
-        assert_eq!(engine.settings.droids[0].widgets[0].label, "Keep my old face");
+    fn restored_boo_and_nimbus_profiles_are_selectable_and_isolated() {
+        let now = std::time::Instant::now();
+        let mut engine = crate::core::Engine::new(Settings::default(), now);
+        engine.set_bot_model("boo").unwrap();
+        let mut boo = select(&engine.settings, Some("BOO_BOARD"), Some("boo")).unwrap();
+        boo.brightness = 37;
+        remember(&mut boo).unwrap();
+        let mut nimbus = select(&boo, Some("CLOUD_BOARD"), Some("nimbus")).unwrap();
+        assert_eq!(nimbus.preferences.bot_model, "nimbus");
+        nimbus.brightness = 82;
+        remember(&mut nimbus).unwrap();
+        let restored = select(&nimbus, Some("BOO_BOARD"), None).unwrap();
+        assert_eq!(restored.preferences.bot_model, "boo");
+        assert_eq!(restored.brightness, 37);
+        assert_eq!(select(&restored, Some("CLOUD_BOARD"), None).unwrap().brightness, 82);
+        restored.validate().unwrap();
     }
 
     #[test]

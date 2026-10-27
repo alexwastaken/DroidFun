@@ -1,22 +1,23 @@
 import type { ReactNode } from "react";
 import "./bot-preview.css";
 
-type BotModel = "boo" | "claw" | "meep";
+type BotModel = "boo" | "claw" | "meep" | "nimbus";
 type BotProps = { model: string };
 
 const names: Record<BotModel, string> = {
   boo: "Boo Bot",
+  nimbus: "Nimbus Bot",
   claw: "Claw Bot",
   meep: "Meep Bot",
 };
 
 function botModel(model: string): BotModel {
-  return model === "claw" ? "claw" : "meep";
+  return model === "boo" || model === "claw" || model === "nimbus" ? model : "meep";
 }
 
 /** The housing is decorative; the real OLED canvas supplies its own accessible label. */
 function Housing({ model, miniature = false }: { model: BotModel; miniature?: boolean }) {
-  const screenY = model === "boo" ? 93 : model === "claw" ? 96 : 78;
+  const screenY = model === "boo" ? 93 : model === "claw" ? 96 : model === "nimbus" ? 103 : 78;
   return <svg className="bot-preview__housing" viewBox="0 0 330 280" preserveAspectRatio="none" aria-hidden="true" focusable="false">
     <ellipse className="bot-preview__ground" cx="165" cy="274" rx={model === "boo" ? 125 : 105} ry="5" />
     {model === "boo" && <>
@@ -35,6 +36,10 @@ function Housing({ model, miniature = false }: { model: BotModel; miniature?: bo
       <path className="bot-preview__shine" d="M55 15H275M24 94H306" />
       <rect className="bot-preview__eye" x="95" y="32" width="48" height="11" rx="2" />
       <rect className="bot-preview__eye" x="187" y="32" width="48" height="11" rx="2" />
+    </>}
+    {model === "nimbus" && <>
+      <path className="bot-preview__body" d="M26 263Q8 263 8 244V164Q8 117 60 112Q67 21 165 21Q263 21 270 112Q322 117 322 164V244Q322 263 304 263Z" />
+      <path className="bot-preview__shine" d="M82 98Q94 43 155 40" />
     </>}
     {model === "meep" && <>
       <rect className="bot-preview__joint" x="160" y="17" width="10" height="34" rx="5" />

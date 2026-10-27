@@ -269,8 +269,8 @@ fn preview_frame(id: String, state: State<AppState>) -> Result<Vec<u8>, String> 
 }
 
 fn standalone_playlist(engine: &Engine) -> Result<protocol::StandalonePlaylist, String> {
-    if !["boo", "meep"].contains(&engine.settings.preferences.bot_model.as_str()) {
-        return Err("Saving screens to the bot is available for Meep Bot. Claw Bot needs a computer for live account usage.".into());
+    if !["boo", "meep", "nimbus"].contains(&engine.settings.preferences.bot_model.as_str()) {
+        return Err("Saving screens to the bot is available for Nimbus, Boo and Meep Bot. Claw Bot needs a computer for live account usage.".into());
     }
     let widgets: Vec<_> = engine
         .settings
@@ -1219,8 +1219,8 @@ async fn install_robot_firmware(
     bot_model: Option<String>,
     app: AppHandle,
 ) -> Result<Snapshot, String> {
-    if bot_model.as_deref().is_some_and(|model| !["meep", "claw"].contains(&model)) {
-        return Err("Choose Meep or Claw before setup.".into());
+    if bot_model.as_deref().is_some_and(|model| !["boo", "meep", "claw", "nimbus"].contains(&model)) {
+        return Err("Choose Nimbus, Boo, Meep or Claw before setup.".into());
     }
     let serial = install_image(path, expected_board_id, false, app.clone()).await?;
     // Persist the newly discovered board, replacing any old robot selection.
@@ -1278,8 +1278,8 @@ async fn install_image(
     {
         let state = app.state::<AppState>();
         let engine = state.engine.lock().map_err(|_| "State unavailable")?;
-        if !["meep", "claw"].contains(&engine.settings.preferences.bot_model.as_str()) {
-            return Err("Choose Meep or Claw before installing its software.".into());
+        if !["boo", "meep", "claw", "nimbus"].contains(&engine.settings.preferences.bot_model.as_str()) {
+            return Err("Choose Nimbus, Boo, Meep or Claw before installing its software.".into());
         }
     }
     if test {
@@ -1403,7 +1403,7 @@ fn connection_worker(app: AppHandle) {
                 .lock()
                 .ok()
                 .and_then(|engine| {
-                    ["meep", "claw"].contains(&engine.settings.preferences.bot_model.as_str())
+                    ["boo", "meep", "claw", "nimbus"].contains(&engine.settings.preferences.bot_model.as_str())
                         .then(|| engine.settings.selected_device_serial.clone()).flatten()
                 })
         };

@@ -314,3 +314,36 @@
   background: var(--bot-panel);
   border-color: var(--bot-control-border);
 }
+
+:root[data-bot="nimbus"] {
+  --bot-page: #f1f8fc;
+  --bot-panel: #fcfeff;
+  --bot-tint: #dfeef6;
+  --bot-tint-hover: #cadfeb;
+  --bot-ink: #1d3545;
+  --bot-muted: #506b7c;
+  --bot-accent: #226183;
+  --bot-accent-strong: #174763;
+  --bot-on-accent: #ffffff;
+  --bot-border: #c6dce9;
+  --bot-control-border: #739bb1;
+  --bot-focus: #226183;
+  --bot-shadow: #1d35451f;
+}
+:root[data-bot="nimbus"][data-theme="dark"] {
+  --bot-page: #12212c;
+  --bot-panel: #1a2e3c;
+  --bot-tint: #254557;
+  --bot-tint-hover: #31586c;
+  --bot-ink: #ebf7ff;
+  --bot-muted: #b1ccd9;
+  --bot-accent: #93cfef;
+  --bot-accent-strong: #b8e6ff;
+  --bot-on-accent: #133448;
+  --bot-border: #3e6075;
+  --bot-control-border: #779cae;
+  --bot-focus: #a4dcff;
+  --bot-shadow: #00000045;
+}
+.bot-choice[data-bot="nimbus"]{background:#edf6fb;border-color:#c6dce9}
+:root[data-theme="dark"] .bot-choice[data-bot="nimbus"]{background:#1a2e3c;border-color:#3e6075}

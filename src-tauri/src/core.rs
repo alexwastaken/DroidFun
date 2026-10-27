@@ -34,7 +34,7 @@ pub fn kind_allowed(bot_model: &str, kind: &str) -> bool {
     match bot_model {
         "" => WIDGET_KINDS.contains(&kind),
         "claw" => matches!(kind, "codex" | "claude"),
-        "boo" | "meep" => WIDGET_KINDS.contains(&kind) && !matches!(kind, "codex" | "claude"),
+        "boo" | "meep" | "nimbus" => WIDGET_KINDS.contains(&kind) && !matches!(kind, "codex" | "claude"),
         _ => false,
     }
 }
@@ -348,7 +348,7 @@ impl Default for Preferences {
 }
 impl Preferences {
     pub fn validate(&self) -> Result<(), String> {
-        if !["", "boo", "claw", "meep"].contains(&self.bot_model.as_str())
+        if !["", "boo", "claw", "meep", "nimbus"].contains(&self.bot_model.as_str())
             || ![0, 180].contains(&self.orientation)
             || !["system", "light", "dark"].contains(&self.appearance.as_str())
             || !["droidfun", "green"].contains(&self.branding.as_str())
@@ -649,12 +649,8 @@ impl Engine {
         }
     }
     pub fn set_bot_model(&mut self, model: &str) -> Result<(), String> {
-        if !["meep", "claw"].contains(&model) {
-            return Err("Choose Meep or Claw.".into());
-        }
-        if self.settings.preferences.bot_model == "boo" {
-            crate::droids::remember(&mut self.settings)?;
-            self.settings.selected_device_serial = None;
+        if !["boo", "meep", "claw", "nimbus"].contains(&model) {
+            return Err("Choose Nimbus, Boo, Meep or Claw.".into());
         }
         let mut preferences = self.settings.preferences.clone();
         preferences.bot_model = model.into();
@@ -2028,7 +2024,7 @@ mod tests {
 
     #[test]
     fn fresh_bot_profiles_start_with_visible_ready_screens() {
-        for (model, expected) in [("meep", "face"), ("claw", "codex")] {
+        for (model, expected) in [("boo", "face"), ("nimbus", "face"), ("meep", "face"), ("claw", "codex")] {
             let mut engine = Engine::new(Settings::default(), Instant::now());
             engine.set_bot_model(model).unwrap();
             let snapshot = engine.snapshot();
@@ -2551,7 +2547,7 @@ mod tests {
 
     #[test]
     fn sleeping_computer_display_shows_a_smile_then_resumes_without_changing_settings() {
-        for model in ["meep", "claw"] {
+        for model in ["boo", "meep", "claw", "nimbus"] {
             for playback in [Playback::Running, Playback::Paused, Playback::Pinned] {
                 let now = Instant::now();
                 let mut e = Engine::new(Settings::default(), now);

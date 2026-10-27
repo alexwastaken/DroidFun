@@ -168,3 +168,6 @@ html[data-theme="dark"] .bot-preview__ground {
   fill: #000;
   opacity: .28;
 }
+
+.bot-preview--nimbus,.bot-avatar--nimbus{--bot-preview-body:#e2f2f8;--bot-preview-edge:#84aebe;--bot-preview-limb:#c4e0ed;--bot-preview-joint:#80a6b8;--bot-preview-shine:#fff}
+.bot-preview--nimbus .bot-preview__screen{top:103px;background:#203641}

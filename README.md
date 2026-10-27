@@ -22,7 +22,7 @@ DroidFun turns a small USB display into a desk companion. Build a playlist of fa
 
 The current release is **[DroidFun App 0.5.2](https://github.com/alexwastaken/DroidFun/releases/tag/v0.5.2)**, with embedded normal firmware **1.2.3**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
 
-- **Meep and Claw profiles** with matching controls, previews, and light/dark themes. Meep supports everyday widgets; Claw focuses on Claude/Codex account allowance.
+- **Nimbus, Boo, Meep and Claw profiles** with matching controls, previews, and light/dark themes. Nimbus, Boo and Meep support everyday widgets; Claw focuses on Claude/Codex account allowance.
 - **A real screen editor:** reorder widgets, set their timing, adjust text layout, borders and inversion, and preview the 128 × 64 result.
 - **Desktop playback:** Show now, Pin, Pause, Next and Resume share one playback state; closing the controls leaves the tray app running.
 - **Local operation:** text, faces, clocks, timers and system stats work without internet. Pause online data cancels network work while local screens and USB continue.
@@ -123,7 +123,7 @@ This repository contains the controller software and firmware. The separate encl
 
 ## Simple setup and multiple droids (0.5.0)
 
-The main connection flow uses plain setup states; board IDs, versions, paths and screen diagnostics are under Help. The first single detected droid auto-connects after model selection. Firmware installation remains explicit. Multiple droids can be named and remembered by USB identity; choose one to control at a time. Each profile saves its playlist, brightness, orientation, quiet hours and companion settings. App-wide online, appearance, startup and window preferences remain shared. Setup for multiple unprogrammed boards requires connecting one new board at a time. Existing USB firmware cannot reliably determine Meep/Claw model, so adding a droid asks once.
+The main connection flow uses plain setup states; board IDs, versions, paths and screen diagnostics are under Help. The first single detected droid auto-connects after model selection. Firmware installation remains explicit. Multiple droids can be named and remembered by USB identity; choose one to control at a time. Each profile saves its playlist, brightness, orientation, quiet hours and companion settings. App-wide online, appearance, startup and window preferences remain shared. Setup for multiple unprogrammed boards requires connecting one new board at a time. Existing USB firmware cannot reliably determine Nimbus/Boo/Meep/Claw model, so adding a droid asks once.
 
 Settings schema 2 migrates existing screens and display settings without changing them and backs up schema 1 on first save. Older apps refuse the newer schema. Saves exceeding the existing 256 KiB limit leave the prior file intact. Profile isolation and migration tests pass; physical multi-droid switching remains pending. Bot firmware remains 1.2.3, and unexplained physical USB disappearance is not claimed fixed by this release.
 
