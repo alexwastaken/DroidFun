@@ -124,7 +124,7 @@ def ui():
         driver.wait('window.__TAURI_INTERNALS__ && (document.querySelector(".bot-picker") || document.querySelector(".bot-controls"))')
         if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
             driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => ["Change model", "Change bot"].includes(b.textContent.trim())).click();')
-        driver.wait('document.querySelectorAll(".bot-choice").length === 2 && !document.documentElement.hasAttribute("data-bot")')
+        driver.wait('document.querySelectorAll(".bot-choice").length === 4 && !document.documentElement.hasAttribute("data-bot")')
         if capture_chooser: driver.capture('linux-bot-chooser.png')
         selector = '.bot-choice[data-bot="'+model+'"]'
         driver.js('document.querySelector('+json.dumps(selector)+').click();')
@@ -187,6 +187,8 @@ def ui():
         caption = driver.js('return document.querySelector(".screen-caption .caption-sub").textContent')
         assert caption == 'Enable a Claude or Codex widget to begin', caption
         assert not re.search(r'\bCycling\b|\d+s left', caption), caption
+        choose_bot('boo')
+        choose_bot('nimbus')
         choose_bot('meep')
         print(json.dumps({'nativeButton':'passed','mandatoryBotChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:

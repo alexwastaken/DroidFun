@@ -2,6 +2,8 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { BotAvatar } from "./BotPreview";
 
 export const botModels = [
+  { id: "nimbus", name: "Nimbus Bot", summary: "A little cloud for your desk.", detail: "Weather, faces, clocks, custom text and everyday updates.", face: "nimbus" },
+  { id: "boo", name: "Boo Bot", summary: "Your friendly little desk ghost.", detail: "Faces, weather, clocks, text and more.", face: "boo" },
   { id: "claw", name: "Claw Bot", summary: "Your AI usage, at a glance.", detail: "Dedicated Claude and Codex allowance screens.", face: "claw" },
   { id: "meep", name: "Meep Bot", summary: "Make your desk a little more you.", detail: "Custom text, faces, clocks, weather, stocks and more.", face: "meep" },
 ];
