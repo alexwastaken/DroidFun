@@ -1,8 +1,8 @@
 # Choose your bot and customize its screens
 
-DroidFun App 0.4.0 asks which bot you have when you open it for the first time after this update. Choose **Boo Bot**, **Claw Bot**, or **Meep Bot**. You can use **Change bot** later. Your existing screens and settings stay saved when you switch; the app only shows the screens available for the selected bot.
+DroidFun App asks which bot you have when you open it for the first time. Choose **Boo Bot**, **Claw Bot**, **Meep Bot**, or **Nimbus Bot**. You can use **Change bot** later. Your existing screens and settings stay saved when you switch; the app only shows the screens available for the selected bot.
 
-- **Boo and Meep:** faces, custom text, weather, stocks, clocks, Pomodoro and meeting timers, CPU and memory.
+- **Boo, Meep and Nimbus:** faces, custom text, weather, stocks, clocks, Pomodoro and meeting timers, CPU and memory.
 - **Claw:** Claude and Codex usage. Connect the appropriate account or choose sample data while setting up. Selecting Claw does not sign you into either service.
 
 ## Add your own text
@@ -13,11 +13,11 @@ DroidFun App 0.4.0 asks which bot you have when you open it for the first time a
 
 The display is 128 × 64 pixels. Text preserves uppercase and lowercase letters and supports printable ASCII characters and line breaks, up to 128 characters. Words wrap automatically. A message that cannot fit is rejected with an explanation; reduce the font size, shorten the message, or remove the border. Text is never silently cut off to make it fit.
 
-Data screens offer classic or minimal layouts, an optional companion face, and display inversion. Screen-specific choices do not change the settings for other screens. A live-data preview uses the most recently available reading; editing a screen does not fetch new data or interrupt playback on the bot.
+Information screens use a simple layout with text lower on the display, a clear screen label, the main reading and its status. Weather shows WEATHER, an optional location, a large temperature and a condition or high/low reading. Information screens never include companion faces or decorative logos. Left alignment, a centered reading and display inversion remain available; dedicated face screens keep their expressions and animation. Screen-specific choices do not change the settings for other screens. A live-data preview uses the most recently available reading; editing a screen does not fetch new data or interrupt playback on the bot.
 
 ## Use your bot with a USB wall charger
 
-For Boo and Meep, **Save to bot** copies your enabled face and text screens into the bot's storage. After a successful save, disconnect it from the computer and connect it to a USB wall charger. The bot cycles through the saved screens without the desktop app, including after power is disconnected and restored.
+For Boo, Meep and Nimbus, **Save to bot** copies your enabled face and text screens into the bot's storage. After a successful save, disconnect it from the computer and connect it to a USB wall charger. The bot cycles through the saved screens without the desktop app, including after power is disconnected and restored.
 
 1. Connect your bot to the computer with a USB data cable.
 2. Use firmware **1.2.0 or newer**. If the app says an update is required, follow **Settings → Robot → Install firmware manually**, then reconnect.

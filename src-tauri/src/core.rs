@@ -9,20 +9,6 @@ pub const WIDTH: usize = 128;
 pub const HEIGHT: usize = 64;
 pub const FRAME_BYTES: usize = WIDTH * HEIGHT / 8;
 
-// Pixel-aligned 24 × 24 Codex mark; source vector: docs/images/codex-display/codex-mark.svg.
-const CODEX_MARK: [u32; 24] = [
-    0x000000, 0x000000, 0x001f00, 0x01ff80, 0x07e0c0, 0x0e00e0, 0x0c0070, 0x180038, 0x18000c,
-    0x18030c, 0x18030c, 0x30060c, 0x30060c, 0x300318, 0x31f318, 0x300018, 0x1c0018, 0x0e0030,
-    0x070070, 0x0307e0, 0x01ff80, 0x00f800, 0x000000, 0x000000,
-];
-
-// Monochrome Claude mark from the official desktop app tray asset; see docs/images/claude-display.
-const CLAUDE_MARK: [u32; 24] = [
-    0x000000, 0x000000, 0x000180, 0x006180, 0x002380, 0x073300, 0x073730, 0x03b670, 0x01fee0,
-    0x00ff80, 0x3eff00, 0x1ffe78, 0x01fff8, 0x1ffe00, 0x18ff80, 0x01fcc0, 0x03d670, 0x04db00,
-    0x099980, 0x011880, 0x000800, 0x000800, 0x000000, 0x000000,
-];
-
 const WIDGET_KINDS: &[&str] = &[
     "face", "text", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu",
     "memory",
@@ -713,27 +699,7 @@ impl Engine {
             Some(w) if w.kind == "face" => {
                 let mut pose = self.animation_state();
                 pose.closed = self.face_closed(w);
-                pose.logo_offset = 0;
-                pose.logo_phase = 0;
                 pose
-            }
-            Some(w)
-                if self.settings.preferences.companion_face
-                    && w.config.display_companion
-                    && w.kind != "text" =>
-            {
-                let mut pose = self.animation_state();
-                if matches!(w.kind.as_str(), "codex" | "claude") {
-                    CompanionPose {
-                        logo_offset: pose.logo_offset,
-                        logo_phase: pose.logo_phase,
-                        ..CompanionPose::default()
-                    }
-                } else {
-                    pose.logo_offset = 0;
-                    pose.logo_phase = 0;
-                    pose
-                }
             }
             _ => CompanionPose::default(),
         }
@@ -771,8 +737,6 @@ impl Engine {
                 w.headline = "WAITING".into();
                 w.footer = "SETUP / LOADING".into();
             }
-        } else if w.kind != "face" {
-            w.footer = format!("DEMO {}", w.footer);
         }
         let frame = if w.kind == "face" {
             let mut f = Frame::new();
@@ -781,22 +745,7 @@ impl Engine {
             f.animated_face(&w.config.face_expression, pose);
             f.bytes
         } else {
-            let companion = (self.settings.preferences.companion_face
-                && w.config.display_companion)
-                .then(|| self.animation_state());
-            if w.config.display_layout == "minimal" {
-                return invert_frame(
-                    render_minimal(&w, companion, &local_values),
-                    w.config.display_invert,
-                );
-            }
-            if crate::local_widgets::local(&w.kind) {
-                return invert_frame(
-                    render_local(&w, on, companion, &local_values),
-                    w.config.display_invert,
-                );
-            }
-            render_card(Some(&w), on, companion)
+            render_information(&w, &local_values)
         };
         invert_frame(frame, w.config.display_invert)
     }
@@ -1420,9 +1369,6 @@ struct CompanionPose {
     closed: bool,
     glance: i8,
     mouth: u8,
-    bounce: bool,
-    logo_offset: u8,
-    logo_phase: u8,
 }
 impl CompanionPose {
     fn at(ms: u64, speed: &str, glances: bool, mouths: bool) -> Self {
@@ -1457,10 +1403,6 @@ impl CompanionPose {
                     _ => 0,
                 }
             },
-            bounce: (4200..4400).contains(&phase),
-            logo_phase: (((ms * if speed == "slow" { 20 } else { 30 } + 500) / 1000) % 64) as u8,
-            logo_offset: [0, 0, 0, 1, 2, 2, 1, 0]
-                [((ms % blink_period) * 8 / blink_period) as usize],
         }
     }
 }
@@ -1575,48 +1517,139 @@ fn render_text(config: &SourceConfig) -> Result<Vec<u8>, String> {
     Ok(invert_frame(f.bytes, config.display_invert))
 }
 
-/// A compact information layout: context, main reading, and footer stay within
-/// dedicated rows, with the companion occupying its usual reserved corner.
-fn render_minimal(
-    widget: &Widget,
-    companion: Option<CompanionPose>,
-    values: &serde_json::Value,
-) -> Vec<u8> {
+/// All information screens share a quiet layout below the housing lip. Each
+/// row has one purpose; alignment never hides context, status or progress.
+fn render_information(widget: &Widget, values: &serde_json::Value) -> Vec<u8> {
     let mut f = Frame::new();
-    let context = values["context"].as_str().unwrap_or(&widget.label);
-    f.text(
-        context,
-        4,
-        if matches!(widget.kind.as_str(), "codex" | "claude") {
-            9
+    let kind = widget.kind.as_str();
+    let title = match kind {
+        "weather" => "WEATHER",
+        "stock" => "STOCKS",
+        "codex" => "CODEX",
+        "claude" => "CLAUDE",
+        "clock" => "CLOCK",
+        "pomodoro" => "FOCUS TIMER",
+        "meeting" => "MEETING",
+        "cpu" => "CPU",
+        "memory" => "MEMORY",
+        _ => "DROID FUN",
+    };
+    f.text(title, 4, 9, 1, 15);
+    if widget.config.mode == "demo" && !crate::local_widgets::local(kind) {
+        f.text("DEMO", 92, 9, 1, 4);
+    }
+    let context = match kind {
+        "weather" => values["location"]
+            .as_str()
+            .or_else(|| widget.config.location.as_ref().map(|l| l.name.as_str()))
+            .unwrap_or_else(|| {
+                if widget.label.eq_ignore_ascii_case("weather") {
+                    ""
+                } else {
+                    &widget.label
+                }
+            }),
+        "stock" => {
+            if widget.config.mode == "live" {
+                &widget.config.symbol
+            } else {
+                &widget.label
+            }
+        }
+        "codex" | "claude" => "ALLOWANCE LEFT",
+        _ => values["context"].as_str().unwrap_or("LOADING"),
+    };
+    f.text(context, 4, 20, 1, 15);
+    // Use familiar temperature notation, retaining WAITING and provider errors.
+    let headline = match widget.headline.split_once(' ') {
+        Some((number, unit))
+            if kind == "weather"
+                && matches!(unit, "F" | "C")
+                && number.parse::<f64>().is_ok_and(f64::is_finite) =>
+        {
+            format!("{number}°{unit}")
+        }
+        _ => widget.headline.clone(),
+    };
+    let (scale, capacity) = if headline.chars().count() <= 7 {
+        (2, 7)
+    } else {
+        (1, 15)
+    };
+    let width = headline.chars().count().min(capacity) as i32 * 8 * scale;
+    let x = if widget.config.display_layout == "minimal" {
+        (WIDTH as i32 - width) / 2
+    } else {
+        4
+    };
+    f.text(&headline, x, 30, scale, capacity);
+    let usable_reading = !matches!(headline.as_str(), "WAITING" | "LOADING" | "UNAVAILABLE");
+    let history = values["history"]
+        .as_array()
+        .filter(|h| h.len() > 1 && usable_reading);
+    if let Some(series) = history {
+        let mut previous: Option<(i32, i32)> = None;
+        for (i, value) in series.iter().enumerate() {
+            let height =
+                (value.as_f64().unwrap_or(0.0).clamp(0.0, 100.0) * 5.0 / 100.0).round() as i32;
+            let x = 4 + i as i32 * 119 / (series.len() as i32 - 1);
+            let y = 53 - height;
+            if let Some((mut xx, mut yy)) = previous {
+                let dx = (x - xx).abs();
+                let dy = -(y - yy).abs();
+                let sx = if xx < x { 1 } else { -1 };
+                let sy = if yy < y { 1 } else { -1 };
+                let mut error = dx + dy;
+                loop {
+                    f.pixel(xx, yy);
+                    if xx == x && yy == y {
+                        break;
+                    }
+                    let e2 = 2 * error;
+                    if e2 >= dy {
+                        error += dy;
+                        xx += sx;
+                    }
+                    if e2 <= dx {
+                        error += dx;
+                        yy += sy;
+                    }
+                }
+            } else {
+                f.pixel(x, y);
+            }
+            previous = Some((x, y));
+        }
+    } else {
+        let progress = if matches!(kind, "codex" | "claude") {
+            if headline == "<1%" {
+                Some(0.0)
+            } else {
+                headline
+                    .strip_suffix('%')
+                    .and_then(|n| n.parse::<f64>().ok())
+            }
         } else {
-            2
-        },
-        1,
-        if companion.is_some() { 10 } else { 15 },
-    );
-    if let Some(pose) = companion {
-        if matches!(widget.kind.as_str(), "codex" | "claude") {
-            f.usage_mark(&widget.kind, pose);
-        } else {
-            f.companion(pose);
+            values["progress"].as_f64().filter(|_| usable_reading)
+        };
+        if let Some(percent) = progress.filter(|p| p.is_finite()) {
+            for x in 4..124 {
+                f.pixel(x, 49);
+                f.pixel(x, 52);
+            }
+            for y in 49..53 {
+                f.pixel(4, y);
+                f.pixel(123, y);
+            }
+            for x in 6..6 + (percent.clamp(0.0, 100.0) * 116.0 / 100.0).round() as i32 {
+                f.pixel(x, 50);
+                f.pixel(x, 51);
+            }
+        } else if usable_reading {
+            f.text(values["status"].as_str().unwrap_or(""), 4, 47, 1, 15);
         }
     }
-    let scale = if widget.headline.chars().count() <= 7 {
-        2
-    } else {
-        1
-    };
-    let capacity = if scale == 2 { 7 } else { 15 };
-    let width = widget.headline.chars().count().min(capacity) as i32 * 8 * scale;
-    f.text(
-        &widget.headline,
-        (WIDTH as i32 - width) / 2,
-        28,
-        scale,
-        capacity,
-    );
-    f.text(&widget.footer, 4, 55, 1, 15);
+    f.text(&widget.footer, 4, 56, 1, 15);
     f.bytes
 }
 
@@ -1751,15 +1784,6 @@ impl Frame {
             self.pixel(x, y + 1);
         }
     }
-    fn bar(&mut self, x: i32, y: i32, len: i32) {
-        for xx in x..x + len.clamp(0, 116) {
-            for yy in y..y + 3 {
-                self.pixel(xx, yy);
-            }
-        }
-    }
-    // Reuse the original happy-face bitmap at half size, including its blink.
-    // Crop its blank margins into a dedicated 40 × 26 corner above the data.
     fn animated_face(&mut self, expression: &str, pose: CompanionPose) {
         self.expression(expression, pose.closed);
         if expression != "happy" {
@@ -1797,224 +1821,23 @@ impl Frame {
             }
         }
     }
-    fn usage_mark(&mut self, kind: &str, pose: CompanionPose) {
-        let rows = if kind == "claude" {
-            &CLAUDE_MARK
-        } else {
-            &CODEX_MARK
-        };
-        // A two-pixel downward bob is visible without lifting the logo behind
-        // the housing lip or touching the reading that starts below row 27.
-        for (y, row) in rows.iter().enumerate() {
-            for x in 0..24 {
-                if row & (1 << x) != 0 {
-                    self.pixel(94 + x, 4 + y as i32 + i32::from(pose.logo_offset));
-                }
-            }
-        }
-        // A short orbit makes the faster cadence visible without moving labels
-        // or using grayscale flicker on this monochrome panel. Phase zero is
-        // the unchanged resting mark used by pause and reduced-motion settings.
-        if pose.logo_phase != 0 {
-            for trail in 0..3 {
-                let phase = (i32::from(pose.logo_phase) - trail).rem_euclid(64);
-                let angle = phase as f32 * std::f32::consts::TAU / 64.0;
-                let x = (105.5 + 16.5 * angle.cos()).round() as i32;
-                let y = (16.5 + 10.5 * angle.sin()).round() as i32;
-                self.pixel(x, y);
-            }
-        }
-    }
-    fn companion(&mut self, pose: CompanionPose) {
-        let mut original = Frame::new();
-        original.animated_face("happy", pose);
-        for y in 0..25 {
-            for x in 0..37 {
-                let mut lit = false;
-                for dy in 0..2 {
-                    for dx in 0..2 {
-                        let sx = 28 + x * 2 + dx;
-                        let sy = 8 + y * 2 + dy;
-                        lit |= original.bytes[(sy / 8) * WIDTH + sx] & (1 << (sy % 8)) != 0;
-                    }
-                }
-                if lit {
-                    self.pixel(88 + x as i32, y as i32 + i32::from(pose.bounce));
-                }
-            }
-        }
-    }
 }
 
+/// Render a still face or an information card without animated ornaments.
 pub fn render(widget: Option<&Widget>, display_on: bool) -> Vec<u8> {
-    render_card(widget, display_on, Some(CompanionPose::default()))
-}
-fn render_card(
-    widget: Option<&Widget>,
-    display_on: bool,
-    companion: Option<CompanionPose>,
-) -> Vec<u8> {
     let mut frame = Frame::new();
     if !display_on {
         return frame.bytes;
     }
-    let kind = widget.map(|w| w.kind.as_str()).unwrap_or("face");
-    if kind == "face" {
-        frame.expression(
-            widget
-                .map(|w| w.config.face_expression.as_str())
-                .unwrap_or("happy"),
-            false,
-        );
-        return frame.bytes;
-    }
-    let Some(widget) = widget else {
+    if let Some(widget) = widget {
+        if widget.kind != "face" {
+            return render_information(widget, &serde_json::Value::Null);
+        }
+        frame.expression(&widget.config.face_expression, false);
+    } else {
         frame.face();
-        return frame.bytes;
-    };
-    let title = match kind {
-        "weather" => &widget.label,
-        "stock" => &widget.label,
-        "codex" => "CODEX",
-        "claude" => "CLAUDE",
-        _ => "DROID FUN",
-    };
-    frame.text(
-        title,
-        4,
-        if matches!(kind, "codex" | "claude") {
-            9
-        } else {
-            2
-        },
-        1,
-        if companion.is_some() { 10 } else { 15 },
-    );
-    if let Some(pose) = companion {
-        if matches!(kind, "codex" | "claude") {
-            frame.usage_mark(kind, pose);
-        } else {
-            frame.companion(pose);
-        }
     }
-    let (scale, capacity) = if widget.headline.chars().count() <= 7 {
-        (2, 7)
-    } else {
-        (1, 15)
-    };
-    frame.text(
-        &widget.headline,
-        4,
-        if companion.is_some() { 28 } else { 19 },
-        scale,
-        capacity,
-    );
-    if kind == "codex" || kind == "claude" {
-        if let Ok(percent) = widget.headline.trim_end_matches('%').parse::<i32>() {
-            frame.bar(4, 47, percent.clamp(0, 100) * 116 / 100);
-        }
-    }
-    frame.text(&widget.footer, 4, 55, 1, 15);
     frame.bytes
-}
-
-fn render_local(
-    widget: &Widget,
-    on: bool,
-    companion: Option<CompanionPose>,
-    values: &serde_json::Value,
-) -> Vec<u8> {
-    let mut f = Frame::new();
-    if !on {
-        return f.bytes;
-    }
-    f.text(
-        match widget.kind.as_str() {
-            "clock" => "CLOCK",
-            "pomodoro" => "POMODORO",
-            "meeting" => "MEETING",
-            "cpu" => "CPU",
-            _ => "MEMORY",
-        },
-        4,
-        2,
-        1,
-        if companion.is_some() { 10 } else { 15 },
-    );
-    f.text(
-        values["context"].as_str().unwrap_or("LOADING"),
-        4,
-        14,
-        1,
-        if companion.is_some() { 10 } else { 15 },
-    );
-    if let Some(pose) = companion {
-        f.companion(pose);
-    }
-    let scale = if widget.headline.chars().count() <= 7 {
-        2
-    } else {
-        1
-    };
-    f.text(
-        &widget.headline,
-        4,
-        28,
-        scale,
-        if scale == 2 { 7 } else { 15 },
-    );
-    let history = values["history"].as_array().filter(|h| h.len() > 1);
-    if let Some(series) = history {
-        let mut previous: Option<(i32, i32)> = None;
-        for (i, value) in series.iter().enumerate() {
-            let height =
-                (value.as_f64().unwrap_or(0.0).clamp(0.0, 100.0) * 7.0 / 100.0).round() as i32;
-            let x = 4 + i as i32 * 119 / (series.len() as i32 - 1);
-            let y = 52 - height;
-            if let Some((mut xx, mut yy)) = previous {
-                let dx = (x - xx).abs();
-                let dy = -(y - yy).abs();
-                let sx = if xx < x { 1 } else { -1 };
-                let sy = if yy < y { 1 } else { -1 };
-                let mut error = dx + dy;
-                loop {
-                    f.pixel(xx, yy);
-                    if xx == x && yy == y {
-                        break;
-                    }
-                    let e2 = 2 * error;
-                    if e2 >= dy {
-                        error += dy;
-                        xx += sx;
-                    }
-                    if e2 <= dx {
-                        error += dx;
-                        yy += sy;
-                    }
-                }
-            } else {
-                f.pixel(x, y);
-            }
-            previous = Some((x, y));
-        }
-    } else if let Some(percent) = values["progress"].as_f64() {
-        for x in 4..124 {
-            f.pixel(x, 49);
-            f.pixel(x, 52);
-        }
-        for y in 49..53 {
-            f.pixel(4, y);
-            f.pixel(123, y);
-        }
-        for x in 6..6 + (percent.clamp(0.0, 100.0) * 116.0 / 100.0).round() as i32 {
-            f.pixel(x, 50);
-            f.pixel(x, 51);
-        }
-    } else {
-        f.text(values["status"].as_str().unwrap_or(""), 4, 45, 1, 15);
-    }
-    f.text(&widget.footer, 4, 55, 1, 15);
-    f.bytes
 }
 
 #[cfg(test)]
@@ -2236,21 +2059,161 @@ mod tests {
     #[test]
     fn per_screen_display_settings_apply_without_changing_global_preferences() {
         let mut e = Engine::new(Settings::default(), Instant::now());
-        let base = e.render_widget("weather");
-        e.settings.widgets[1].config.display_companion = false;
-        assert_ne!(base, e.render_widget("weather"));
+        let base = e.render_widget("stock");
+        e.settings.widgets[2].config.display_companion = false;
+        assert_eq!(base, e.render_widget("stock"));
         assert!(e.settings.preferences.companion_face);
-        let classic = e.render_widget("weather");
-        e.settings.widgets[1].config.display_layout = "minimal".into();
-        let minimal = e.render_widget("weather");
+        let classic = e.render_widget("stock");
+        e.settings.widgets[2].config.display_layout = "minimal".into();
+        let minimal = e.render_widget("stock");
         assert_ne!(classic, minimal);
-        e.settings.widgets[1].config.display_invert = true;
+        e.settings.widgets[2].config.display_invert = true;
         assert!(minimal
             .iter()
-            .zip(e.render_widget("weather"))
+            .zip(e.render_widget("stock"))
             .all(|(a, b)| *a == !b));
         e.set_display_on(false);
         assert!(e.snapshot().frame.iter().all(|b| *b == 0));
+    }
+
+    #[test]
+    fn weather_is_clear_lowered_and_face_free_on_every_supported_bot_and_layout() {
+        let now = Instant::now();
+        let mut e = Engine::new(Settings::default(), now);
+        let pixel = |f: &[u8], x: usize, y: usize| f[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
+        for model in ["nimbus", "boo", "meep"] {
+            e.set_bot_model(model).unwrap();
+            for layout in ["classic", "minimal"] {
+                e.settings.widgets[1].config.display_layout = layout.into();
+                e.settings.widgets[1].config.display_companion = true;
+                e.settings.preferences.companion_face = true;
+                e.phase_ms = 0;
+                let base = e.render_widget("weather");
+                // The complete content starts below the top housing lip.
+                assert!((0..9).all(|y| (0..WIDTH).all(|x| !pixel(&base, x, y))));
+                let mut header = Frame::new();
+                header.text("WEATHER", 4, 9, 1, 7);
+                header.text("DEMO", 92, 9, 1, 4);
+                for y in 9..17 {
+                    for x in 0..WIDTH {
+                        assert_eq!(pixel(&base, x, y), pixel(&header.bytes, x, y));
+                    }
+                }
+                for phase in [800, 1600, 4200, 4600] {
+                    e.phase_ms = phase;
+                    assert_eq!(base, e.render_widget("weather"), "{model} / {layout}");
+                }
+                e.settings.preferences.companion_face = false;
+                e.settings.widgets[1].config.display_companion = false;
+                assert_eq!(base, e.render_widget("weather"));
+                e.settings.widgets[1].config.display_invert = true;
+                assert!(base
+                    .iter()
+                    .zip(e.render_widget("weather"))
+                    .all(|(a, b)| *a == !b));
+                e.settings.widgets[1].config.display_invert = false;
+            }
+        }
+        e.set_display_on(false);
+        assert!(e.snapshot().frame.iter().all(|b| *b == 0));
+    }
+
+    #[test]
+    fn weather_keeps_locations_temperatures_ranges_and_unavailable_states_visible() {
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        e.set_bot_model("nimbus").unwrap();
+        let now = unix_now();
+        e.settings.widgets[1].config.mode = "live".into();
+        e.settings.widgets[1].config.weather_layout = "high_low".into();
+        e.settings.widgets[1].config.location = Some(Location {
+            name: "A very long accented location".into(),
+            latitude: 59.9,
+            longitude: 10.7,
+            country: "NO".into(),
+            region: String::new(),
+        });
+        let pixel = |f: &[u8], x: usize, y: usize| f[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
+        for (state, stale_at, expires_at, headline, footer, reading, status) in [
+            (
+                "fresh",
+                now + 1800,
+                now + 7200,
+                "-12 C",
+                "H-2 L-15 C",
+                "-12°C",
+                "H-2 L-15 C",
+            ),
+            (
+                "fresh",
+                now.saturating_sub(1),
+                now + 7200,
+                "-12 C",
+                "RAIN",
+                "-12°C",
+                "STALE CACHED",
+            ),
+            (
+                "fresh",
+                now.saturating_sub(2),
+                now.saturating_sub(1),
+                "-12 C",
+                "RAIN",
+                "WAITING",
+                "UPDATING",
+            ),
+            (
+                "unavailable",
+                now,
+                now,
+                "WAITING",
+                "NO WEATHER",
+                "WAITING",
+                "NO WEATHER",
+            ),
+        ] {
+            e.set_data(
+                "weather",
+                DataCard {
+                    source_id: "open-meteo".into(),
+                    scope_id: "59.9,10.7:C".into(),
+                    observed_at: now,
+                    fetched_at: now,
+                    stale_at,
+                    expires_at,
+                    state: state.into(),
+                    headline: headline.into(),
+                    footer: footer.into(),
+                    detail: String::new(),
+                    values: serde_json::json!({"location":"A very long accented location"}),
+                },
+            );
+            for layout in ["classic", "minimal"] {
+                e.settings.widgets[1].config.display_layout = layout.into();
+                let actual = e.render_widget("weather");
+                let mut expected = Frame::new();
+                expected.text("WEATHER", 4, 9, 1, 7);
+                expected.text("A very long accented location", 4, 20, 1, 15);
+                let x = if layout == "minimal" {
+                    (128 - reading.chars().count() as i32 * 16) / 2
+                } else {
+                    4
+                };
+                expected.text(reading, x, 30, 2, 7);
+                expected.text(status, 4, 56, 1, 15);
+                assert_eq!(actual, expected.bytes, "{state} / {status} / {layout}");
+                // Location ellipsis ends before the right margin, and none of
+                // the information rows run into their neighbors.
+                assert!((0..HEIGHT).all(|y| (124..WIDTH).all(|x| !pixel(&actual, x, y))));
+                assert!((28..30)
+                    .chain(46..56)
+                    .all(|y| (0..WIDTH).all(|x| !pixel(&actual, x, y))));
+            }
+        }
+        e.data.remove("weather");
+        let waiting = e.render_widget("weather");
+        let mut footer = Frame::new();
+        footer.text("SETUP / LOADING", 4, 56, 1, 15);
+        assert_eq!(&waiting[WIDTH * 7..], &footer.bytes[WIDTH * 7..]);
     }
 
     #[test]
@@ -2314,44 +2277,142 @@ mod tests {
     }
 
     #[test]
-    fn companion_gestures_preserve_all_local_widget_information_and_original_identity() {
-        assert_eq!(crate::protocol::crc32(&render(None, true)), 2039582962);
+    fn information_screens_ignore_legacy_companion_settings_and_animation() {
+        let pixel = |f: &[u8], x: usize, y: usize| f[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
+        for kind in [
+            "weather", "stock", "clock", "pomodoro", "meeting", "cpu", "memory", "codex", "claude",
+        ] {
+            let mut e = Engine::new(Settings::default(), Instant::now());
+            e.set_bot_model(if matches!(kind, "codex" | "claude") {
+                "claw"
+            } else {
+                "nimbus"
+            })
+            .unwrap();
+            if !e.settings.widgets.iter().any(|w| w.kind == kind) {
+                e.add_widget(kind).unwrap();
+            }
+            let index = e
+                .settings
+                .widgets
+                .iter()
+                .position(|w| w.kind == kind)
+                .unwrap();
+            let id = e.settings.widgets[index].id.clone();
+            for layout in ["classic", "minimal"] {
+                e.settings.widgets[index].config.display_layout = layout.into();
+                e.settings.widgets[index].config.display_companion = true;
+                e.settings.preferences.companion_face = true;
+                e.settings.preferences.companion_animation = true;
+                let base = e.render_widget(&id);
+                assert!(
+                    (0..9).all(|y| (0..WIDTH).all(|x| !pixel(&base, x, y))),
+                    "{kind} top margin"
+                );
+                for phase in [600, 1600, 2200, 4200, 4600] {
+                    e.phase_ms = phase;
+                    assert_eq!(base, e.render_widget(&id), "{kind} / {layout} / {phase}");
+                }
+                e.settings.widgets[index].config.display_companion = false;
+                e.settings.preferences.companion_face = false;
+                e.settings.preferences.companion_animation = false;
+                assert_eq!(base, e.render_widget(&id));
+                e.settings.widgets[index].config.display_invert = true;
+                assert!(base.iter().zip(e.render_widget(&id)).all(|(a, b)| *a == !b));
+                e.settings.widgets[index].config.display_invert = false;
+            }
+        }
+    }
+
+    #[test]
+    fn local_information_keeps_all_context_status_progress_and_footer_rows() {
+        let pixel = |f: &[u8], x: usize, y: usize| f[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
         for kind in ["clock", "pomodoro", "meeting", "cpu", "memory"] {
-            let w = Widget {
+            let mut w = Widget {
                 id: kind.into(),
                 kind: kind.into(),
-                label: "Test".into(),
+                label: "An unusually long meeting name".into(),
                 enabled: true,
                 duration_sec: 3,
-                headline: "12:34".into(),
-                footer: "MON OCT 12".into(),
+                headline: String::new(),
+                footer: String::new(),
                 config: SourceConfig {
                     mode: "live".into(),
+                    clock_seconds: true,
+                    clock_zone: "Asia/Tokyo".into(),
+                    timer_running: true,
+                    timer_started_at: 1791833600,
+                    meeting_starts_at: 1791833700,
                     ..SourceConfig::default()
                 },
             };
-            let values = serde_json::json!({"context":"LOCAL","progress":50});
-            let base = render_local(&w, true, Some(CompanionPose::default()), &values);
-            for ms in [600, 800, 1600, 2200, 2600, 4200, 4600] {
-                let pose = CompanionPose::at(ms, "quick", true, true);
-                let animated = render_local(&w, true, Some(pose), &values);
-                assert_ne!(base, animated, "{kind} at {ms}");
-                for y in 0..64 {
-                    for x in 0..128 {
-                        if x < 88 || y >= 26 {
-                            let bit = 1 << (y % 8);
+            let d = match kind {
+                "cpu" => crate::local_widgets::cpu_card(&w, 1791833640, 50.0, &[0.0, 100.0, 0.0]),
+                "memory" => crate::local_widgets::memory_card(
+                    &w,
+                    1791833640,
+                    8 * 1024u64.pow(3),
+                    8 * 1024u64.pow(3),
+                    16 * 1024u64.pow(3),
+                ),
+                _ => crate::local_widgets::dynamic_card(&w, 1791833640),
+            };
+            w.headline = d.headline;
+            w.footer = d.footer;
+            for layout in ["classic", "minimal"] {
+                w.config.display_layout = layout.into();
+                let actual = render_information(&w, &d.values);
+                let mut expected = Frame::new();
+                expected.text(d.values["context"].as_str().unwrap(), 4, 20, 1, 15);
+                expected.text(&w.footer, 4, 56, 1, 15);
+                for y in (20..28).chain(56..64) {
+                    for x in 0..WIDTH {
+                        assert_eq!(
+                            pixel(&actual, x, y),
+                            pixel(&expected.bytes, x, y),
+                            "{kind} / {layout} / {x},{y}"
+                        );
+                    }
+                }
+                if let Some(status) = d.values["status"].as_str() {
+                    expected.text(status, 4, 47, 1, 15);
+                    for y in 47..55 {
+                        for x in 0..WIDTH {
                             assert_eq!(
-                                base[y / 8 * 128 + x] & bit,
-                                animated[y / 8 * 128 + x] & bit
+                                pixel(&actual, x, y),
+                                pixel(&expected.bytes, x, y),
+                                "{kind} status"
                             );
                         }
                     }
+                } else {
+                    assert!(
+                        (48..54).any(|y| (4..124).any(|x| pixel(&actual, x, y))),
+                        "{kind} keeps its bar or graph"
+                    );
                 }
+                assert!(
+                    (17..20)
+                        .chain(28..30)
+                        .chain(46..47)
+                        .chain(55..56)
+                        .all(|y| (0..WIDTH).all(|x| !pixel(&actual, x, y))),
+                    "{kind} rows must not overlap"
+                );
             }
         }
-        assert!(!CompanionPose::at(2199, "quick", true, true).closed);
-        assert!(CompanionPose::at(2200, "quick", true, true).closed);
-        assert!(!CompanionPose::at(2400, "quick", true, true).closed);
+    }
+
+    #[test]
+    fn dedicated_face_keeps_original_bitmap_and_blinking() {
+        assert_eq!(crate::protocol::crc32(&render(None, true)), 2039582962);
+        let mut e = Engine::new(Settings::default(), Instant::now());
+        let original = e.render_widget("face");
+        assert_eq!(original, render(None, true));
+        e.phase_ms = 3400;
+        assert_ne!(original, e.render_widget("face"));
+        e.set_reduced_motion(true);
+        assert_eq!(original, e.render_widget("face"));
     }
 
     #[test]
@@ -2391,64 +2452,6 @@ mod tests {
     }
 
     #[test]
-    fn companion_animation_preserves_every_data_pixel_and_can_be_disabled() {
-        let now = Instant::now();
-        let mut engine = Engine::new(Settings::default(), now);
-        for kind in ["weather", "stock"] {
-            let w = engine
-                .settings
-                .widgets
-                .iter_mut()
-                .find(|w| w.kind == kind)
-                .unwrap();
-            w.enabled = true;
-            w.label = "An unusually long accented location".into();
-            let id = w.id.clone();
-            engine.current_id = id.clone();
-            engine.playback = Playback::Pinned;
-            engine.phase_ms = 0;
-            engine.last_tick = now;
-            let open = engine.render_widget(&id);
-            assert!(engine.tick_at(now + Duration::from_millis(4600), 10000, 720));
-            let closed = engine.render_widget(&id);
-            assert_ne!(open, closed);
-            let pixel =
-                |frame: &[u8], x: usize, y: usize| frame[(y / 8) * WIDTH + x] & (1 << (y % 8)) != 0;
-            assert!(pixel(&open, 93, 2));
-            assert!(!pixel(&closed, 93, 2));
-            assert!(!pixel(&open, 93, 8)); // The original rounded eyes have hollow centers.
-            assert!(pixel(&closed, 93, 8));
-            assert!(pixel(&open, 106, 20)); // The original smile remains while blinking.
-            for y in 0..HEIGHT {
-                for x in 0..WIDTH {
-                    if x < 88 || y >= 26 {
-                        assert_eq!(pixel(&open, x, y), pixel(&closed, x, y));
-                    }
-                }
-            }
-            engine.phase_ms = 4200;
-            let beaming = engine.render_widget(&id);
-            assert_ne!(open, beaming);
-            for i in WIDTH * 4..FRAME_BYTES {
-                assert_eq!(open[i], beaming[i]);
-            }
-            engine.set_reduced_motion(true);
-            assert_eq!(open, engine.render_widget(&id));
-            engine.set_reduced_motion(false);
-            engine.settings.preferences.companion_animation = false;
-            assert_eq!(open, engine.render_widget(&id));
-            engine.settings.preferences.companion_animation = true;
-            engine.settings.preferences.companion_face = false;
-            let without = engine.render_widget(&id);
-            assert!(!pixel(&without, 106, 20));
-            engine.settings.preferences.companion_face = true;
-            engine.set_display_on(false);
-            assert!(engine.snapshot().frame.iter().all(|b| *b == 0));
-            engine.set_display_on(true);
-        }
-    }
-
-    #[test]
     fn fast_render_ticks_preserve_fractional_time_for_animation_and_dwell() {
         let now = Instant::now();
         let mut e = Engine::new(Settings::default(), now);
@@ -2462,86 +2465,30 @@ mod tests {
     }
 
     #[test]
-    fn usage_logo_motion_has_frequent_distinct_frames_and_stays_in_its_corner() {
+    fn usage_cards_keep_remaining_allowance_and_do_not_draw_expired_progress() {
         let pixel = |f: &[u8], x: usize, y: usize| f[y / 8 * WIDTH + x] & (1 << (y % 8)) != 0;
         for kind in ["codex", "claude"] {
-            let now = Instant::now();
-            let mut e = Engine::new(Settings::default(), now);
-            e.set_enabled(kind, true).unwrap();
-            e.pin(kind).unwrap();
-            let resting = e.render_widget(kind);
-            let mut unique = std::collections::HashSet::new();
-            for tick in 1..=30 {
-                e.tick_at(now + Duration::from_nanos(tick * 33_333_334), 10000, 720);
-                let frame = e.render_widget(kind);
-                for y in 0..HEIGHT {
-                    for x in 0..WIDTH {
-                        if !(89..123).contains(&x) || !(6..28).contains(&y) {
-                            assert_eq!(pixel(&resting, x, y), pixel(&frame, x, y));
-                        }
-                    }
-                }
-                unique.insert(frame);
-            }
-            assert!(unique.len() >= 24, "{kind}: only {} distinct frames", unique.len());
-            e.set_reduced_motion(true);
-            assert_eq!(e.render_widget(kind), resting);
-        }
-    }
-
-    #[test]
-    fn usage_logos_bob_visibly_below_the_lip_without_moving_data_or_labels() {
-        let pixel =
-            |frame: &[u8], x: usize, y: usize| frame[(y / 8) * WIDTH + x] & (1 << (y % 8)) != 0;
-        for kind in ["codex", "claude"] {
-            for layout in ["classic", "minimal"] {
-                let now = Instant::now();
-                let mut e = Engine::new(Settings::default(), now);
-                let w = e
-                    .settings
-                    .widgets
-                    .iter_mut()
-                    .find(|w| w.kind == kind)
-                    .unwrap();
-                w.enabled = true;
-                w.config.display_layout = layout.into();
-                e.current_id = kind.into();
-                e.playback = Playback::Pinned;
-                let resting = e.render_widget(kind);
-                assert!((0..6).all(|y| (0..WIDTH).all(|x| !pixel(&resting, x, y))));
-                assert!((0..9).all(|y| (4..84).all(|x| !pixel(&resting, x, y))));
-                assert!((9..17).any(|y| (4..84).any(|x| pixel(&resting, x, y))));
-                for ms in [900, 1200, 1800] {
-                    assert!(e.tick_at(now + Duration::from_millis(ms), 10000, 720));
-                    let moving = e.render_widget(kind);
-                    let changes: Vec<_> = (0..HEIGHT)
-                        .flat_map(|y| (0..WIDTH).map(move |x| (x, y)))
-                        .filter(|&(x, y)| pixel(&resting, x, y) != pixel(&moving, x, y))
-                        .collect();
-                    assert!(changes.len() > 30, "{kind}: motion should be visible");
-                    assert!(changes
-                        .iter()
-                        .all(|&(x, y)| (89..123).contains(&x) && (6..28).contains(&y)));
-                }
-                e.set_reduced_motion(true);
-                assert_eq!(resting, e.render_widget(kind));
-                e.set_reduced_motion(false);
-                e.settings.preferences.companion_animation = false;
-                assert_eq!(resting, e.render_widget(kind));
-                e.settings.preferences.companion_animation = true;
-                e.playback = Playback::Paused;
-                assert_eq!(resting, e.render_widget(kind));
-                e.settings
-                    .widgets
-                    .iter_mut()
-                    .find(|w| w.kind == kind)
-                    .unwrap()
-                    .config
-                    .display_companion = false;
-                let no_mark = e.render_widget(kind);
-                // With the logo hidden, the longer Claude header may use this corner.
-                assert!((17..28).all(|y| (94..118).all(|x| !pixel(&no_mark, x, y))));
-            }
+            let mut w = Settings::default()
+                .widgets
+                .iter()
+                .find(|w| w.kind == kind)
+                .unwrap()
+                .clone();
+            w.config.mode = "live".into();
+            w.headline = "75%".into();
+            w.footer = "5H ALLOWANCE".into();
+            let values = serde_json::json!({"remainingPercent":75.0});
+            let shown = render_information(&w, &values);
+            assert!(pixel(&shown, 92, 50));
+            assert!(!pixel(&shown, 93, 50));
+            w.headline = "<1%".into();
+            let nearly_used = render_information(&w, &values);
+            assert!(pixel(&nearly_used, 4, 49));
+            assert!((6..122).all(|x| !pixel(&nearly_used, x, 50)));
+            w.headline = "WAITING".into();
+            w.footer = "UPDATING".into();
+            let expired = render_information(&w, &values);
+            assert!((48..54).all(|y| (0..WIDTH).all(|x| !pixel(&expired, x, y))));
         }
     }
 
