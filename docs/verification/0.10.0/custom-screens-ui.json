@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "scope": "Production browser fixtures with simulated native and USB commands; no physical hardware assertion.",
+  "results": [
+    {
+      "name": "nimbus-text-scroll-upload-edit-reject-static-save",
+      "passed": true
+    },
+    {
+      "name": "boo-text-scroll-upload-edit-reject-static-save",
+      "passed": true
+    },
+    {
+      "name": "meep-text-scroll-upload-edit-reject-static-save",
+      "passed": true
+    },
+    {
+      "name": "claw-excludes-text-and-images",
+      "passed": true
+    }
+  ]
+}

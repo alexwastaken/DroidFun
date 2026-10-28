@@ -201,6 +201,44 @@ pub fn rename(settings: &mut Settings, serial: &str, name: &str) -> Result<(), S
 mod tests {
     use super::*;
     #[test]
+    fn four_droids_restore_their_own_screens_and_preferences_on_every_switch() {
+        let mut settings = Settings::default();
+        for (index, model) in ["nimbus", "boo", "meep", "claw"].iter().enumerate() {
+            let serial = format!("BOARD_{index}");
+            settings = select(&settings, Some(&serial), Some(model)).unwrap();
+            settings.brightness = 30 + index as u8;
+            settings.widgets[0].label = format!("Screen {index}");
+            settings.preferences.orientation = if index % 2 == 0 { 0 } else { 180 };
+            settings.manual_display_off = index == 2;
+        }
+        for index in [0, 3, 2, 1, 0, 3] {
+            settings = select(&settings, Some(&format!("board_{index}")), None).unwrap();
+            assert_eq!(settings.brightness, 30 + index as u8);
+            assert_eq!(settings.widgets[0].label, format!("Screen {index}"));
+            assert_eq!(settings.preferences.orientation, if index % 2 == 0 { 0 } else { 180 });
+            assert_eq!(settings.manual_display_off, index == 2);
+        }
+        assert_eq!(settings.droids.len(), 4);
+    }
+
+    #[test]
+    fn connection_limit_does_not_invalidate_older_saved_profile_history() {
+        let mut settings = Settings::default();
+        for index in 0..8 {
+            settings = select(&settings, Some(&format!("BOARD_{index}")), Some("nimbus")).unwrap();
+            settings.widgets[0].label = format!("Saved {index}");
+        }
+        remember(&mut settings).unwrap();
+        let saved = serde_json::to_vec(&settings).unwrap();
+        let loaded: Settings = serde_json::from_slice(&saved).unwrap();
+        loaded.validate().unwrap();
+        assert_eq!(loaded.droids.len(), 8);
+        for index in 0..8 {
+            let restored = select(&loaded, Some(&format!("BOARD_{index}")), None).unwrap();
+            assert_eq!(restored.widgets[0].label, format!("Saved {index}"));
+        }
+    }
+    #[test]
     fn first_board_inherits_existing_playlist_and_same_model_boards_stay_separate() {
         let mut original = Settings::default();
         original.preferences.bot_model = "meep".into();

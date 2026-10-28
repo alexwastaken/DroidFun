@@ -1,4 +1,4 @@
-# Customer and Workshop handoff — 0.9.0 / 0.3.1
+# Customer and Workshop handoff — 0.10.0 / 0.3.1
 
 The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download.
 
@@ -20,7 +20,7 @@ Workshop 0.3.1 offers **Prepare a droid → Prepare and verify → Wipe and rein
 2. Plug in the prepared droid using a USB data cable and open the app. A single factory droid is recognized automatically, including Nimbus and Mistake units. Its saved profile is restored if it has been used before.
 3. Choose screens. Faces, stationary/scrolling text and uploaded images work locally on Nimbus, Boo and Meep. Account widgets and online sources are optional. Preview works without a droid.
 
-Older firmware without a model can use a model-only lookup after Workshop registration. Offline or unknown boards ask for the model once. Multiple connected droids require choosing one; no silent switching away from a selected board. Each physical USB identity keeps its own playlist and display settings. Read-only discovery is bounded, cached for each attachment, and retries transient errors; Find droid permits a fresh attempt.
+Older firmware without a model can use a model-only lookup after Workshop registration. Offline or unknown boards ask for the model once. Use the arrows or droid menu at the top to switch between up to four plugged-in droids. A fifth waits until another is unplugged. Existing saved profiles are preserved independently of attached slots. There is no silent switching away from a selected board. Only the selected droid receives live app frames; others show their saved screens or fallback face. Each physical USB identity keeps its own playlist and display settings. Read-only discovery is bounded, cached for each attachment, and retries transient errors; Find droid permits a fresh attempt.
 
 ## Private inventory
 
