@@ -1,0 +1,21 @@
+{
+  "version": "0.10.0",
+  "source": "1722ba3b56ab5a25225d86969fa234f661070c46",
+  "previousVersion": "0.9.0",
+  "checkedAt": "2026-10-28T21:46:58.385800+00:00",
+  "publicFeedOfferedUpdate": true,
+  "signedDownloadCompleted": true,
+  "automaticRestartObservedBeforeAppAcquisition": true,
+  "installedBundleVersion": "0.10.0",
+  "codeSignatureVerified": true,
+  "executableMatchesPublishedArchive": true,
+  "executableSha256": "9ecf6c2005d1537ce2f2f69802167d9429727edd9b4c5f7bd0f5a805947b8221",
+  "settingsByteForByteUnchanged": true,
+  "physicalBoardAttached": false,
+  "existingPlaylistVisible": true,
+  "topSwitcherVisible": true,
+  "attachedCountShown": 0,
+  "maxConnectedShown": 4,
+  "arrowsDisabledWithoutAttachedDroids": true,
+  "followUpUpdateCheck": "up-to-date"
+}

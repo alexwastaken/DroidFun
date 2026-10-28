@@ -91,3 +91,7 @@ The [0.8.0 records](verification/0.8.0/README.md) cover all four platform packag
 ## 0.9.0 diagnostics acceptance
 
 The [0.9.0 evidence](verification/0.9.0/README.md) records exact-source packages and signed updater checks on all platforms. The installed Mac 0.8.0 app updated through the public feed, restarted automatically and matched the published 0.9.0 executable with strict signature verification. Settings were unchanged byte for byte. A real no-device diagnostic ran for six seconds, correctly withheld physical-test/reinstall actions, saved the reviewed JSON through the native file dialog with owner-only permissions, and opened the fixed public support page in Chrome. A fresh update check reported up to date. The private exported report and its droid ID are not included in public evidence.
+
+## 0.10.0 droid-switching acceptance
+
+The [0.10.0 evidence](verification/0.10.0/README.md) covers all four native platforms, exact-source packages and updater signatures. The installed Mac completed 0.9.0 → 0.10.0 through the public feed, restarted automatically before any manual launch, matched the verified universal executable and passed strict code-signature validation. Saved settings were unchanged byte for byte. The native home screen showed the top droid menu, 0/4 attached, and disabled arrows with no boards connected. A fresh manual update check reported up to date. The four-droid behavior has native slot/profile tests and simulated browser checks; physical multi-USB acceptance remains open.

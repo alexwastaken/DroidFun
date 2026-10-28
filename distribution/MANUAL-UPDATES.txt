@@ -12,7 +12,7 @@ The owner will ask for an update when ready. At that time:
 2. Prefer finished, verified release installers. If no installers exist, build and
    test real installers for the platforms being updated. Pushing source
    code alone does not create a new executable. Report any build/platform limits.
-   Check version per platform: the current release set is 0.7.1 for Mac, Windows
+   Check version per platform: the current release set is 0.10.0 for Mac, Windows
    and Linux. Never relabel an older binary as the newest release.
 3. Verify the files and upload/deploy them to the existing Droid Fun website.
    Publish matching file records and version labels only after verifying uploads.
@@ -34,11 +34,11 @@ The manual Mac and Windows/Linux build workflows remain available. Their optiona
 private-draft upload mode places verified installers in an existing draft release
 when Actions artifact storage is unavailable. It never publishes the release or
 updates the website automatically. Publish only after all intended files pass
-verification. The current guide is version 2.4, matching App 0.7.1. Factory firmware is
+verification. The current guide is version 2.4, compatible with App 0.10.0. Factory firmware is
 1.3.2 standard or 1.3.2-mistake; customer legacy recovery remains 1.2.4. Physical USB save and wall-power reboot acceptance remains pending;
 CI and host simulations do not replace a check on an actual bot.
 
-Private Workshop 0.3.0 and its source are never customer downloads. Its owner-paired
+Private Workshop 0.3.1 and its source are never customer downloads. Its owner-paired
 inventory token lives outside the app package. The customer app contains no
 registry credentials and can request only a model hint for one connected board.
 Dashboard inventory access remains owner-authenticated.
