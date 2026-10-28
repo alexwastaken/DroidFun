@@ -1,0 +1,24 @@
+{
+  "source": "b6d347d1f977db709ff4379af3294b03f912e5d4",
+  "checkedAt": "2026-10-28T17:20:33.414412+00:00",
+  "fromVersion": "0.6.0",
+  "toVersion": "0.7.0",
+  "workflow": [
+    "Settings > App",
+    "Check again",
+    "Download update",
+    "Restart to update"
+  ],
+  "publicFeedUsed": true,
+  "automaticRelaunchObserved": true,
+  "installedExecutableSha256": "61734b83deefdb3cbda2fa7bb701ec9d126746a57e7cc32555fec388539fe261",
+  "matchesPublishedUniversalExecutable": true,
+  "strictCodeSignatureVerified": true,
+  "settingsSha256Before": "3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05",
+  "settingsSha256After": "3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05",
+  "settingsUnchanged": true,
+  "followupUpdateCheck": "up_to_date",
+  "installed3dModelRendered": true,
+  "physicalUsbChecked": false,
+  "physicalPowerCycleChecked": false
+}

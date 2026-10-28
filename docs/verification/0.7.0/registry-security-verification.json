@@ -1,0 +1,70 @@
+{
+  "checkedAt": "2026-10-28T17:04:26.976Z",
+  "checks": [
+    {
+      "path": "/api/admin/droids",
+      "method": "GET",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "path": "/api/admin/workshop-sessions",
+      "method": "GET",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "path": "/api/workshop/droids",
+      "method": "GET",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "path": "/api/admin/workshop-pairing",
+      "method": "POST",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "path": "/api/workshop/droids",
+      "method": "POST",
+      "status": 401,
+      "passed": true
+    },
+    {
+      "path": "/api/droids/identify",
+      "method": "GET",
+      "status": 405,
+      "passed": true
+    },
+    {
+      "path": "/api/droids",
+      "method": "GET",
+      "status": 404,
+      "passed": true
+    },
+    {
+      "path": "/api/droids/identify",
+      "method": "POST",
+      "status": 200,
+      "passed": true
+    }
+  ],
+  "catalogPreserved": true,
+  "ownerPairingPerformed": true,
+  "liveDroidCreated": false,
+  "nativeAuthenticatedSyncVerified": true,
+  "runtimeSessionFilePrivate": true,
+  "backendSourceSha256": "39de5e9757606481381181331708e00155499989eb62f8da76402408b74c4d05",
+  "migrationSha256": "a82cf7a7c902e5bd4e8115a69b32320d7e2b9513a8890df81d3f83d9018bbf58",
+  "serverSecurityTestsPassed": 9,
+  "siteTestsPassed": 58,
+  "customerResponseFields": [
+    "model"
+  ],
+  "customerLookupIsPublicSetupHint": true,
+  "boardIdIsAuthentication": false,
+  "privateInventoryRequiresOwnerOrScopedWorkshopSession": true,
+  "customerConnectionHistoryStored": false,
+  "credentialsBundledInCustomerApp": false
+}

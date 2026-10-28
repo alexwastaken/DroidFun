@@ -1,0 +1,25 @@
+{
+  "version": "0.7.0",
+  "source": "b6d347d1f977db709ff4379af3294b03f912e5d4",
+  "archive": "DroidFun-App-0.7.0-macOS-universal.app.tar.gz",
+  "archiveSha256": "874094a38e35dd4f05a1ebeb0621563b1c7396b3894452d6b71b159d712b5d17",
+  "executableSha256": "61734b83deefdb3cbda2fa7bb701ec9d126746a57e7cc32555fec388539fe261",
+  "bundleVersion": "0.7.0",
+  "minimumSystemVersion": "13.0",
+  "codeSignatureVerified": true,
+  "architectures": [
+    {
+      "architecture": "arm64",
+      "command": "LC_BUILD_VERSION",
+      "minimumOS": "13.0",
+      "sdk": "14.5"
+    },
+    {
+      "architecture": "x86_64",
+      "command": "LC_BUILD_VERSION",
+      "minimumOS": "13.0",
+      "sdk": "14.5"
+    }
+  ],
+  "launchPerformed": false
+}

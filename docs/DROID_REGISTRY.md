@@ -18,7 +18,7 @@ Workshop stores its session outside its app bundle in private runtime storage, w
 
 Workshop records model, board ID, firmware and actual wiring after inspection. Older boards can be recorded after the owner chooses their model, without reinstalling firmware. Offline records are queued locally and retried after connection returns. A board becomes prepared only after Workshop's reconnect and readable-screen confirmations. Changing the recorded configuration clears previous preparation status; owner retirement and private notes survive sync.
 
-“Connected here” describes USB presence on the Workshop computer. Inventory dates describe Workshop checks. The registry does not claim that customer droids are currently online. Previously programmed boards can be added by reconnecting them to Workshop once.
+“Connected here” describes USB presence on the Workshop computer. Inventory dates record Workshop syncs. The registry does not claim that customer droids are currently online. Previously programmed boards can be added by reconnecting them to Workshop once.
 
 The public single-device lookup is rate-limited, accepts no SQL or arbitrary fields, and returns no inventory rows, notes, dates, status, session details, or fleet counts. The owner list uses bounded pagination. These boundaries are enforced by the service; hiding dashboard controls is not an authorization mechanism.
 

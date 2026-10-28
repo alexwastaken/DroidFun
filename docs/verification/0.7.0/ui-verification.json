@@ -1,0 +1,102 @@
+{
+  "scope": "Browser fixtures with mocked Tauri commands; no physical USB or native installer asserted.",
+  "passed": true,
+  "scenarios": [
+    {
+      "name": "welcome-500",
+      "passed": true
+    },
+    {
+      "name": "welcome-360",
+      "passed": true
+    },
+    {
+      "name": "automatic-recognition-360",
+      "passed": true
+    },
+    {
+      "name": "recognized-connected-500",
+      "passed": true
+    },
+    {
+      "name": "recognized-connected-360",
+      "passed": true
+    },
+    {
+      "name": "factory-mistake-500",
+      "passed": true
+    },
+    {
+      "name": "legacy-model-360",
+      "passed": true
+    },
+    {
+      "name": "multiple-new-500",
+      "passed": true
+    },
+    {
+      "name": "multiple-mixed-360",
+      "passed": true
+    },
+    {
+      "name": "multiple-remembered-500",
+      "passed": true
+    },
+    {
+      "name": "recovery-360",
+      "passed": true
+    },
+    {
+      "name": "discovery-error-500",
+      "passed": true
+    },
+    {
+      "name": "updates-settings-360",
+      "passed": true
+    },
+    {
+      "name": "updates-restart-500",
+      "passed": true
+    },
+    {
+      "name": "offline-updates-360",
+      "passed": true
+    },
+    {
+      "name": "unsupported-recovery-360",
+      "passed": true
+    },
+    {
+      "name": "linux-update-installer-500",
+      "passed": true
+    },
+    {
+      "name": "supported-legacy-recovery-500",
+      "passed": true
+    },
+    {
+      "name": "model-3d-boo-360",
+      "passed": true
+    },
+    {
+      "name": "model-3d-claw-360",
+      "passed": true
+    },
+    {
+      "name": "model-3d-meep-360",
+      "passed": true
+    },
+    {
+      "name": "model-3d-nimbus-360",
+      "passed": true
+    },
+    {
+      "name": "model-reduced-motion-360",
+      "passed": true
+    },
+    {
+      "name": "model-webgl-fallback",
+      "passed": true
+    }
+  ]
+}

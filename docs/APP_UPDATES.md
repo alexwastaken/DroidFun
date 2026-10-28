@@ -71,3 +71,11 @@ On October 27, 2026, an installed, user-owned Mac app completed a real **0.5.5 �
 - A follow-up manual update check reported the app up to date.
 
 This confirms the Mac desktop update and settings-preservation flow. No physical droid was available, so USB reconnection, real-device model recognition, screen visibility, power cycling, wall-power saved screens and sleep/wake behavior were not verified by this upgrade. Windows in-app upgrade acceptance remains separate from successful installer smoke checks and updater-signature verification. Mac packages remain ad-hoc signed without Developer ID notarization, and Windows installers lack platform code signing.
+
+## Recorded 0.7.0 acceptance
+
+The [public 0.7.0 prerelease](https://github.com/alexwastaken/DroidFun/releases/tag/v0.7.0) was built from `b6d347d1f977db709ff4379af3294b03f912e5d4`. [Mac CI](https://github.com/alexwastaken/DroidFun/actions/runs/40731707194) passed 131 native tests; [Windows/Linux CI](https://github.com/alexwastaken/DroidFun/actions/runs/40732069700) passed 125 per target. Package hashes, Mac/Windows updater signatures and native installer smoke checks passed.
+
+On October 28, 2026, the installed Mac app completed **0.6.0 → 0.7.0** through Settings → App → Check → Download → Restart using the public feed. The process restarted automatically before any manual launch. The [acceptance record](verification/0.7.0/mac-app-upgrade.json) confirms the installed executable matched the published universal package (SHA-256 `61734b83deefdb3cbda2fa7bb701ec9d126746a57e7cc32555fec388539fe261`), strict ad-hoc signature verification passed, and saved settings were unchanged. A subsequent update check reported the app up to date, and the installed app rendered its bundled 3D preview.
+
+No physical board was attached, so this verifies the Mac desktop upgrade rather than USB, display, power-cycle or sleep/wake acceptance. A Windows in-app upgrade remains separate from package smoke and signature checks. Mac Developer ID notarization and Windows publisher signing remain open.
