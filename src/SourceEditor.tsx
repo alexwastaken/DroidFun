@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
+import ImageUpload from "./ImageUpload";
 import Oled from "./Oled";
 import { BotAvatar } from "./BotPreview";
 import { botName } from "./BotPicker";
 import { invoke } from "@tauri-apps/api/core";
 
 export type Location = { name: string; latitude: number; longitude: number; country: string; region: string };
-export type SourceConfig = { customText: string; textSize: number; textAlign: string; textValign: string; textBorder: boolean; displayInvert: boolean; displayCompanion: boolean; displayLayout: string; mode: string; location: Location | null; unit: string; symbol: string; currency: string; limitId: string; window: string; sessionId: string; cliPath: string; claudeSource: string; claudeProfile: string; claudeReportDirectory: string; claudeReportProfile: string; faceExpression: string; blink: boolean; animationSpeed: string; weatherLayout: string; showChange: boolean; clockZone: string; clockFormat: string; clockSeconds: boolean; clockDate: string; focusMinutes: number; breakMinutes: number; longBreakMinutes: number; focusSessions: number; timerRunning: boolean; timerStartedAt: number; timerElapsed: number; meetingStartsAt: number; meetingMinutes: number; monitorInterval: number; showGraph: boolean; memoryMetric: string; memoryUnit: string };
+export type SourceConfig = { customText: string; textSize: number; textAlign: string; textValign: string; textBorder: boolean; textMotion: string; scrollSpeed: string; imagePixels: string; displayInvert: boolean; displayCompanion: boolean; displayLayout: string; mode: string; location: Location | null; unit: string; symbol: string; currency: string; limitId: string; window: string; sessionId: string; cliPath: string; claudeSource: string; claudeProfile: string; claudeReportDirectory: string; claudeReportProfile: string; faceExpression: string; blink: boolean; animationSpeed: string; weatherLayout: string; showChange: boolean; clockZone: string; clockFormat: string; clockSeconds: boolean; clockDate: string; focusMinutes: number; breakMinutes: number; longBreakMinutes: number; focusSessions: number; timerRunning: boolean; timerStartedAt: number; timerElapsed: number; meetingStartsAt: number; meetingMinutes: number; monitorInterval: number; showGraph: boolean; memoryMetric: string; memoryUnit: string };
 export type Widget = { id: string; kind: string; label: string; enabled: boolean; durationSec: number; headline: string; footer: string; config: SourceConfig };
 type Window = { bucket: string; slot: string; label: string; usedPercent: number; minutes: number; resetsAt: number };
 type Bridge = { enabled: boolean; command: string; hasExisting: boolean; explanation: string };
@@ -14,12 +15,12 @@ type SourceInfo = { claudeBridge: Bridge; claudeAccount: { signedIn: boolean; co
 const minutesLabel = (n: number) => n % 1440 === 0 ? `${n / 1440} days` : n % 60 === 0 ? `${n / 60} hours` : `${n} minutes`;
 
 export default function SourceEditor({ model, widget, offline, orientation, onClose, onApply, onRemove }: { model: string; widget: Widget; offline: boolean; orientation: number; onClose: () => void; onApply: (label: string, config: SourceConfig, headline: string, footer: string) => Promise<boolean>; onRemove: () => Promise<boolean> }) {
-  const local = ["text","clock","pomodoro","meeting","cpu","memory"].includes(widget.kind);
+  const local = ["text","image","clock","pomodoro","meeting","cpu","memory"].includes(widget.kind);
   const [zones,setZones] = useState<string[]>([]);
   useEffect(() => {if(widget.kind!=="clock")return;let active=true;invoke<string[]>("time_zones").then(z => {if(active)setZones(z);}).catch(e => {if(active)setError(String(e));});return () => {active=false;};},[widget.kind]);
   const meetingDate = (epoch:number) => {if(!epoch)return "";const d=new Date(epoch*1000);return `${String(d.getFullYear()).padStart(4,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
   const [label, setLabel] = useState(widget.label);
-  const [config, setConfig] = useState<SourceConfig>({ ...{ customText: "Hello, human!", textSize: 1, textAlign: "center", textValign: "center", textBorder: false, displayInvert: false, displayCompanion: true, displayLayout: "classic" }, ...widget.config });
+  const [config, setConfig] = useState<SourceConfig>({ ...{ customText: "Hello, human!", textMotion:"static",scrollSpeed:"normal",imagePixels:"", textSize: 1, textAlign: "center", textValign: "center", textBorder: false, displayInvert: false, displayCompanion: true, displayLayout: "classic" }, ...widget.config });
   const [headline, setHeadline] = useState(widget.headline);
   const [footer, setFooter] = useState(widget.footer);
   const [query, setQuery] = useState(widget.config.location?.name ?? "");
@@ -27,6 +28,7 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
   const [windows, setWindows] = useState<Window[]>([]);
   const [info, setInfo] = useState<SourceInfo | null>(null);
   const [pending, setPending] = useState("");
+  const [imagePending,setImagePending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -37,11 +39,13 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
   useEffect(() => {
     let active = true;
     setPreviewPending(true); setPreviewError("");
-    const timer = window.setTimeout(() => {
-      invoke<number[]>("preview_draft", { widget: JSON.parse(draftKey) }).then(frame => {
-        if (active) { setDraftFrame(frame); setPreviewPending(false); }
-      }).catch(e => { if (active) { setPreviewError(String(e)); setPreviewPending(false); } });
-    }, 220);
+    let timer: number;
+    const refresh = async () => {
+      try { const frame = await invoke<number[]>("preview_draft", { widget: JSON.parse(draftKey) }); if (active) { setDraftFrame(frame); setPreviewPending(false); } }
+      catch(e) { if (active) { setPreviewError(String(e)); setPreviewPending(false); } return; }
+      if(active && widget.kind === "text" && config.textMotion === "scroll") timer = window.setTimeout(refresh, 100);
+    };
+    timer = window.setTimeout(refresh, 220);
     return () => { active = false; window.clearTimeout(timer); };
   }, [draftKey]);
   useEffect(() => {
@@ -56,20 +60,23 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
   }
   const patch = (value: Partial<SourceConfig>) => setConfig(c => ({ ...c, ...value }));
   return <Modal title={`Configure ${botName(model)} screen`} onClose={onClose}><form className="editor source-editor" onSubmit={e => {
-    e.preventDefault(); if (previewPending || previewError || pending) return; run("Applying", async () => { if (await onApply(label, config, headline, footer)) onClose(); else setError("Settings could not be applied. Check the widget settings, then try again."); });
+    e.preventDefault(); if (previewPending || previewError || pending || imagePending || (widget.kind === "image" && !config.imagePixels)) return; run("Applying", async () => { if (await onApply(label, config, headline, footer)) onClose(); else setError("Settings could not be applied. Check the widget settings, then try again."); });
   }}>
     <div className="bot-context"><BotAvatar model={model}/><span>{botName(model)} · screen settings</span></div><h2>{widget.kind === "stock" ? "Stocks" : widget.kind === "codex" ? "Codex allowance" : widget.kind === "claude" ? "Claude allowance" : widget.label}</h2>
     <section className="draft-preview" aria-label="Your screen preview"><div className="eyebrow">128 × 64 SCREEN PREVIEW</div>{draftFrame ? <Oled frame={draftFrame} brightness={100} orientation={orientation} description={`${label} draft screen`} /> : <div className="preview-placeholder">Preparing your screen…</div>}<p role="status">{previewPending ? "Updating preview…" : previewError ? "Your last valid preview is shown. Adjust the settings below." : offline && !local && widget.kind !== "face" && config.mode === "live" ? "Online data is paused. This preview may show saved data; it is not a live reading." : "This is how your screen will look. Apply to save it."}</p>{previewError && <p className="source-error" role="alert">{previewError}</p>}</section>
     {offline && !local && widget.kind !== "face" && <p className="offline-notice">Online data is paused. Sample screens still work. Resume online data to connect accounts or search for a city.</p>}
     <label>Name<input maxLength={24} required value={label} onChange={e => setLabel(e.target.value)} /></label>
     {widget.kind === "text" && <>
-      <label>Your text<textarea value={config.customText} rows={4} maxLength={128} spellCheck={false} aria-describedby="text-help" onChange={e => patch({ customText: e.target.value })}/></label>
-      <p id="text-help">Up to 128 characters. Use English letters, numbers, spaces and basic punctuation (printable ASCII). New lines are welcome. Text wraps to fit the screen; use the preview to check the fit.</p>
-      <div className="screen-field-pair"><label>Text size<select value={config.textSize} onChange={e => patch({ textSize: Number(e.target.value) })}><option value={1}>Small · more text</option><option value={2}>Large · easier to read</option></select></label><label>Horizontal<select value={config.textAlign} onChange={e => patch({ textAlign: e.target.value })}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label></div>
+      <label>Your text<textarea aria-label="Your text" value={config.customText} rows={4} maxLength={config.textMotion === "scroll" ? 256 : 128} spellCheck={false} aria-describedby="text-help" onChange={e => patch({ customText: e.target.value })}/></label>
+      <p id="text-help">{config.textMotion === "scroll" ? "Up to 256 characters. Your message repeats from right to left; line breaks become spaces." : "Up to 128 characters. New lines are welcome; text wraps to fit the screen."} Use English letters, numbers and basic punctuation. Check the preview before applying.</p>
+      <label>Text motion<select value={config.textMotion} onChange={e=>patch({textMotion:e.target.value})}><option value="static">Stationary</option><option value="scroll">Scroll across the screen</option></select></label>
+      {config.textMotion === "scroll" && <><label>Scrolling speed<select value={config.scrollSpeed} onChange={e=>patch({scrollSpeed:e.target.value})}><option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option></select></label><p>Keep DroidFun App running for scrolling. Playlist time adjusts for one pass, up to 120 seconds. Pin longer or slower messages to keep them playing. Pause stops motion; system reduced-motion settings show a still portion.</p></>}
+      <div className="screen-field-pair"><label>Text size<select value={config.textSize} onChange={e => patch({ textSize: Number(e.target.value) })}><option value={1}>Small · more text</option><option value={2}>Large · easier to read</option></select></label><label>Horizontal<select disabled={config.textMotion === "scroll"} value={config.textAlign} onChange={e => patch({ textAlign: e.target.value })}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label></div>
       <label>Vertical position<select value={config.textValign} onChange={e => patch({ textValign: e.target.value })}><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
       <label className="inline-check"><input type="checkbox" checked={config.textBorder} onChange={e => patch({ textBorder: e.target.checked })}/>Add a border</label>
     </>}
-    {widget.kind !== "text" && widget.kind !== "face" && <div className="screen-appearance"><h3>Screen style</h3><label>Reading alignment<select value={config.displayLayout} onChange={e => patch({ displayLayout: e.target.value })}><option value="classic">Left aligned</option><option value="minimal">Centered reading</option></select></label><p>Information screens use clear labels and readings, without a face or logo.</p></div>}
+    {widget.kind !== "text" && widget.kind !== "image" && widget.kind !== "face" && <div className="screen-appearance"><h3>Screen style</h3><label>Reading alignment<select value={config.displayLayout} onChange={e => patch({ displayLayout: e.target.value })}><option value="classic">Left aligned</option><option value="minimal">Centered reading</option></select></label><p>Information screens use clear labels and readings, without a face or logo.</p></div>}
+    {widget.kind === "image" && <ImageUpload onBusy={setImagePending} hasImage={Boolean(config.imagePixels)} onChange={imagePixels=>patch({imagePixels})} onName={name=>{if(label === "Uploaded image")setLabel(name);}}/>}
     <label className="inline-check"><input type="checkbox" checked={config.displayInvert} onChange={e => patch({ displayInvert: e.target.checked })}/>Invert screen colors</label>
     {widget.kind === "face" && <><label>Expression<select value={config.faceExpression} onChange={e => patch({faceExpression:e.target.value})}><option value="happy">Happy</option><option value="neutral">Neutral</option><option value="sleepy">Sleepy</option><option value="surprised">Surprised</option></select></label><label className="inline-check"><input type="checkbox" checked={config.blink} onChange={e => patch({blink:e.target.checked})}/>Blink</label><label>Animation speed<select value={config.animationSpeed} onChange={e => patch({animationSpeed:e.target.value})}><option value="slow">Relaxed</option><option value="normal">Normal</option><option value="quick">Lively</option></select></label><p>Blinks gently while this face is on screen. System reduced-motion preferences turn animation off. On USB wall power, your bot cycles its saved text and face screens. If none are saved, it shows its built-in happy face.</p></>}
     {!local && widget.kind !== "face" && <label>Data source<select value={config.mode} onChange={e => patch({ mode: e.target.value, window: widget.kind === "claude" && e.target.value === "live" ? "five_hour" : config.window })}><option value="demo">Demo / sample values</option><option value="live">Live data</option></select></label>}
@@ -132,7 +139,7 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
 
     </>}
     {pending && <p role="status">{pending}…</p>}{notice && <p className="source-notice" role="status">{notice}</p>}{error && <p className="source-error" role="alert">{error}</p>}
-    <div className="modal-actions"><button type="button" onClick={onClose}>Cancel</button><button type="submit" className="primary-control" disabled={!!pending || previewPending || !!previewError}>Apply</button></div>
+    <div className="modal-actions"><button type="button" onClick={onClose}>Cancel</button><button type="submit" className="primary-control" disabled={!!pending || imagePending || previewPending || !!previewError || (widget.kind === "image" && !config.imagePixels)}>Apply</button></div>
     {widget.id !== "face" && <div className="remove-widget">{confirmRemove ? <><span>Remove this widget from your playlist?</span><button type="button" disabled={!!pending} onClick={() => run("Removing", async () => { if (await onRemove()) onClose(); })}>Remove widget</button><button type="button" onClick={() => setConfirmRemove(false)}>Keep it</button></> : <button type="button" onClick={() => setConfirmRemove(true)}>Remove from playlist</button>}</div>}
   </form></Modal>;
 }

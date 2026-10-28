@@ -9,11 +9,11 @@ pub fn load(path: &Path) -> Result<Settings, String> {
                 return Err("Settings exceeded the size limit; original file preserved".into());
             }
             if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
-                if value["version"].as_u64().is_some_and(|v| v > 2) {
+                if value["version"].as_u64().is_some_and(|v| v > crate::core::SETTINGS_VERSION as u64) {
                     return Err("These settings belong to a newer DroidFun App version. Install that version; your file has been preserved.".into());
                 }
                 if let Ok(mut settings) = serde_json::from_value::<Settings>(value) {
-                    if settings.version == 1 { settings.version = 2; }
+                    if settings.version == 1 || settings.version == 2 { settings.version = crate::core::SETTINGS_VERSION; }
                     if settings.validate().is_ok() {
                         if candidate != path && path.exists() {
                             fs::copy(
@@ -50,7 +50,7 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
         if let Ok(value) =
             serde_json::from_slice::<serde_json::Value>(&fs::read(path).map_err(|e| e.to_string())?)
         {
-            if value["version"].as_u64().is_some_and(|v| v > 2) {
+            if value["version"].as_u64().is_some_and(|v| v > crate::core::SETTINGS_VERSION as u64) {
                 return Err(
                     "Newer settings preserved; update DroidFun App before changing them".into(),
                 );
@@ -80,7 +80,7 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     if path.exists() {
         let bytes = fs::read(path).map_err(|e| e.to_string())?;
-        if serde_json::from_slice::<Settings>(&bytes).is_ok_and(|mut s| { if s.version == 1 { s.version = 2; } s.validate().is_ok() }) {
+        if serde_json::from_slice::<Settings>(&bytes).is_ok_and(|mut s| { if s.version == 1 || s.version == 2 { s.version = crate::core::SETTINGS_VERSION; } s.validate().is_ok() }) {
             if serde_json::from_slice::<Settings>(&bytes).is_ok_and(|s| s.version == 1) {
                 let archive = path.with_extension("before-droid-profiles.json");
                 match fs::OpenOptions::new().write(true).create_new(true).open(&archive) {
@@ -98,6 +98,17 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
                     Err(error) => return Err(format!("Could not preserve your original droid settings: {error}")),
                 }
             }
+            if serde_json::from_slice::<Settings>(&bytes).is_ok_and(|s| s.version == 2) {
+                let archive = path.with_extension("before-custom-screens.json");
+                match fs::OpenOptions::new().write(true).create_new(true).open(&archive) {
+                    Ok(mut original) => {
+                        #[cfg(unix)] { use std::os::unix::fs::PermissionsExt; original.set_permissions(fs::Permissions::from_mode(0o600)).map_err(|e| e.to_string())?; }
+                        if let Err(e) = original.write_all(&bytes).and_then(|_| original.sync_all()) { let _ = fs::remove_file(&archive); return Err(e.to_string()); }
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {},
+                    Err(e) => return Err(format!("Could not preserve your previous settings: {e}")),
+                }
+            }
             fs::copy(path, path.with_extension("json.bak")).map_err(|e| e.to_string())?;
         }
     }
@@ -107,6 +118,18 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn schema_two_customizations_migrate_and_new_images_round_trip_with_an_original_archive() {
+        let root=std::env::temp_dir().join(format!("droidfun-custom-screens-{}",std::process::id()));fs::create_dir_all(&root).unwrap();let path=root.join("settings.json");
+        let mut old=Settings::default();old.version=2;old.brightness=38;old.preferences.bot_model="boo".into();old.widgets[0].label="My saved face".into();
+        let mut value=serde_json::to_value(&old).unwrap();for w in value["widgets"].as_array_mut().unwrap(){for key in ["textMotion","scrollSpeed","imagePixels"] {w["config"].as_object_mut().unwrap().remove(key);}}
+        let original=serde_json::to_vec(&value).unwrap();fs::write(&path,&original).unwrap();let loaded=load(&path).unwrap();assert_eq!(loaded.version,3);assert_eq!(loaded.brightness,38);assert_eq!(loaded.widgets[0].label,"My saved face");assert_eq!(loaded.widgets[0].config.text_motion,"static");
+        let mut e=crate::core::Engine::new(loaded,std::time::Instant::now());e.add_widget("image").unwrap();let image=e.settings.widgets.last_mut().unwrap();image.config.image_pixels="a5".repeat(1024);image.enabled=true;save(&path,&e.settings).unwrap();assert_eq!(fs::read(path.with_extension("before-custom-screens.json")).unwrap(),original);
+        let restored=load(&path).unwrap();assert_eq!(restored.widgets.last().unwrap().config.image_pixels,"a5".repeat(1024));assert_eq!(restored.brightness,38);
+        #[cfg(unix)] {use std::os::unix::fs::PermissionsExt;assert_eq!(fs::metadata(path.with_extension("before-custom-screens.json")).unwrap().permissions().mode()&0o777,0o600);}
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn legacy_settings_migrate_with_per_droid_profile_and_keep_original_backup() {
         let dir = std::env::temp_dir().join(format!("droidfun-profile-migration-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap(); let path = dir.join("settings.json");
@@ -115,7 +138,7 @@ mod tests {
         for w in &mut legacy.widgets { w.enabled = false; }
         let mut value = serde_json::to_value(&legacy).unwrap(); value.as_object_mut().unwrap().remove("droids");
         let bytes = serde_json::to_vec(&value).unwrap(); fs::write(&path,&bytes).unwrap();
-        let upgraded = load(&path).unwrap(); assert_eq!(upgraded.version,2);assert_eq!(upgraded.brightness,37);
+        let upgraded = load(&path).unwrap(); assert_eq!(upgraded.version,3);assert_eq!(upgraded.brightness,37);
         assert!(upgraded.widgets.iter().all(|w| !w.enabled));assert_eq!(upgraded.droids[0].name,"Meep 1");
         assert_eq!(fs::read(&path).unwrap(), bytes); save(&path,&upgraded).unwrap();
         assert_eq!(fs::read(path.with_extension("json.bak")).unwrap(),bytes);
