@@ -20,7 +20,7 @@ Cross-platform desktop software and RP2040 firmware for a USB robot with a 128 �
 
 DroidFun turns a small USB display into a desk companion. Build a playlist of faces, custom text, clocks, Pomodoro timers, meeting countdowns, CPU/memory stats, weather, stock quotes, or account-allowance screens. Preview the exact pixels, choose how long each screen stays, and send the playlist to your bot.
 
-The current release is **[DroidFun App 0.5.2](https://github.com/alexwastaken/DroidFun/releases/tag/v0.5.2)**, with embedded normal firmware **1.2.3**. See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
+This checkout prepares **DroidFun App 0.6.0**. Public downloads remain at their published version until native release verification and publishing finish. The customer recovery image is **1.2.4**; factory firmware **1.3.2** and **1.3.2-mistake** are recognized and preserved. See [the customer and Workshop handoff](docs/ECOSYSTEM.md). See the [USB setup guide](docs/USB_SETUP.md) for the setup flow, recorded hardware observations and remaining acceptance checks.
 
 - **Nimbus, Boo, Meep and Claw profiles** with matching controls, previews, and light/dark themes. Nimbus, Boo and Meep support everyday widgets; Claw focuses on Claude/Codex account allowance.
 - **A real screen editor:** reorder widgets, set their timing, adjust text layout, borders and inversion, and preview the 128 × 64 result.
@@ -129,6 +129,6 @@ Settings schema 2 migrates existing screens and display settings without changin
 
 Codex usage refreshes about every minute and Claude account usage about every five minutes while active and online; local Claude Code reports are checked every two seconds and reflect new reports written by Claude Code. Rate limits and source errors can delay refreshes. The display cycle and animation do not represent source polling frequency. Firmware 1.2.4 targets up to 30 FPS over the faster screen connection; older firmware and screens that need the slower connection keep their 5 FPS limit. Static pixels are sent only when they change.
 
-The current product lineup is Meep and Claw. Boo is retired from new setup; its archived artwork and legacy settings remain readable so updating does not erase existing files. The private owner programmer is distributed separately and is never included in customer downloads.
+Historical 0.5.1 lineup: Meep and Claw. Boo was temporarily retired from new setup; its archived artwork and legacy settings remain readable so updating does not erase existing files. The private owner programmer is distributed separately and is never included in customer downloads.
 
 In 0.5.1, new setup offers Meep and Claw only. Mac and Windows receive the version through the signed app updater; Linux packages and the current one-page quick-start guide are on [Downloads](https://droidfun.io/downloads). The Mac in-app Check → Download → Restart upgrade to 0.5.1 preserved saved settings, installed the exact published universal executable, and reconnected to Claw with acknowledged live Codex frames. Native Windows and Linux package checks passed. A physical Mac sleep/wake cycle remains separate from these upgrade checks.

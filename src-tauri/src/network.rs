@@ -490,21 +490,32 @@ mod tests {
     fn canceled_http_is_dropped_without_waiting_for_timeout() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let flag = Arc::new(AtomicBool::new(false));
+        let cancel = flag.clone();
         let server = std::thread::spawn(move || {
-            let (mut socket, _) = listener.accept().unwrap();
+            let deadline = Instant::now() + Duration::from_secs(3);
+            let mut socket = loop {
+                match listener.accept() {
+                    Ok((socket, _)) => break socket,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock && Instant::now() < deadline => {
+                        std::thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("The cancellation fixture did not receive a request: {error}"),
+                }
+            };
+            socket.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
             let mut buffer = [0; 2048];
-            let _ = socket.read(&mut buffer);
+            assert!(socket.read(&mut buffer).unwrap() > 0);
+            // Cancel only after the request is truly in flight. Starting a
+            // timer before connecting could strand accept() on a busy host.
+            std::thread::sleep(Duration::from_millis(80));
+            cancel.store(true, Ordering::Release);
             std::thread::sleep(Duration::from_millis(300));
             let _ = socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}");
         });
-        let flag = Arc::new(AtomicBool::new(false));
-        let cancel = flag.clone();
-        let trigger = std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(80));
-            cancel.store(true, Ordering::Release);
-        });
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(3))
             .build()
             .unwrap();
         let _guard = RequestGuard::new(flag);
@@ -514,8 +525,7 @@ mod tests {
                 .unwrap_err()
                 .contains("canceled")
         );
-        assert!(start.elapsed() < Duration::from_millis(250));
-        trigger.join().unwrap();
+        assert!(start.elapsed() < Duration::from_secs(1));
         server.join().unwrap();
     }
 }

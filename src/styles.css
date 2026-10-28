@@ -68,3 +68,69 @@
 .droid-card .droid-rename { border: 0; padding: 4px 0; background: transparent; color: var(--ui-accent); }
 .droid-name input, .droid-add select { border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-panel); padding: 10px; color: inherit; font: inherit; }
 .droid-add .primary-control { width: auto; }
+
+/* Customer journey: connect first, then personalize; maintenance stays quiet. */
+.app-shell { width: 100%; }
+.topline { justify-content: space-between; }
+.header-settings { border: 1px solid var(--ui-border); border-radius: 9px; background: var(--ui-panel); color: var(--ui-muted); padding: 8px 11px; font-size: 12px; font-weight: 650; letter-spacing: 0; }
+.home-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 28px 0 20px; }
+.home-intro > div { min-width: 0; }
+.home-intro .bot-avatar { width: 66px; height: 60px; flex: none; }
+.home-intro h1 { overflow-wrap: anywhere; }
+.welcome-intro { text-align: center; padding: 32px 0 24px; }
+.welcome-intro .welcome-droids { display: flex; align-items: end; justify-content: center; gap: 13px; margin: 14px 0 30px; }
+.welcome-droids .bot-avatar { width: 74px; height: 68px; }
+.welcome-droids .bot-avatar:nth-child(even) { transform: translateY(-8px); }
+.welcome-shell .welcome-intro h1 { font-size: 32px; line-height: 1.2; letter-spacing: -.045em; }
+.welcome-shell .welcome-intro p { max-width: 340px; margin: 14px auto 0; font-size: 14px; line-height: 1.65; }
+.welcome-steps { display: grid; grid-template-columns: 1fr 1fr 1fr; list-style: none; padding: 0; margin: 0 0 26px; gap: 10px; }
+.welcome-steps li { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
+.welcome-steps li > span { display: grid; place-items: center; width: 25px; height: 25px; background: var(--ui-tint); color: var(--ui-accent); border-radius: 50%; font-size: 11px; font-weight: 750; }
+.welcome-steps strong { display: block; font-size: 12px; line-height: 1.4; }
+.welcome-steps small { display: block; color: var(--ui-muted); font-size: 10px; line-height: 1.5; margin-top: 4px; }
+.app-shell .robot-connection { padding: 17px 18px 8px; border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-panel); margin: 6px 0 24px; }
+.connection-heading { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 11px; color: var(--ui-muted); }
+.connection-heading .scan-button { margin-left: auto; min-width: 0; font-size: 10px; padding: 6px 8px; }
+.connection-indicator { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-muted); }
+.connection-indicator.is-ready { background: var(--ui-accent); box-shadow: 0 0 0 3px var(--ui-tint); }
+.robot-connection .droid-status { padding: 14px 0 0; border-radius: 0; background: transparent; margin: 0; }
+.droid-status > strong { font-size: 16px; letter-spacing: -.02em; }
+.droid-status p { font-size: 12px; line-height: 1.6; margin: 7px 0; color: var(--ui-muted); }
+.droid-status small { font-size: 11px; }
+.droid-status .firmware-confirmation { color: var(--ui-accent); margin: 10px 0 3px; }
+.robot-connection .droid-help { margin-top: 8px; font-size: 11px; }
+.droid-help > summary { font-weight: 600; color: var(--ui-muted); }
+.connection-facts { margin: 12px 0; }
+.connection-facts > div { display: flex; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--ui-border); }
+.connection-facts dt { flex: none; width: 90px; color: var(--ui-muted); }
+.connection-facts dd { margin: 0; overflow-wrap: anywhere; }
+.connection-error { font-size: 12px; line-height: 1.6; padding: 10px 12px; border-left: 3px solid #a13220; background: var(--ui-tint); overflow-wrap: anywhere; }
+.robot-update { padding: 12px; border-radius: 10px; background: var(--ui-tint); margin: 12px 0; font-size: 12px; line-height: 1.6; }
+.robot-update p { margin: 6px 0 10px; color: var(--ui-muted); }
+.new-droid { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--ui-border); margin-top: 10px; }
+.new-droid > div { flex: 1; }
+.new-droid strong { font-size: 12px; }
+.new-droid small { display: block; color: var(--ui-muted); font-size: 11px; margin-top: 4px; }
+.new-droid > details { width: 100%; font-size: 11px; }
+.new-droid summary { cursor: pointer; color: var(--ui-muted); }
+.welcome-explore { text-align: center; padding: 0 0 28px; font-size: 12px; }
+.welcome-explore p { color: var(--ui-muted); margin: 0 0 7px; }
+.text-action { padding: 0; border: 0; background: transparent; color: var(--ui-accent); font-size: 12px; cursor: pointer; }
+.offline-banner { display: grid; gap: 7px; justify-items: start; padding: 12px 14px; border-radius: 10px; background: var(--ui-tint); font-size: 12px; line-height: 1.5; margin-bottom: 16px; }
+.screen-studio { padding: 0 0 4px; }
+.screen-studio .bot-preview { margin-top: 4px; }
+.app-shell .standalone-controls { margin: 8px 0 16px; padding: 15px 0; border-bottom: 1px solid var(--ui-border); }
+.standalone-controls > summary { cursor: pointer; font-size: 14px; font-weight: 750; }
+.standalone-controls > summary small { display: block; font-size: 11px; font-weight: 400; color: var(--ui-muted); margin: 5px 0 0 17px; }
+.standalone-controls[open] > summary { margin-bottom: 18px; }
+.app-version { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0 0; font-size: 11px; color: var(--ui-muted); }
+.app-version > button { border: 0; border-radius: 0; padding: 3px 0; font-size: 11px; background: transparent; color: var(--ui-muted); }
+.app-version > .update-available { color: var(--ui-accent); font-weight: 700; }
+:root[data-bot] :is(.app-version > button, .header-settings, .text-action) { background: transparent; }
+:root[data-bot] :is(.app-version > button, .header-settings, .text-action):hover:not(:disabled) { background: transparent; text-decoration: underline; }
+@media (max-width: 390px) {
+  .welcome-droids .bot-avatar { width: 60px; height: 56px; }
+  .welcome-shell .welcome-intro h1 { font-size: 28px; }
+  .app-shell .robot-connection { padding-inline: 14px; }
+  .welcome-steps { gap: 6px; }
+}
