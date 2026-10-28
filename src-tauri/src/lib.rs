@@ -18,6 +18,7 @@ mod platform;
 mod protocol;
 mod providers;
 mod reliability;
+mod support;
 #[cfg(windows)]
 mod windows_claude_terminal;
 
@@ -45,6 +46,8 @@ struct AppState {
     started: Instant,
     platform: platform::PlatformInfo,
     diagnostics: Mutex<Option<String>>,
+    support_report: Mutex<Option<support::Report>>,
+    support_pattern: Mutex<Option<support::Pattern>>,
     events: Mutex<std::collections::VecDeque<serde_json::Value>>,
     pending: Mutex<
         std::collections::HashMap<String, Vec<std::sync::Weak<std::sync::atomic::AtomicBool>>>,
@@ -946,6 +949,135 @@ fn reset_deskbot(app: AppHandle, state: State<AppState>) -> Result<Snapshot, Str
     }
     result
 }
+static SUPPORT_RUNNING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+struct SupportRun;
+impl SupportRun {
+    fn acquire() -> Result<Self,String> {
+        if USB_OPERATION.load(std::sync::atomic::Ordering::SeqCst) { return Err("Wait for the current USB operation or app installation to finish.".into()); }
+        SUPPORT_RUNNING.compare_exchange(false,true,std::sync::atomic::Ordering::SeqCst,std::sync::atomic::Ordering::SeqCst).map_err(|_|"A diagnostic check is already running. Wait for it to finish.")?;
+        Ok(Self)
+    }
+}
+impl Drop for SupportRun { fn drop(&mut self) { SUPPORT_RUNNING.store(false,std::sync::atomic::Ordering::SeqCst); } }
+static SUPPORT_ENUMERATING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+struct SupportEnumeration;
+impl Drop for SupportEnumeration { fn drop(&mut self) { SUPPORT_ENUMERATING.store(false,std::sync::atomic::Ordering::SeqCst); } }
+
+#[tauri::command]
+async fn run_support_diagnostics(symptom: support::Symptom, app: AppHandle) -> Result<support::Report,String> {
+    let _run=SupportRun::acquire()?;
+    let initial_selection=app.state::<AppState>().engine.lock().map_err(|_|"Settings are busy")?.settings.selected_device_serial.clone();
+    rescan_robot();
+    let scan=async {
+        // A stalled native driver can outlive its timeout. Keep its permit in
+        // the worker so repeat checks cannot accumulate blocked scan threads.
+        if SUPPORT_ENUMERATING.compare_exchange(false,true,std::sync::atomic::Ordering::SeqCst,std::sync::atomic::Ordering::SeqCst).is_err() {return None;}
+        let permit=SupportEnumeration;
+        tokio::time::timeout(Duration::from_secs(5),tauri::async_runtime::spawn_blocking(move || {let _permit=permit;(connection::robot_ports(),firmware_setup::drives())})).await.ok().and_then(Result::ok)
+    };
+    let observe=async {
+        let mut prior: Option<(Option<String>,String)>=None;
+        let mut changes=0; let mut replies=support::ReplyEvidence::default(); let mut target_changed=false;
+        for _ in 0..25 {
+            let state=app.state::<AppState>();
+            let c=state.connection.lock().map_err(|_|"Connection is busy")?.clone();
+            let selected=state.engine.lock().map_err(|_|"Settings are busy")?.settings.selected_device_serial.clone();
+            target_changed |= selected != initial_selection || USB_OPERATION.load(std::sync::atomic::Ordering::SeqCst);
+            let metrics=state.link_metrics.lock().map_err(|_|"USB counters are busy")?.clone();
+            replies.observe(initial_selection.as_deref(),c.board_id.as_deref(),&metrics);
+            if let Some((board,status))=&prior {
+                if board!=&c.board_id || status!=&c.state {changes+=1;}
+            }
+            prior=Some((c.board_id,c.state));
+            if prior.is_some() {tokio::time::sleep(Duration::from_millis(240)).await;}
+        }
+        Ok::<_,String>((changes,replies.total,target_changed))
+    };
+    let (scan,observations)=tokio::join!(scan,observe);
+    let (changes,replies,target_changed)=observations?;
+    let (ports,drives,complete)=match scan {Some((Ok(ports),Ok(drives)))=>(ports,drives,true),_ => (Vec::new(),Vec::new(),false)};
+    let state=app.state::<AppState>();
+    let snapshot=state.engine.lock().map_err(|_|"Settings are busy")?.snapshot();
+    let mut connection=state.connection.lock().map_err(|_|"Connection is busy")?.clone();
+    let target=initial_selection.or_else(||connection.board_id.clone()).or_else(||if ports.len()==1 {Some(ports[0].serial.clone())} else {None});
+    let target_present=target.as_ref().is_some_and(|id|ports.iter().any(|p|p.serial.eq_ignore_ascii_case(id)));
+    if connection.board_id.is_none() {connection.board_id=target.clone();}
+    let identity_matches=target.as_deref().is_some_and(|id|connection.board_id.as_deref().is_some_and(|b|id.eq_ignore_ascii_case(b)));
+    static SEQUENCE: std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);
+    let id=format!("DF-{:X}-{:X}",std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),SEQUENCE.fetch_add(1,std::sync::atomic::Ordering::SeqCst));
+    let report=support::build(id,symptom,&connection,&snapshot,support::Facts {runtime_devices:ports.len(),recovery_devices:drives.len(),enumeration_complete:complete,target_present:target_present && identity_matches,acknowledged_commands:replies,connection_changes:changes,target_changed:target_changed || (target.is_some() && !identity_matches)});
+    *state.support_report.lock().map_err(|_|"Support report is busy")?=Some(report.clone());
+    Ok(report)
+}
+
+#[tauri::command]
+async fn show_support_pattern(report_id: String, app: AppHandle) -> Result<support::Report,String> {
+    let _run=SupportRun::acquire()?;
+    let _usb=UsbOperationGuard::acquire()?;
+    let state=app.state::<AppState>();
+    let report=state.support_report.lock().map_err(|_|"Support report is busy")?.clone().filter(|r|r.report_id==report_id && r.can_test_screen && core::unix_now().saturating_sub(r.created_at)<=300).ok_or("Run diagnostics again before testing this droid.")?;
+    let board=report.board_id.ok_or("Droid identity is unavailable. Run diagnostics again.")?;
+    let connection=state.connection.lock().map_err(|_|"Connection is busy")?.clone();
+    let selected=state.engine.lock().map_err(|_|"Settings are busy")?.settings.selected_device_serial.clone();
+    if !["connected","display_error"].contains(&connection.state.as_str()) || !connection.board_id.as_deref().is_some_and(|id|id.eq_ignore_ascii_case(&board)) || !selected.as_deref().is_some_and(|id|id.eq_ignore_ascii_case(&board)) {return Err("This droid is no longer connected. Run diagnostics again.".into());}
+    let acknowledged=Arc::new(std::sync::atomic::AtomicBool::new(false));
+    *state.support_pattern.lock().map_err(|_|"Screen test is busy")?=Some(support::Pattern {_operation:Some(_usb.clone()),board_id:board,expires:Instant::now()+Duration::from_secs(8),acknowledged:acknowledged.clone()});
+    tokio::time::sleep(Duration::from_secs(8)).await;
+    *state.support_pattern.lock().map_err(|_|"Screen test is busy")?=None;
+    let mut cached=state.support_report.lock().map_err(|_|"Support report is busy")?;
+    let report=cached.as_mut().filter(|r|r.report_id==report_id).ok_or("This support report was replaced. Run diagnostics again.")?;
+    report.visual_test.requested=true;
+    report.visual_test.acknowledged=acknowledged.load(std::sync::atomic::Ordering::SeqCst);
+    report.visual_test.observation=support::Observation::NotChecked;
+    Ok(report.clone())
+}
+
+#[tauri::command]
+fn record_support_observation(report_id: String, observation: support::Observation, state: State<AppState>) -> Result<support::Report,String> {
+    let mut cached=state.support_report.lock().map_err(|_|"Support report is busy")?;
+    let report=cached.as_mut().filter(|r|r.report_id==report_id && r.visual_test.requested).ok_or("Show a test pattern before recording its result.")?;
+    support::record_observation(report,observation)?;
+    Ok(report.clone())
+}
+
+#[tauri::command]
+fn open_support_page() -> Result<(),String> {
+    // No URL or shell input is accepted from the webview. Merely opening this
+    // public page sends no report, board ID or customer information.
+    const URL: &str="https://droidfun.io/downloads#droid-support";
+    static OPENING: std::sync::atomic::AtomicBool=std::sync::atomic::AtomicBool::new(false);
+    if OPENING.swap(true,std::sync::atomic::Ordering::SeqCst) {return Ok(());}
+    #[cfg(target_os="macos")]
+    let mut command={let mut c=std::process::Command::new("/usr/bin/open");c.arg(URL);c};
+    #[cfg(target_os="windows")]
+    let mut command={
+        use std::os::windows::process::CommandExt;
+        let mut c=std::process::Command::new("rundll32.exe");c.args(["url.dll,FileProtocolHandler",URL]).creation_flags(0x08000000);c
+    };
+    #[cfg(target_os="linux")]
+    let mut command={let mut c=std::process::Command::new("xdg-open");c.arg(URL);c};
+    match command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()).spawn() {
+        Ok(mut child)=>{std::thread::spawn(move || {let _=child.wait();OPENING.store(false,std::sync::atomic::Ordering::SeqCst);});Ok(())},
+        Err(_)=>{OPENING.store(false,std::sync::atomic::Ordering::SeqCst);Err("Open droidfun.io/downloads in your browser and choose Droid not found, or screen not responding? for support.".into())},
+    }
+}
+
+#[tauri::command]
+async fn export_support_report(report_id: String, app: AppHandle) -> Result<bool,String> {
+    let state=app.state::<AppState>();
+    let report=state.support_report.lock().map_err(|_|"Support report is busy")?.clone().filter(|r|r.report_id==report_id).ok_or("This support report was replaced. Review the latest report before saving.")?;
+    let bytes=serde_json::to_vec_pretty(&report).map_err(|_|"Could not prepare support report")?;
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        let Some(path)=app.dialog().file().set_file_name(format!("DroidFun-support-{}.json",report.report_id)).add_filter("JSON",&["json"]).blocking_save_file() else {return Ok(false);};
+        let path=path.into_path().map_err(|_|"Choose a local report file")?;
+        let mut file=fs::OpenOptions::new().write(true).create(true).truncate(true).open(path).map_err(|_|"Could not save support report")?;
+        #[cfg(unix)] {use std::os::unix::fs::PermissionsExt;file.set_permissions(fs::Permissions::from_mode(0o600)).map_err(|_|"Could not protect support report")?;}
+        file.write_all(&bytes).and_then(|_|file.sync_all()).map_err(|_|"Could not finish saving support report")?;
+        Ok(true)
+    }).await.map_err(|_|"Support report export stopped".to_string())?
+}
+
 #[tauri::command]
 fn diagnostics_preview(state: State<AppState>) -> Result<String, String> {
     use sha2::{Digest, Sha256};
@@ -1532,7 +1664,11 @@ fn connection_worker(app: AppHandle) {
     let mut probes = onboarding::ProbeSchedule::default();
     let mut discovered = None;
     loop {
-        if USB_OPERATION.load(std::sync::atomic::Ordering::SeqCst) {
+        // A support pattern owns the operation guard to exclude flashing and
+        // selection changes, while this worker must keep its normal link alive.
+        let support_pattern_active=app.state::<AppState>().support_pattern.lock().ok()
+            .is_some_and(|mut p| {if p.as_ref().is_some_and(|p|Instant::now()>=p.expires) {*p=None;} p.is_some()});
+        if USB_OPERATION.load(std::sync::atomic::Ordering::SeqCst) && !support_pattern_active {
             std::thread::sleep(Duration::from_millis(100));
             continue;
         }
@@ -1603,6 +1739,7 @@ fn connection_worker(app: AppHandle) {
         match Link::connect(&candidate) {
             Ok(mut link) => {
                 backoff = 0;
+                if let Ok(mut metrics) = app.state::<AppState>().link_metrics.lock() { *metrics = connection::LinkMetrics::default(); }
                 publish_connection(&app, link.status.clone());
                 loop {
                     if reliability::fault("link-interruption") {
@@ -1624,18 +1761,26 @@ fn connection_worker(app: AppHandle) {
                         break;
                     }
                     process_standalone_request(&app, &mut link, &serial);
+                    let pattern = app.state::<AppState>().support_pattern.lock().ok()
+                        .and_then(|mut p| {if p.as_ref().is_some_and(|p|Instant::now()>=p.expires) {*p=None;} p.as_ref().filter(|p|p.active(&serial,Instant::now())).cloned()});
+                    let frame = pattern.as_ref().map(|_|support::test_frame());
+                    let prior_acks = link.metrics.frame_acks;
                     match link.update(
-                        &snapshot.frame,
-                        snapshot.display_on,
-                        snapshot.settings.brightness,
+                        frame.as_deref().unwrap_or(&snapshot.frame),
+                        pattern.is_some() || snapshot.display_on,
+                        if pattern.is_some() {75} else {snapshot.settings.brightness},
                         snapshot.settings.preferences.orientation,
                     ) {
                         Ok(changed) => {
+                            if let Some(pattern) = &pattern { if link.metrics.frame_acks > prior_acks { pattern.acknowledge(); } }
                             if changed {
                                 publish_connection(&app, link.status.clone());
                             }
                         }
                         Err(error) => {
+                            // DISPLAY/PING may have succeeded before a failed
+                            // FRAME. Keep that USB evidence for support checks.
+                            if let Ok(mut metrics) = app.state::<AppState>().link_metrics.lock() { *metrics = link.metrics.clone(); }
                             publish_connection(
                                 &app,
                                 ConnectionSnapshot {
@@ -1806,6 +1951,8 @@ pub fn run() {
                 started: Instant::now(),
                 platform: platform::info(),
                 diagnostics: Mutex::new(None),
+                support_report: Mutex::new(None),
+                support_pattern: Mutex::new(None),
                 events: Mutex::new(std::collections::VecDeque::new()),
                 pending: Mutex::new(std::collections::HashMap::new()),
                 standalone: Mutex::new(None),
@@ -1948,6 +2095,11 @@ pub fn run() {
             reorder_widget,
             reset_deskbot,
             diagnostics_preview,
+            run_support_diagnostics,
+            show_support_pattern,
+            record_support_observation,
+            export_support_report,
+            open_support_page,
             export_diagnostics,
             export_firmware,
             list_setup_drives,

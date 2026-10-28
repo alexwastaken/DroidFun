@@ -13,7 +13,7 @@ type Props = {
   model: string; selectedSerial: string | null; profiles: DroidProfile[]; connection: Connection | null; ports: RobotPort[]; setupDrives: SetupDrive[];
   busy: boolean; scanning: boolean; scanFinished: boolean; scanIssue: string; installing: boolean; setupNotice: string; setupError: string;
   testBoardId: string; testReport: DisplayTestReport | null; testIssue: string; readingTest: boolean; supportsDisplayTest: boolean;
-  onScan: () => Promise<void>; onConnect: (serial: string, model?: string) => void; onUpdate: (serial?: string) => void;
+  onDiagnostics: () => void; onScan: () => Promise<void>; onConnect: (serial: string, model?: string) => void; onUpdate: (serial?: string) => void;
   onTest: (path?: string) => void; onReadTest: (serial: string) => void; onRename: (serial: string, name: string) => void;
 };
 const same = (a: string | null | undefined, b: string | null | undefined) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
@@ -56,6 +56,7 @@ export default function BotConnection(p: Props) {
     {p.testBoardId && <div className="display-test-card"><p>{p.readingTest ? "Reading the screen test…" : p.testReport?.write_ok ? "The screen is responding. Check that its pattern is visible." : "Check whether a pattern is visible on your droid’s screen."}</p>{canRecover ? <button disabled={blocked || p.readingTest} onClick={() => p.onUpdate(p.testBoardId)}>Finish screen test</button> : <p>Open Help below for support finishing your droid’s screen test.</p>}</div>}
     <LinuxRobotAccess permissionNeeded={p.connection?.state === "permission_needed"} onSetup={p.onScan}/>
 
+    <button type="button" className="diagnostics-entry" disabled={blocked || p.scanning} onClick={p.onDiagnostics}>Run diagnostics</button>
     <details className="droid-help"><summary>{p.profiles.length > 1 ? "Your droids, help & connection details" : "Help & connection details"}</summary>
       <p>A USB cable can provide power without carrying data. If the screen has power but the app cannot find it, try another data cable and a direct computer port.</p>
       <p><a href="https://droidfun.io/downloads" target="_blank" rel="noreferrer">{p.setupDrives.length ? "Contact DroidFun support for recovery" : "Connection help & support"} ↗</a></p>
