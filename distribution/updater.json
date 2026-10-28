@@ -1,23 +1,23 @@
 {
-  "version": "0.6.0",
-  "notes": "DroidFun App 0.6.0 makes first setup easier. Plug in a prepared Nimbus, Boo, Meep or Claw and the app recognizes it, connects it and restores its saved screens. Older droids ask for their model once.\n\nConnection help now explains the next step clearly. Each droid keeps its own screens and display settings. App updates live quietly in Settings → App, with a manual Check for updates action.\n\nFirmware recovery preserves factory identity and screen wiring. Factory, newer and custom firmware are protected from generic reinstalls. Windows and Linux firmware service uses Workshop or support; supported Macs can recover verified standard legacy firmware through direct USB.\n\nThis prerelease is not notarized on macOS; Windows installers are unsigned. Linux updates use the website DEB or RPM packages.\n",
-  "pub_date": "2026-10-28T03:41:12Z",
+  "version": "0.7.0",
+  "notes": "DroidFun App 0.7.0 adds the same rotating 3D droids used on droidfun.io, bundled for offline use. Drag to turn them, use arrow keys, or pause motion. Reduced-motion preferences and a still-image fallback are supported.\n\nFactory-prepared and remembered droids are recognized locally. For older boards, the app can look up the model recorded by private Workshop using a limited setup endpoint. It receives only the model for that ID. No database credentials, private inventory access or customer connection history are included. Pause online data disables this lookup; unavailable lookups fall back to choosing the model once.\n\nExisting screens, factory firmware protection and signed app updates are preserved. The OLED preview remains the readable screen preview.\n\nThis prerelease is not notarized on macOS; Windows installers lack publisher signing. Linux updates use the website DEB or RPM packages.\n",
+  "pub_date": "2026-10-28T17:16:05Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.6.0/DroidFun-App-0.6.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK05zSW5Pc21iRG00MHExZ090MVdKbFg5dGhKZ3RPTW1qd2J2RC8xKzhxVzZnWEk2S1c4YjVHdlA0cDFvbGkyZmRCalh5Y0tMS25reU9haXlCYkN6cGdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTU4NjkwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjYuMApZOG1kWUpaOGRWQjAvM04zZGdOdzBVa3g2N245VFhWRzBLN2MzdjRYNU9GS2ZzbGJqSEFRR3ZlZUFNMDZvREpjZk9kWTNCeTBKUXd3aFFIbkM5REJBdz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0ZuYUg1NGhadEZKSnB0UlZ6TG5FdXFaUmgyWk0vcmdTYXEzd3hRUXJPN3ZVSWRvb2p0WUdCSmJxQnBqdlJmOTh0QVh4UDltSXJtSnhLdlo0QXVERlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3MzI5CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjcuMApEaHE2aVZDbzJhOUZOLzBxWVRETHJWMEpQZ093NWlnZEsxdnpoNXkrMW1aVlA5TmNLZHVsTVBRcTNUVDE0YUVIQXhQMURHOUo0ZzhtNk1ZcTdaeTBBdz09Cg=="
     },
     "darwin-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.6.0/DroidFun-App-0.6.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK05zSW5Pc21iRG00MHExZ090MVdKbFg5dGhKZ3RPTW1qd2J2RC8xKzhxVzZnWEk2S1c4YjVHdlA0cDFvbGkyZmRCalh5Y0tMS25reU9haXlCYkN6cGdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTU4NjkwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjYuMApZOG1kWUpaOGRWQjAvM04zZGdOdzBVa3g2N245VFhWRzBLN2MzdjRYNU9GS2ZzbGJqSEFRR3ZlZUFNMDZvREpjZk9kWTNCeTBKUXd3aFFIbkM5REJBdz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0ZuYUg1NGhadEZKSnB0UlZ6TG5FdXFaUmgyWk0vcmdTYXEzd3hRUXJPN3ZVSWRvb2p0WUdCSmJxQnBqdlJmOTh0QVh4UDltSXJtSnhLdlo0QXVERlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3MzI5CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjcuMApEaHE2aVZDbzJhOUZOLzBxWVRETHJWMEpQZ093NWlnZEsxdnpoNXkrMW1aVlA5TmNLZHVsTVBRcTNUVDE0YUVIQXhQMURHOUo0ZzhtNk1ZcTdaeTBBdz09Cg=="
     },
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.6.0/DroidFun-App-0.6.0-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK016b05Dek1aUUszZnNhQlJKbHE0S2VWVnJMNXE2eFpzNUVGaS9CZnY2NkJ4cW9Celp0Vkk2NGxnY015Rk10WXBNZ2lYZER6U292cHBUVjIza2FGZndnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTU4MTM0CWZpbGU6RHJvaWRGdW4gQXBwXzAuNi4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjYuMAppWlExTXhoejZ1aXBKZndZVjJhTXNWQVJIRWorcEFzYnJIVHNNOW5ZVDIzNmtialVESzl4K1JTWG9qS3BrdUZaZmVHd3NIT21aR0hyOVp4RUEyeW5EZz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09OU1NFV3N1Wng0OS9XbjF6TWFaWFJ6TjN4Y0xlVk4yOEVTeDcwV1hkMzgxN011UU13L1dpbWUvOXpjN1RBSGJXU1pXdHN3VHNqNVRrRURTN05KMGdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3MzExCWZpbGU6RHJvaWRGdW4gQXBwXzAuNy4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjcuMApTYklZcW1BMTVqTVQwYlI5aUFodnhWaDVENXRMQlpBbjlmbGZjSkpVVEZYQmx0ZUM0dkhVMG9ab3FPaDVDanRzeVJkdXVRcTM2THhjZ3JlWGVscHpDZz09Cg=="
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.6.0/DroidFun-App-0.6.0-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0FLZ2hUWElyN3hPVVdteFg5QkV4R2IyaEQ3d3FDMTdna0pEcGZxQkNqV2dyekZxemdqdVBmc3hpS0RDbXptSjY4Nkkwbm9IeHNDZjZseWZvNUNJMVFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMTU4MzcxCWZpbGU6RHJvaWRGdW4gQXBwXzAuNi4wX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNi4wClFtZW1rZnVWUTJrNkxDZkNSOVBPcGN6bnJtSHI3SmM5N1ltY1MwWnFqS2ZBSWNwSFFTeCthWk1lVGYza20wbGdzZlBVQjBqTzBudUpjbFRjaXpTREJ3PT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0oyV2ZoWjBVa3MyUGlZQmttdDRJMjVRT2JxdlU5U1dyVmEydUZjZGZKNDNucGJtd1VPeisvZTUyVEFncUlBSGVOUm9RL0Y3bmtrV2g3NHdOYkFSV0E0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3Mzc4CWZpbGU6RHJvaWRGdW4gQXBwXzAuNy4wX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNy4wCkRJazg1K2pOcXpINyt1eFErUm16M0M0NERHVWd4b0EyWU1iWDkzYlhiODFXNzR1bThCSmpraFNhR2lKeVgza0loL2U5MFl1UGxPRlVMeTFsbUtJdUNnPT0K"
     }
   }
 }
