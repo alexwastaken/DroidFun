@@ -2,6 +2,7 @@ mod app_update;
 pub mod claude_account;
 pub mod claude_bridge;
 mod connection;
+mod connection_slots;
 mod core;
 mod display_test;
 mod droids;
@@ -42,6 +43,7 @@ use tauri_plugin_dialog::DialogExt;
 struct AppState {
     engine: Mutex<Engine>,
     connection: Mutex<ConnectionSnapshot>,
+    connection_slots: Mutex<connection_slots::Slots>,
     settings_path: PathBuf,
     started: Instant,
     platform: platform::PlatformInfo,
@@ -218,9 +220,15 @@ async fn setup_robot_access() -> Result<(), String> {
         .map_err(|_| "USB setup stopped. Please try again.".to_string())?
 }
 
+fn robot_choices(state: &AppState) -> Result<Vec<connection_slots::PortChoice>, String> {
+    let selected = state.engine.lock().map_err(|_| "Settings are busy")?.settings.selected_device_serial.clone();
+    let ports = connection::robot_ports()?;
+    Ok(state.connection_slots.lock().map_err(|_| "Droid connections are busy")?.refresh(ports, selected.as_deref()))
+}
+
 #[tauri::command]
-fn list_robot_ports() -> Result<Vec<RobotPort>, String> {
-    connection::robot_ports()
+fn list_robot_ports(state: State<AppState>) -> Result<Vec<connection_slots::PortChoice>, String> {
+    robot_choices(&state)
 }
 
 #[tauri::command]
@@ -240,9 +248,11 @@ async fn select_robot(
     let mut chosen_model = bot_model;
     let mut registry_ticket: Option<network::Ticket> = None;
     if let Some(ref value) = serial {
-        let candidate = connection::robot_ports()?.into_iter()
-            .find(|port| port.serial.eq_ignore_ascii_case(value))
+        let choice = robot_choices(&state)?.into_iter()
+            .find(|choice| choice.port.serial.eq_ignore_ascii_case(value))
             .ok_or("That droid is not currently detected. Reconnect its cable and try again.")?;
+        if !choice.connectable { return Err(connection_slots::LIMIT_MESSAGE.into()); }
+        let candidate = choice.port;
         let remembered = state.engine.lock().map_err(|_| "Settings are busy")?.settings.droids
             .iter().any(|p| p.serial.eq_ignore_ascii_case(value));
         if chosen_model.is_none() && !remembered {
@@ -255,16 +265,22 @@ async fn select_robot(
             let status = tokio::time::timeout(Duration::from_secs(5), job).await
                 .map_err(|_| "Checking this droid took too long. Reconnect USB and try again.")?
                 .map_err(|_| "The droid check stopped. Try again.")??;
-            chosen_model = status.identity.map(|identity| identity.model);
+            chosen_model = status.identity.as_ref().map(|identity| identity.model.clone());
             if chosen_model.is_none() {
                 if let Ok(ticket) = state.providers.request_ticket("droid_setup") {
                     chosen_model = droid_registry::lookup(value,ticket.clone()).await.filter(|_|ticket.current());
                     if chosen_model.is_some() { registry_ticket=Some(ticket); }
                 }
             }
-            if chosen_model.is_none() { return Err("Choose this droid’s model once so we can remember it.".into()); }
-            if !connection::robot_ports()?.iter().any(|p|p.serial.eq_ignore_ascii_case(value)) { return Err("Reconnect your droid and try again.".into()); }
+            if chosen_model.is_none() {
+                // The UI shows a model choice for this target. Keep any
+                // currently selected droid's live connection status intact.
+                return Err("Choose this droid’s model below to finish connecting it.".into());
+            }
         }
+        let current = robot_choices(&state)?.into_iter().find(|p|p.port.serial.eq_ignore_ascii_case(value))
+            .ok_or("Reconnect your droid and try again.")?;
+        if !current.connectable { return Err(connection_slots::LIMIT_MESSAGE.into()); }
     }
     let snapshot = mutate(&app, state, true, |engine| {
         if registry_ticket.as_ref().is_some_and(|ticket| !ticket.current() || engine.settings.preferences.offline_mode) {
@@ -1594,8 +1610,8 @@ fn tray_action(app: &AppHandle, id: &str) {
 
 fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
     cached: &mut Option<ConnectionSnapshot>) {
-    let ports = match connection::robot_ports() {
-        Ok(ports) => ports,
+    let ports: Vec<RobotPort> = match robot_choices(&app.state::<AppState>()) {
+        Ok(ports) => ports.into_iter().filter(|p| p.connectable).map(|p| p.port).collect(),
         Err(error) => { publish_connection(app, ConnectionSnapshot {state: "discovery_error".into(), detail: error, ..ConnectionSnapshot::default()}); return; }
     };
     probes.refresh(DISCOVERY_GENERATION.load(std::sync::atomic::Ordering::SeqCst), ports.iter().map(|p| p.serial.as_str()));
@@ -1700,9 +1716,10 @@ fn connection_worker(app: AppHandle) {
             std::thread::sleep(Duration::from_secs(1));
             continue;
         };
-        let candidate = connection::robot_ports()
+        let candidate = robot_choices(&app.state::<AppState>())
             .ok()
-            .and_then(|ports| ports.into_iter().find(|port| port.serial.eq_ignore_ascii_case(&serial)));
+            .and_then(|ports| ports.into_iter().find(|p| p.connectable && p.port.serial.eq_ignore_ascii_case(&serial)))
+            .map(|p|p.port);
         let Some(candidate) = candidate else {
             publish_connection(
                 &app,
@@ -1945,6 +1962,7 @@ pub fn run() {
             app.manage(AppState {
                 engine: Mutex::new(engine),
                 connection: Mutex::new(ConnectionSnapshot::default()),
+                connection_slots: Mutex::new(connection_slots::Slots::default()),
                 settings_path,
                 providers,
                 link_metrics: Mutex::new(connection::LinkMetrics::default()),

@@ -10,6 +10,7 @@ import BotPreview from "./BotPreview";
 import BotConnection, { type Connection, type RobotPort, type SetupDrive, type DisplayTestReport, type DroidProfile } from "./BotConnection";
 import { AppUpdateLink, useAppUpdates } from "./AppUpdates";
 import DroidModel from "./DroidModel";
+import DroidSwitcher from "./DroidSwitcher";
 
 type Playback = "running" | "paused" | "pinned";
 import SourceEditor, { type Widget, type SourceConfig } from "./SourceEditor";
@@ -54,6 +55,7 @@ export default function App() {
   const [installing, setInstalling] = useState(false);
   const [setupNotice, setSetupNotice] = useState("");
   const [setupError, setSetupError] = useState("");
+  const [pendingModelSerial, setPendingModelSerial] = useState("");
   const [testBoardId, setTestBoardId] = useState(() => { try { return localStorage.getItem("droidfun-display-test-board") ?? ""; } catch { return ""; } });
   const [testReport, setTestReport] = useState<DisplayTestReport | null>(null);
   const [testIssue, setTestIssue] = useState("");
@@ -77,6 +79,7 @@ export default function App() {
   const standaloneDraftKey = JSON.stringify({ orientation: state?.settings.preferences.orientation, brightness: state?.settings.brightness, selectedDeviceSerial: state?.settings.selectedDeviceSerial, connectedBoard: connection?.boardId, connectedPort: connection?.port, widgets: state?.settings.widgets.filter(w => ["face", "image"].includes(w.kind) || w.kind === "text" && w.config.textMotion !== "scroll") });
   useEffect(() => { setSavedToBot(""); setSaveError(""); }, [standaloneDraftKey]);
   useEffect(() => { setSelected(null); setEditor(null); setAdding(false); setAddKind(model === "claw" ? "codex" : "text"); setSavedToBot(""); setSaveError(""); }, [model, state?.settings.selectedDeviceSerial]);
+  useEffect(() => { if (pendingModelSerial && !ports.some(p => p.connectable !== false && p.serial.toLowerCase() === pendingModelSerial.toLowerCase())) setPendingModelSerial(""); }, [ports, pendingModelSerial]);
   const previewKey = selected ? JSON.stringify({ widget: state?.settings.widgets.find(w => w.id === selected), data: state?.data?.[selected] }) : "";
 
   useEffect(() => {
@@ -158,9 +161,14 @@ export default function App() {
   }, [installing, scanning]);
 
   async function connectDroid(serial: string, botModel?: string) {
-    setBusy(true); setSetupError(""); setSetupNotice("");
+    if (busy || installing || scanning || testBoardId) return;
+    setBusy(true); setSetupError(""); setSetupNotice(""); setPendingModelSerial("");
     try { setState(await invoke<Snapshot>("select_robot", {serial, botModel: botModel ?? null})); }
-    catch (e) { setSetupError(String(e)); }
+    catch (e) {
+      const message = String(e);
+      if (message === "Choose this droid’s model below to finish connecting it.") setPendingModelSerial(serial);
+      setSetupError(message);
+    }
     finally { setBusy(false); }
   }
 
@@ -256,10 +264,12 @@ export default function App() {
   const openSettings = (section = "Display") => { setSettingsSection(section); setSettingsOpen(true); };
   const updateLink = <AppUpdateLink updates={appUpdates} onOpen={() => openSettings("App")}/>;
   const settingsPanel = <>{supportOpen && <SupportDiagnostics onBusy={setSupportBusy} onClose={() => setSupportOpen(false)} onReinstall={serial => void updateRobot(serial)}/>} {settingsOpen && <SettingsPanel initialSection={settingsSection} onDiagnostics={() => {setSettingsOpen(false);setSupportOpen(true);}} appUpdates={appUpdates} preferences={state.settings.preferences} connection={connection} onChangeBot={() => { setSettingsOpen(false); setChoosingBot(true); }} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />}</>;
-  const connectionPanel = <BotConnection model={model} selectedSerial={state.settings.selectedDeviceSerial} profiles={(state.settings.droids ?? []).filter(d => botName(d.model))} connection={connection} ports={ports} setupDrives={setupDrives} busy={busy} scanning={scanning} scanFinished={scanFinished} scanIssue={scanIssue} installing={installing} setupNotice={setupNotice} setupError={setupError} testBoardId={testBoardId} testReport={testReport} testIssue={testIssue} readingTest={readingTest} supportsDisplayTest={supportsDisplayTest} onDiagnostics={() => setSupportOpen(true)} onScan={scanPorts} onConnect={(serial, botModel) => void connectDroid(serial, botModel)} onUpdate={serial => void updateRobot(serial)} onTest={path => void startDisplayTest(path)} onReadTest={serial => void readTestReport(serial)} onRename={(serial, name) => void act("rename_droid", {serial, name})}/>;
+  const connectionPanel = <BotConnection model={model} selectedSerial={state.settings.selectedDeviceSerial} profiles={(state.settings.droids ?? []).filter(d => botName(d.model))} connection={connection} ports={ports} setupDrives={setupDrives} busy={busy} scanning={scanning} scanFinished={scanFinished} scanIssue={scanIssue} installing={installing} setupNotice={setupNotice} setupError={setupError} testBoardId={testBoardId} testReport={testReport} testIssue={testIssue} readingTest={readingTest} supportsDisplayTest={supportsDisplayTest} pendingModelSerial={pendingModelSerial} onDiagnostics={() => setSupportOpen(true)} onScan={scanPorts} onConnect={(serial, botModel) => void connectDroid(serial, botModel)} onUpdate={serial => void updateRobot(serial)} onTest={path => void startDisplayTest(path)} onReadTest={serial => void readTestReport(serial)} onRename={(serial, name) => void act("rename_droid", {serial, name})}/>;
+  const droidSwitcher = <DroidSwitcher ports={ports} profiles={state.settings.droids ?? []} selectedSerial={state.settings.selectedDeviceSerial} busy={busy || installing || scanning || Boolean(testBoardId)} onSelect={serial => void connectDroid(serial)}/>;
   if (choosingBot) return <><BotPicker footer={updateLink} current={model} busy={busy} error={error} onCancel={() => setChoosingBot(false)} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />{settingsPanel}</>;
   if (!botName(model)) return <main className="app-shell welcome-shell">
     <header className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><button className="header-settings" onClick={() => openSettings("App")}>Settings</button></header>
+    {droidSwitcher}
     <section className="intro welcome-intro"><DroidModel model={connection?.identity?.model ?? "nimbus"}/><div className="eyebrow">WELCOME HOME</div><h1>A little droid.<br/><em>A desk that feels like you.</em></h1><p>Plug your droid into this computer. We’ll find it and get its screens ready.</p></section>
     <ol className="welcome-steps" aria-label="Getting started"><li><span>1</span><div><strong>Plug in</strong><small>Use a USB data cable</small></div></li><li><span>2</span><div><strong>Meet your droid</strong><small>We’ll recognize it for you</small></div></li><li><span>3</span><div><strong>Make it yours</strong><small>Choose what’s on screen</small></div></li></ol>
     {connectionPanel}
@@ -290,6 +300,7 @@ export default function App() {
 
   return <main className="app-shell">
     <header className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><button className="header-settings" onClick={() => openSettings()}>Settings</button></header>
+    {droidSwitcher}
     <section className="intro home-intro"><div><div className="eyebrow">YOUR DESK COMPANION</div><h1>{(state.settings.droids ?? []).find(d => d.serial === state.settings.selectedDeviceSerial)?.name || botName(model)}</h1><p>{model === "claw" ? "Your Claude and Codex usage, at a glance." : "A favorite face. A useful update. A little more you."}</p></div><DroidModel model={model}/></section>
     {connectionPanel}
     {offline && <div className="offline-banner"><span>Online data is paused. Local screens still work over USB.</span><button className="text-action" disabled={busy} onClick={() => act("set_offline_mode", { offline: false })}>Resume online data</button></div>}
