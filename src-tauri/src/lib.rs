@@ -976,24 +976,22 @@ async fn run_support_diagnostics(symptom: support::Symptom, app: AppHandle) -> R
         tokio::time::timeout(Duration::from_secs(5),tauri::async_runtime::spawn_blocking(move || {let _permit=permit;(connection::robot_ports(),firmware_setup::drives())})).await.ok().and_then(Result::ok)
     };
     let observe=async {
-        let mut prior: Option<(Option<String>,String,u64)>=None;
-        let mut changes=0; let mut replies=0; let mut target_changed=false;
+        let mut prior: Option<(Option<String>,String)>=None;
+        let mut changes=0; let mut replies=support::ReplyEvidence::default(); let mut target_changed=false;
         for _ in 0..25 {
             let state=app.state::<AppState>();
             let c=state.connection.lock().map_err(|_|"Connection is busy")?.clone();
             let selected=state.engine.lock().map_err(|_|"Settings are busy")?.settings.selected_device_serial.clone();
             target_changed |= selected != initial_selection || USB_OPERATION.load(std::sync::atomic::Ordering::SeqCst);
-            let acks=state.link_metrics.lock().map_err(|_|"USB counters are busy")?.command_acks;
-            if let Some((board,status,count))=&prior {
+            let metrics=state.link_metrics.lock().map_err(|_|"USB counters are busy")?.clone();
+            replies.observe(initial_selection.as_deref(),c.board_id.as_deref(),&metrics);
+            if let Some((board,status))=&prior {
                 if board!=&c.board_id || status!=&c.state {changes+=1;}
-                if board==&c.board_id && initial_selection.as_deref().is_some_and(|s|c.board_id.as_deref().is_some_and(|b|s.eq_ignore_ascii_case(b))) {
-                    replies+=acks.saturating_sub(*count);
-                }
             }
-            prior=Some((c.board_id,c.state,acks));
+            prior=Some((c.board_id,c.state));
             if prior.is_some() {tokio::time::sleep(Duration::from_millis(240)).await;}
         }
-        Ok::<_,String>((changes,replies,target_changed))
+        Ok::<_,String>((changes,replies.total,target_changed))
     };
     let (scan,observations)=tokio::join!(scan,observe);
     let (changes,replies,target_changed)=observations?;
@@ -1758,6 +1756,9 @@ fn connection_worker(app: AppHandle) {
                             }
                         }
                         Err(error) => {
+                            // DISPLAY/PING may have succeeded before a failed
+                            // FRAME. Keep that USB evidence for support checks.
+                            if let Ok(mut metrics) = app.state::<AppState>().link_metrics.lock() { *metrics = link.metrics.clone(); }
                             publish_connection(
                                 &app,
                                 ConnectionSnapshot {

@@ -85,6 +85,24 @@ pub struct Facts {
     pub connection_changes: usize,
     pub target_changed: bool,
 }
+#[derive(Default)]
+pub struct ReplyEvidence {
+    pub total: u64,
+    prior: Option<(Option<String>, u64, u64)>,
+}
+impl ReplyEvidence {
+    pub fn observe(&mut self, target: Option<&str>, board: Option<&str>, metrics: &crate::connection::LinkMetrics) {
+        if let Some((prior_board,count,at))=&self.prior {
+            if target.is_some_and(|id|board.is_some_and(|b|id.eq_ignore_ascii_case(b))) && prior_board.as_deref()==board {
+                let increment=metrics.command_acks.saturating_sub(*count);
+                // Reconnecting resets the link counter. A newer successful ACK
+                // still proves a fresh reply even if the new counter is smaller.
+                self.total+=if increment>0 {increment} else {u64::from(metrics.last_ack_at>*at)};
+            }
+        }
+        self.prior=Some((board.map(str::to_owned),metrics.command_acks,metrics.last_ack_at));
+    }
+}
 fn bounded(value: Option<&str>, limit: usize) -> Option<String> {
     value
         .filter(|v| {
@@ -449,5 +467,16 @@ mod tests {
         let r = build("test".into(), Symptom::Other, &c, &snapshot(), facts());
         assert!(r.checks.iter().any(|c| c.code == "DF-LINK-02"));
         assert!(!r.can_reinstall);
+    }
+    #[test]
+    fn fresh_replies_survive_counter_resets_without_counting_other_boards() {
+        let mut evidence=ReplyEvidence::default();
+        let mut metrics=crate::connection::LinkMetrics {command_acks:10,last_ack_at:100,..Default::default()};
+        evidence.observe(Some("ABC"),Some("ABC"),&metrics);
+        metrics.command_acks=12;evidence.observe(Some("ABC"),Some("ABC"),&metrics);assert_eq!(evidence.total,2);
+        metrics.command_acks=1;metrics.last_ack_at=101;evidence.observe(Some("ABC"),Some("ABC"),&metrics);assert_eq!(evidence.total,3);
+        evidence.observe(Some("ABC"),Some("ABC"),&metrics);assert_eq!(evidence.total,3);
+        metrics.command_acks=20;metrics.last_ack_at=102;evidence.observe(Some("ABC"),Some("OTHER"),&metrics);assert_eq!(evidence.total,3);
+        evidence.observe(None,Some("OTHER"),&metrics);assert_eq!(evidence.total,3);
     }
 }
