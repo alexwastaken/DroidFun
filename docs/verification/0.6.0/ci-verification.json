@@ -1,0 +1,62 @@
+{
+  "source": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+  "checkedAt": "2026-10-28T03:40:57.063042+00:00",
+  "runs": [
+    {
+      "id": 40626592307,
+      "platforms": [
+        "macOS-universal"
+      ],
+      "conclusion": "success",
+      "url": "https://github.com/alexwastaken/DroidFun/actions/runs/40626592307"
+    },
+    {
+      "id": 40626594859,
+      "platforms": [
+        "Windows-x64",
+        "Windows-ARM64",
+        "Linux-x86_64"
+      ],
+      "conclusion": "success",
+      "url": "https://github.com/alexwastaken/DroidFun/actions/runs/40626594859"
+    }
+  ],
+  "platforms": [
+    {
+      "platform": "Linux-x86_64",
+      "applicationCommit": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+      "tests": {
+        "passed": 121,
+        "failed": 0
+      }
+    },
+    {
+      "platform": "Windows-ARM64",
+      "applicationCommit": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+      "tests": {
+        "passed": 121,
+        "failed": 0
+      }
+    },
+    {
+      "platform": "Windows-x64",
+      "applicationCommit": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+      "tests": {
+        "passed": 121,
+        "failed": 0
+      }
+    },
+    {
+      "platform": "macOS-universal",
+      "applicationCommit": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+      "tests": {
+        "passed": 127,
+        "failed": 0
+      }
+    }
+  ],
+  "reviewManifest": "droidfun-app-0.6.0.json",
+  "releaseStillDraftWhenDownloaded": true,
+  "siteStaged": false,
+  "published": false
+}

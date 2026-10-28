@@ -1,0 +1,22 @@
+{
+  "source": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+  "checkedAt": "2026-10-28T03:44:10.120098+00:00",
+  "fromVersion": "0.5.5",
+  "toVersion": "0.6.0",
+  "workflow": [
+    "Check for updates",
+    "Download update",
+    "Restart to update"
+  ],
+  "publicFeedUsed": true,
+  "automaticRelaunchObserved": true,
+  "installedExecutableSha256": "00959c662e62c07b159a0f98e64807feb1cf4d4f9645072ca6d11a891ef96252",
+  "matchesPublishedUniversalExecutable": true,
+  "strictCodeSignatureVerified": true,
+  "settingsSha256Before": "3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05",
+  "settingsSha256After": "3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05",
+  "settingsUnchanged": true,
+  "followupUpdateCheck": "up_to_date",
+  "physicalUsbChecked": false,
+  "physicalPowerCycleChecked": false
+}

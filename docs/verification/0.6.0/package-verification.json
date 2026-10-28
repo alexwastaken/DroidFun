@@ -1,0 +1,105 @@
+{
+  "version": "0.6.0",
+  "source": "a5593ec9e68696e9e43dac1cb51c3c85361ed8f0",
+  "verifiedAt": "2026-10-28T03:42:11.526Z",
+  "platforms": [
+    {
+      "platform": "Linux-x86_64",
+      "tests": {
+        "passed": 121,
+        "failed": 0
+      },
+      "hashesVerified": true,
+      "updaterVerified": false,
+      "nativeInstallCheck": "passed",
+      "assets": [
+        {
+          "name": "DroidFun-App-0.6.0-Linux-x86_64.deb",
+          "bytes": 8321816,
+          "sha256": "0feff02694e05243f3fd2473840a073e2a8695c9a15caac0bd87cc205f094e7d"
+        },
+        {
+          "name": "DroidFun-App-0.6.0-Linux-x86_64.rpm",
+          "bytes": 8321780,
+          "sha256": "adc1f0b1b9ab3d90a1817f43f16908df675ee9834f3196c4a6ea007dfdb0f768"
+        }
+      ]
+    },
+    {
+      "platform": "Windows-ARM64",
+      "tests": {
+        "passed": 121,
+        "failed": 0
+      },
+      "hashesVerified": true,
+      "updaterVerified": true,
+      "nativeInstallCheck": "passed",
+      "assets": [
+        {
+          "name": "DroidFun-App-0.6.0-Windows-ARM64-setup.exe",
+          "bytes": 4134543,
+          "sha256": "94749c7ef13250c3814d3e6099c9e8bfe747ab3ff5bc8e7c58736a04c12b4e35"
+        },
+        {
+          "name": "DroidFun-App-0.6.0-Windows-ARM64-setup.exe.sig",
+          "bytes": 444,
+          "sha256": "e010c5fed7097ea0702f23a9d3ccd12f992c34406467d909783059054ada89f3"
+        }
+      ]
+    },
+    {
+      "platform": "Windows-x64",
+      "tests": {
+        "passed": 121,
+        "failed": 0
+      },
+      "hashesVerified": true,
+      "updaterVerified": true,
+      "nativeInstallCheck": "passed",
+      "assets": [
+        {
+          "name": "DroidFun-App-0.6.0-Windows-x64-setup.exe",
+          "bytes": 4616333,
+          "sha256": "af3b4c47f98ebb56fde0809abddfa75943647e9af123d1cfb5dea7ac123ec5f9"
+        },
+        {
+          "name": "DroidFun-App-0.6.0-Windows-x64-setup.exe.sig",
+          "bytes": 444,
+          "sha256": "32796ba0c11613443a35b11e8d49f9165f7a7459b8a9f46f7f0b3a20f64084a9"
+        }
+      ]
+    },
+    {
+      "platform": "macOS-universal",
+      "tests": {
+        "passed": 127,
+        "failed": 0
+      },
+      "hashesVerified": true,
+      "updaterVerified": true,
+      "nativeInstallCheck": null,
+      "assets": [
+        {
+          "name": "DroidFun-App-0.6.0-macOS-universal.dmg",
+          "bytes": 19048093,
+          "sha256": "c268d4c63efc90b5cf4894351b9a25b2a49080549e92fb793c7a0e9e933e58d1"
+        },
+        {
+          "name": "DroidFun-App-0.6.0-macOS-universal.zip",
+          "bytes": 19039855,
+          "sha256": "966e3c443fdbefab6bd4f19a0c75d1acc5f274f64b7f88e379d6ad491545aafe"
+        },
+        {
+          "name": "DroidFun-App-0.6.0-macOS-universal.app.tar.gz",
+          "bytes": 19428683,
+          "sha256": "aaa7ded6c7cc0dab4fc9705422e4dbc1a5069b4a7f079ea16f5bda6236e7c35c"
+        },
+        {
+          "name": "DroidFun-App-0.6.0-macOS-universal.app.tar.gz.sig",
+          "bytes": 432,
+          "sha256": "b4b49830aeab16cf1e4637b877b0837d044d4db6f8a2c17a902391a732542a21"
+        }
+      ]
+    }
+  ]
+}

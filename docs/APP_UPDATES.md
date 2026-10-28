@@ -58,3 +58,16 @@ The physical board was absent during this upgrade check, so successful USB opera
 This establishes the Mac desktop upgrade and settings-preservation flow. It does not establish a Windows in-app upgrade, sustained physical USB stability, saved-playlist wall-power behavior, or Intel Mac/macOS 13/Fedora runtime acceptance. Updater signatures are separate from platform trust: the Mac app remains ad-hoc signed without Developer ID notarization, and Windows installers lack platform code signing. Consumers still need hardware that has passed readable-screen and power-cycle acceptance.
 
 For a protected Mac installation, the pinned updater uses a graphical administrator authorization prompt after a permission-denied replacement; canceling or failing authorization returns an error and DroidFun does not restart. That path was reviewed in the updater source, but the recorded upgrade used a writable test bundle and did not exercise administrator authorization.
+
+## Recorded 0.6.0 acceptance
+
+The [public 0.6.0 release](https://github.com/alexwastaken/DroidFun/releases/tag/v0.6.0) was built from `a5593ec9e68696e9e43dac1cb51c3c85361ed8f0`. [Mac CI](https://github.com/alexwastaken/DroidFun/actions/runs/40626592307) passed 127 native tests; [Windows/Linux CI](https://github.com/alexwastaken/DroidFun/actions/runs/40626594859) passed 121 per target. Package hashes and Mac/Windows updater signatures were independently verified for the exact version and bytes. Windows/Linux installed-package smoke checks passed. The 18 customer UI browser fixtures included update progress surviving closed Settings, settings applied before restart when edited, and offline mode blocking update checks.
+
+On October 27, 2026, an installed, user-owned Mac app completed a real **0.5.5 → 0.6.0** upgrade using its in-app **Check → Download → Restart** controls against the published feed. The updated process restarted automatically before any manual launch. A follow-up check used Settings → App in 0.6.0. The [acceptance record](verification/0.6.0/mac-app-upgrade.json) confirms:
+
+- The installed executable matched the verified universal archive: SHA-256 `00959c662e62c07b159a0f98e64807feb1cf4d4f9645072ca6d11a891ef96252`.
+- Strict ad-hoc code-signature verification passed.
+- The saved settings file was unchanged: SHA-256 `3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05` before and after.
+- A follow-up manual update check reported the app up to date.
+
+This confirms the Mac desktop update and settings-preservation flow. No physical droid was available, so USB reconnection, real-device model recognition, screen visibility, power cycling, wall-power saved screens and sleep/wake behavior were not verified by this upgrade. Windows in-app upgrade acceptance remains separate from successful installer smoke checks and updater-signature verification. Mac packages remain ad-hoc signed without Developer ID notarization, and Windows installers lack platform code signing.
