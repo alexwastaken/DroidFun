@@ -5,12 +5,13 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
+pub const SETTINGS_VERSION: u8 = 3;
 pub const WIDTH: usize = 128;
 pub const HEIGHT: usize = 64;
 pub const FRAME_BYTES: usize = WIDTH * HEIGHT / 8;
 
 const WIDGET_KINDS: &[&str] = &[
-    "face", "text", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu",
+    "face", "text", "image", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting", "cpu",
     "memory",
 ];
 
@@ -98,6 +99,9 @@ pub struct SourceConfig {
     pub text_align: String,
     pub text_valign: String,
     pub text_border: bool,
+    pub text_motion: String,
+    pub scroll_speed: String,
+    pub image_pixels: String,
     pub display_invert: bool,
     pub display_companion: bool,
     pub display_layout: String,
@@ -145,6 +149,9 @@ impl Default for SourceConfig {
             text_align: "center".into(),
             text_valign: "center".into(),
             text_border: false,
+            text_motion: "static".into(),
+            scroll_speed: "normal".into(),
+            image_pixels: String::new(),
             display_invert: false,
             display_companion: true,
             display_layout: "classic".into(),
@@ -161,8 +168,14 @@ impl SourceConfig {
         {
             return Err("Choose a valid text size, alignment, and screen layout".into());
         }
+        if !["static", "scroll"].contains(&self.text_motion.as_str()) || !["slow", "normal", "fast"].contains(&self.scroll_speed.as_str()) {
+            return Err("Choose stationary or scrolling text and a valid speed".into());
+        }
+        if self.image_pixels.len() > FRAME_BYTES * 2 || (!self.image_pixels.is_empty() && (self.image_pixels.len() != FRAME_BYTES * 2 || !self.image_pixels.bytes().all(|b| b.is_ascii_hexdigit()))) {
+            return Err("Choose a valid 128 × 64 image".into());
+        }
         if kind == "text" {
-            text_lines(self)?;
+            if self.text_motion == "scroll" { validate_marquee(self)?; } else { text_lines(self)?; }
         }
         if crate::local_widgets::local(kind) && self.mode != "live" {
             return Err("Local widgets use the computer's actual time and readings".into());
@@ -389,7 +402,7 @@ impl Default for Settings {
             config: SourceConfig::default(),
         };
         Self {
-            version: 2,
+            version: SETTINGS_VERSION,
             droids: Vec::new(),
             brightness: 85,
             selected_device_serial: None,
@@ -440,7 +453,7 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(&self) -> Result<(), String> {
-        if self.version != 2 || self.widgets.is_empty() || self.widgets.len() > 30 {
+        if self.version != SETTINGS_VERSION || self.widgets.is_empty() || self.widgets.len() > 30 {
             return Err("Unsupported settings version or playlist size".into());
         }
         crate::droids::validate(&self.droids)?;
@@ -458,6 +471,7 @@ impl Settings {
         let mut ids = std::collections::HashSet::new();
         for widget in &self.widgets {
             widget.config.validate(&widget.kind)?;
+            if widget.kind == "image" && widget.enabled && widget.config.image_pixels.is_empty() { return Err("Upload an image before enabling this screen".into()); }
             if widget.id.is_empty()
                 || widget.id.len() > 128
                 || !ids.insert(&widget.id)
@@ -528,6 +542,7 @@ pub struct Engine {
     quiet_active: bool,
     quiet_override_until: u64,
     phase_ms: u64,
+    scroll_epoch_ms: u64,
     reduced_motion: bool,
     local_second: u64,
 }
@@ -566,6 +581,7 @@ impl Engine {
             quiet_active: false,
             quiet_override_until: 0,
             phase_ms: 0,
+            scroll_epoch_ms: 0,
             reduced_motion: false,
             local_second: 0,
         }
@@ -596,7 +612,7 @@ impl Engine {
             && !(self.settings.preferences.offline_mode
                 && remote_kind(&w.kind)
                 && w.config.mode == "live")
-            && (matches!(w.kind.as_str(), "face" | "text")
+            && (matches!(w.kind.as_str(), "face" | "text" | "image")
                 || crate::local_widgets::dynamic(&w.kind)
                 || w.config.mode == "demo"
                 || self.data.get(&w.id).is_some_and(|d| d.usable(unix_now())))
@@ -712,8 +728,9 @@ impl Engine {
             return vec![0; FRAME_BYTES];
         }
         if w.kind == "text" {
-            return render_text(&w.config).unwrap_or_else(|_| vec![0; FRAME_BYTES]);
+            return if w.config.text_motion == "scroll" { render_marquee(&w.config, if id == self.current_id { self.phase_ms.wrapping_sub(self.scroll_epoch_ms) } else { self.phase_ms }, self.reduced_motion) } else { render_text(&w.config) }.unwrap_or_else(|_| vec![0; FRAME_BYTES]);
         }
+        if w.kind == "image" { return render_image(&w.config); }
         let mut local_values = serde_json::Value::Null;
         if crate::local_widgets::dynamic(&w.kind) {
             let d = crate::local_widgets::dynamic_card(&w, unix_now());
@@ -806,6 +823,13 @@ impl Engine {
                 config.timer_elapsed = 0;
             }
         }
+        if w.kind == "text" && config.text_motion == "scroll" && (w.config.text_motion != config.text_motion || w.config.custom_text != config.custom_text || w.config.text_size != config.text_size || w.config.scroll_speed != config.scroll_speed) {
+            let speed: usize = match config.scroll_speed.as_str() { "slow" => 24, "fast" => 72, _ => 40 };
+            let pass = (WIDTH + config.custom_text.len() * 8 * config.text_size as usize + 24).div_ceil(speed).clamp(3, 120) as u16;
+            w.duration_sec = w.duration_sec.max(pass);
+            if self.current_id == id { self.remaining_ms = w.duration_sec as u64 * 1000; self.scroll_epoch_ms = self.phase_ms; }
+        }
+        if w.kind == "image" && w.config.image_pixels.is_empty() && !config.image_pixels.is_empty() { w.enabled = true; }
         w.label = label.trim().into();
         w.config = config;
         let local_card = crate::local_widgets::dynamic(&w.kind)
@@ -822,7 +846,7 @@ impl Engine {
     pub fn add_widget(&mut self, kind: &str) -> Result<(), String> {
         self.ensure_kind_allowed(kind)?;
         if ![
-            "face", "text", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting",
+            "face", "text", "image", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting",
             "cpu", "memory",
         ]
         .contains(&kind)
@@ -846,6 +870,7 @@ impl Engine {
                 kind: kind.into(),
                 label: match kind {
                     "text" => "Custom text",
+                    "image" => "Uploaded image",
                     "clock" => "Clock",
                     "pomodoro" => "Pomodoro",
                     "meeting" => "Meeting",
@@ -948,9 +973,11 @@ impl Engine {
 
     fn advance_to_next(&mut self) {
         if let Some((id, duration)) = self.next_eligible().map(|w| (w.id.clone(), w.duration_sec)) {
+            self.scroll_epoch_ms = self.phase_ms;
             self.current_id = id;
             self.remaining_ms = duration as u64 * 1000;
         } else {
+            self.scroll_epoch_ms = self.phase_ms;
             self.current_id = "face".into();
             self.remaining_ms = 12_000;
         }
@@ -984,11 +1011,13 @@ impl Engine {
                 .unwrap_or(12000);
         }
         let prior_animation = self.current_animation_state();
+        let prior_scroll = self.phase_ms / 50;
         let elapsed = now.saturating_duration_since(self.last_tick).as_millis() as u64;
         // Keep fractional milliseconds so frequent render ticks do not slow timers.
         self.last_tick += std::time::Duration::from_millis(elapsed);
         if elapsed > 60000 {
             self.phase_ms = 0;
+            self.scroll_epoch_ms = 0;
         } else if !self.host_display_asleep
             && !self.quiet_active
             && self.display_on
@@ -996,7 +1025,7 @@ impl Engine {
         {
             self.phase_ms = self.phase_ms.wrapping_add(elapsed);
         }
-        let animation_changed = prior_animation != self.current_animation_state();
+        let animation_changed = prior_animation != self.current_animation_state() || (!self.reduced_motion && prior_scroll != self.phase_ms / 50 && self.current_widget().is_some_and(|w| w.kind == "text" && w.config.text_motion == "scroll"));
         if self.quiet_active || self.host_display_asleep {
             return policy_changed || local_changed;
         }
@@ -1009,6 +1038,7 @@ impl Engine {
         // A suspended computer should resume at a full dwell, not replay hours of transitions.
         if elapsed > 60_000 {
             if let Some(saved) = self.temporary.take() {
+                self.scroll_epoch_ms = self.phase_ms;
                 self.current_id = saved.saved_id;
                 self.playback = saved.saved_playback;
             }
@@ -1026,6 +1056,7 @@ impl Engine {
         while left >= self.remaining_ms && self.remaining_ms > 0 {
             left -= self.remaining_ms;
             if let Some(saved) = self.temporary.take() {
+                self.scroll_epoch_ms = self.phase_ms;
                 self.current_id = saved.saved_id;
                 self.remaining_ms = saved.saved_remaining_ms;
                 self.playback = saved.saved_playback;
@@ -1117,6 +1148,7 @@ impl Engine {
             .iter_mut()
             .find(|w| w.id == id)
             .ok_or("Widget not found")?;
+        if enabled && widget.kind == "image" && widget.config.image_pixels.is_empty() { return Err("Upload an image before enabling this screen".into()); }
         widget.enabled = enabled;
         if !self.enabled(&self.current_id) {
             self.temporary = None;
@@ -1279,6 +1311,7 @@ impl Engine {
             return Err("Enable the widget before pinning it".into());
         }
         self.temporary = None;
+        self.scroll_epoch_ms = self.phase_ms;
         self.current_id = id.into();
         self.remaining_ms = self.current_widget().unwrap().duration_sec as u64 * 1000;
         self.playback = Playback::Pinned;
@@ -1296,6 +1329,7 @@ impl Engine {
                 saved_playback: self.playback,
             });
         }
+        self.scroll_epoch_ms = self.phase_ms;
         self.current_id = id.into();
         self.remaining_ms = self.current_widget().unwrap().duration_sec as u64 * 1000;
         self.playback = Playback::Running;
@@ -1308,6 +1342,7 @@ impl Engine {
             return;
         }
         self.temporary = None;
+        self.scroll_epoch_ms = self.phase_ms;
         self.current_id = "face".into();
         self.remaining_ms = self
             .current_widget()
@@ -1450,11 +1485,54 @@ fn text_lines(config: &SourceConfig) -> Result<Vec<String>, String> {
     }
     if lines.len() > rows {
         return Err(format!(
-            "This text needs {} lines, but this size and border fit {rows}. Use smaller text, fewer words, or remove the border.",
+            "This text needs {} lines, but this size and border fit {rows}. Use smaller text, fewer words, remove the border, or choose scrolling.",
             lines.len()
         ));
     }
     Ok(lines)
+}
+
+fn validate_marquee(config: &SourceConfig) -> Result<(), String> {
+    if config.custom_text.trim().is_empty() || config.custom_text.len() > 256 || !config.custom_text.bytes().all(|b| b == b'\n' || (32..=126).contains(&b)) {
+        return Err("Use 1–256 English letters, numbers, punctuation, spaces or line breaks for scrolling text".into());
+    }
+    Ok(())
+}
+
+fn render_image(config: &SourceConfig) -> Vec<u8> {
+    let bytes = config.image_pixels.as_bytes();
+    if bytes.len() != FRAME_BYTES * 2 || !bytes.iter().all(|b| b.is_ascii_hexdigit()) { return vec![0; FRAME_BYTES]; }
+    let nibble = |b: u8| if b.is_ascii_digit() { b - b'0' } else { b.to_ascii_lowercase() - b'a' + 10 };
+    invert_frame(bytes.chunks_exact(2).map(|pair| (nibble(pair[0]) << 4) | nibble(pair[1])).collect(), config.display_invert)
+}
+
+fn render_marquee(config: &SourceConfig, phase_ms: u64, reduced: bool) -> Result<Vec<u8>, String> {
+    validate_marquee(config)?;
+    let mut f = Frame::new();
+    let scale = config.text_size as i32;
+    let margin = if config.text_border { 4 } else { 0 };
+    let text = config.custom_text.replace('\n', " ");
+    let text_width = text.len() as i32 * 8 * scale;
+    let span = WIDTH as i32 - margin * 2;
+    let speed = match config.scroll_speed.as_str() { "slow" => 24, "fast" => 72, _ => 40 };
+    let offset = if reduced { span } else { ((phase_ms / 50 * speed / 20) % (span + text_width + 24) as u64) as i32 };
+    let x = WIDTH as i32 - margin - offset;
+    let y = match config.text_valign.as_str() { "top" => margin, "bottom" => HEIGHT as i32 - margin - 8 * scale, _ => (HEIGHT as i32 - 8 * scale) / 2 };
+    for (column, ch) in text.chars().enumerate() {
+        let left = x + column as i32 * 8 * scale;
+        if left + 8 * scale <= margin || left >= WIDTH as i32 - margin { continue; }
+        if let Some(glyph) = BASIC_FONTS.get(ch) {
+            for (gy, bits) in glyph.iter().enumerate() { for gx in 0..8 { if bits & (1 << gx) != 0 { for dy in 0..scale { for dx in 0..scale {
+                let px = left + gx * scale + dx;
+                if px >= margin && px < WIDTH as i32 - margin { f.pixel(px, y + gy as i32 * scale + dy); }
+            }}}}}
+        }
+    }
+    if config.text_border {
+        for x in 0..WIDTH as i32 { f.pixel(x, 0); f.pixel(x, HEIGHT as i32 - 1); }
+        for y in 0..HEIGHT as i32 { f.pixel(0, y); f.pixel(WIDTH as i32 - 1, y); }
+    }
+    Ok(invert_frame(f.bytes, config.display_invert))
 }
 
 fn invert_frame(mut frame: Vec<u8>, invert: bool) -> Vec<u8> {
@@ -1844,6 +1922,39 @@ pub fn render(widget: Option<&Widget>, display_on: bool) -> Vec<u8> {
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn marquee_moves_repeats_and_keeps_case_border_and_inversion() {
+        let mut c = SourceConfig { custom_text: "Sale today!".into(), text_motion: "scroll".into(), ..Default::default() };
+        assert!(c.validate("text").is_ok());
+        let start=render_marquee(&c,0,false).unwrap();assert!(start.iter().all(|b|*b==0));
+        let moved=render_marquee(&c,1000,false).unwrap();assert!(moved.iter().any(|b|*b!=0));assert_ne!(moved,render_marquee(&c,2000,false).unwrap());
+        c.custom_text="SALE TODAY!".into();assert_ne!(moved,render_marquee(&c,1000,false).unwrap());
+        c.text_border=true;let bordered=render_marquee(&c,1000,false).unwrap();for x in 0..WIDTH {assert_ne!(bordered[x]&1,0);assert_ne!(bordered[7*WIDTH+x]&128,0);}
+        c.display_invert=true;assert_eq!(render_marquee(&c,1000,false).unwrap(),bordered.iter().map(|b|!*b).collect::<Vec<_>>());
+        c.custom_text="X".repeat(256);assert!(c.validate("text").is_ok());c.custom_text.push('X');assert!(c.validate("text").is_err());
+    }
+    #[test]
+    fn marquee_starts_on_selection_pauses_and_honors_reduced_motion() {
+        let now=Instant::now();let mut settings=Settings::default();settings.preferences.bot_model="nimbus".into();let mut e=Engine::new(settings,now);e.add_widget("text").unwrap();
+        let id=e.settings.widgets.last().unwrap().id.clone();let mut c=e.settings.widgets.last().unwrap().config.clone();c.custom_text="Hello from Nimbus".into();c.text_motion="scroll".into();
+        e.configure_source(&id,"My sign".into(),c).unwrap();assert!(e.settings.widgets.last().unwrap().duration_sec>=8);
+        e.phase_ms=50000;e.pin(&id).unwrap();let first=e.snapshot().frame;assert!(first.iter().all(|b|*b==0));
+        assert!(e.tick_at(now+std::time::Duration::from_secs(1),1000,600));let moved=e.snapshot().frame;assert_ne!(first,moved);
+        e.playback=Playback::Paused;e.tick_at(now+std::time::Duration::from_secs(2),1001,600);assert_eq!(moved,e.snapshot().frame);
+        e.reduced_motion=true;let still=e.snapshot().frame;assert!(still.iter().any(|b|*b!=0));e.phase_ms+=5000;assert_eq!(still,e.snapshot().frame);
+    }
+    #[test]
+    fn image_pixels_are_bounded_exact_and_work_offline_only_for_general_droids() {
+        let pixels=format!("80{}","00".repeat(FRAME_BYTES-1));
+        for model in ["nimbus","boo","meep"] {
+            let mut settings=Settings::default();settings.preferences.bot_model=model.into();settings.preferences.offline_mode=true;let mut e=Engine::new(settings,Instant::now());e.add_widget("image").unwrap();let id=e.settings.widgets.last().unwrap().id.clone();assert!(e.set_enabled(&id,true).is_err());
+            let mut c=e.settings.widgets.last().unwrap().config.clone();c.image_pixels=pixels.clone();e.configure_source(&id,"My logo".into(),c.clone()).unwrap();assert!(e.enabled(&id));e.pin(&id).unwrap();let frame=e.snapshot().frame;assert_eq!(frame[0],128);assert!(frame[1..].iter().all(|b|*b==0));
+            c.display_invert=true;assert_eq!(render_image(&c),frame.iter().map(|b|!*b).collect::<Vec<_>>());
+        }
+        let mut settings=Settings::default();settings.preferences.bot_model="claw".into();let mut e=Engine::new(settings,Instant::now());assert!(e.add_widget("image").is_err());assert!(e.add_widget("text").is_err());
+        for bad in ["ff".repeat(1023),"zz".repeat(1024),"ff".repeat(1025)] { let c=SourceConfig{image_pixels:bad,..Default::default()};assert!(c.validate("image").is_err()); }
+    }
 
     #[test]
     fn fresh_bot_profiles_start_with_visible_ready_screens() {

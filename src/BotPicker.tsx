@@ -7,7 +7,7 @@ export const botModels = [
   { id: "claw", name: "Claw Bot", summary: "Your AI usage, at a glance.", detail: "Dedicated Claude and Codex allowance screens.", face: "claw" },
   { id: "meep", name: "Meep Bot", summary: "Make your desk a little more you.", detail: "Custom text, faces, clocks, weather, stocks and more.", face: "meep" },
 ];
-const generalOptions = [["text", "Custom text"], ["face", "Face"], ["clock", "Clock"], ["pomodoro", "Focus timer"], ["meeting", "Meeting countdown"], ["cpu", "Computer CPU"], ["memory", "Computer memory"], ["weather", "Weather"], ["stock", "Stocks"]];
+const generalOptions = [["text", "Custom text"], ["image", "Upload an image"], ["face", "Face"], ["clock", "Clock"], ["pomodoro", "Focus timer"], ["meeting", "Meeting countdown"], ["cpu", "Computer CPU"], ["memory", "Computer memory"], ["weather", "Weather"], ["stock", "Stocks"]];
 const usageOptions = [["codex", "Codex allowance"], ["claude", "Claude allowance"]];
 export const botName = (model: string) => botModels.find(bot => bot.id === model)?.name ?? "";
 export const widgetOptions = (model: string) => model === "claw" ? usageOptions : generalOptions;

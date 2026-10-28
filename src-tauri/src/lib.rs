@@ -304,17 +304,18 @@ fn standalone_playlist(engine: &Engine) -> Result<protocol::StandalonePlaylist, 
         .iter()
         .filter(|w| {
             w.enabled
-                && ["face", "text"].contains(&w.kind.as_str())
+                && ["face", "text", "image"].contains(&w.kind.as_str())
+                && (w.kind != "text" || w.config.text_motion != "scroll")
                 && core::kind_allowed(&engine.settings.preferences.bot_model, &w.kind)
         })
         .collect();
     if widgets.is_empty() {
         return Err(
-            "Enable at least one face or custom text screen before saving to your bot.".into(),
+            "Enable at least one face, still text or image screen before saving to your bot.".into(),
         );
     }
     if widgets.len() > 30 {
-        return Err("A bot can save up to 30 face or custom text screens.".into());
+        return Err("A bot can save up to 30 faces, still text screens or images.".into());
     }
     // Save the intended expression, never an incidental blink or motion pose.
     let mut static_engine = engine.clone();
@@ -2009,6 +2010,14 @@ pub fn run() {
 #[cfg(test)]
 mod usb_restart_tests {
     use super::*;
+    #[test]
+    fn wall_power_saves_uploaded_images_but_does_not_freeze_scrolling_text() {
+        let mut settings=Settings::default();settings.preferences.bot_model="meep".into();for w in &mut settings.widgets {w.enabled=false;}
+        let mut e=Engine::new(settings,Instant::now());e.add_widget("image").unwrap();let image=e.settings.widgets.last_mut().unwrap();image.enabled=true;image.config.image_pixels="a5".repeat(1024);let expected=vec![0xa5;1024];
+        e.add_widget("text").unwrap();e.settings.widgets.last_mut().unwrap().config.text_motion="scroll".into();
+        let playlist=standalone_playlist(&e).unwrap();assert_eq!(playlist.frames.len(),1);assert_eq!(playlist.frames[0].frame,expected);assert!(playlist.encode().is_ok());
+    }
+
     #[test]
     fn customer_recovery_requires_matching_recent_verified_board() {
         let now = Instant::now();
