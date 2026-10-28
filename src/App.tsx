@@ -3,11 +3,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 import SettingsPanel, { type Preferences } from "./Settings";
-import BotPicker, { botName, botModels, widgetOptions, widgetAllowed } from "./BotPicker";
+import BotPicker, { botName, widgetOptions, widgetAllowed } from "./BotPicker";
 import Oled from "./Oled";
-import BotPreview, { BotAvatar } from "./BotPreview";
+import BotPreview from "./BotPreview";
 import BotConnection, { type Connection, type RobotPort, type SetupDrive, type DisplayTestReport, type DroidProfile } from "./BotConnection";
 import { AppUpdateLink, useAppUpdates } from "./AppUpdates";
+import DroidModel from "./DroidModel";
 
 type Playback = "running" | "paused" | "pinned";
 import SourceEditor, { type Widget, type SourceConfig } from "./SourceEditor";
@@ -248,7 +249,7 @@ export default function App() {
   if (choosingBot) return <><BotPicker footer={updateLink} current={model} busy={busy} error={error} onCancel={() => setChoosingBot(false)} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />{settingsPanel}</>;
   if (!botName(model)) return <main className="app-shell welcome-shell">
     <header className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><button className="header-settings" onClick={() => openSettings("App")}>Settings</button></header>
-    <section className="intro welcome-intro"><div className="welcome-droids" aria-hidden="true">{botModels.map(bot => <BotAvatar key={bot.id} model={bot.id}/>)}</div><div className="eyebrow">WELCOME HOME</div><h1>A little droid.<br/><em>A desk that feels like you.</em></h1><p>Plug your droid into this computer. We’ll find it and get its screens ready.</p></section>
+    <section className="intro welcome-intro"><DroidModel model={connection?.identity?.model ?? "nimbus"}/><div className="eyebrow">WELCOME HOME</div><h1>A little droid.<br/><em>A desk that feels like you.</em></h1><p>Plug your droid into this computer. We’ll find it and get its screens ready.</p></section>
     <ol className="welcome-steps" aria-label="Getting started"><li><span>1</span><div><strong>Plug in</strong><small>Use a USB data cable</small></div></li><li><span>2</span><div><strong>Meet your droid</strong><small>We’ll recognize it for you</small></div></li><li><span>3</span><div><strong>Make it yours</strong><small>Choose what’s on screen</small></div></li></ol>
     {connectionPanel}
     <div className="welcome-explore"><p>Just taking a look?</p><button className="text-action" disabled={busy || installing} onClick={() => setChoosingBot(true)}>Explore screens without a droid →</button></div>
@@ -278,7 +279,7 @@ export default function App() {
 
   return <main className="app-shell">
     <header className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><button className="header-settings" onClick={() => openSettings()}>Settings</button></header>
-    <section className="intro home-intro"><div><div className="eyebrow">YOUR DESK COMPANION</div><h1>{(state.settings.droids ?? []).find(d => d.serial === state.settings.selectedDeviceSerial)?.name || botName(model)}</h1><p>{model === "claw" ? "Your Claude and Codex usage, at a glance." : "A favorite face. A useful update. A little more you."}</p></div><BotAvatar model={model}/></section>
+    <section className="intro home-intro"><div><div className="eyebrow">YOUR DESK COMPANION</div><h1>{(state.settings.droids ?? []).find(d => d.serial === state.settings.selectedDeviceSerial)?.name || botName(model)}</h1><p>{model === "claw" ? "Your Claude and Codex usage, at a glance." : "A favorite face. A useful update. A little more you."}</p></div><DroidModel model={model}/></section>
     {connectionPanel}
     {offline && <div className="offline-banner"><span>Online data is paused. Local screens still work over USB.</span><button className="text-action" disabled={busy} onClick={() => act("set_offline_mode", { offline: false })}>Resume online data</button></div>}
     <section className="screen-studio" aria-label="Your droid screen">

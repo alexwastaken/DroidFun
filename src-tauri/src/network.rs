@@ -57,10 +57,10 @@ impl Policy {
                 "Offline mode is on. Turn it off to use online data or connect an account.".into(),
             );
         }
-        if state.bot_model.is_empty() {
+        if kind != "droid_setup" && state.bot_model.is_empty() {
             return Err("Choose your bot before connecting an online source.".into());
         }
-        if !crate::core::kind_allowed(&state.bot_model, kind) {
+        if kind != "droid_setup" && !crate::core::kind_allowed(&state.bot_model, kind) {
             return Err("This source is not available for the selected bot.".into());
         }
         Ok(Ticket {

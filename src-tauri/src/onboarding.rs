@@ -91,6 +91,20 @@ pub fn adopt(engine: &mut Engine, status: &ConnectionSnapshot) -> Result<(), Str
     engine.select_droid(Some(serial), Some(&identity.model))
 }
 
+/// Registry hints select a local profile, never fabricate firmware identity or
+/// authorization. A saved profile or the board's own identity always wins.
+pub fn adopt_hint(engine: &mut Engine, status: &ConnectionSnapshot, model: &str) -> Result<(), String> {
+    if engine.settings.preferences.offline_mode || engine.settings.selected_device_serial.is_some()
+        || status.identity.is_some() || !FACTORY_MODELS.contains(&model)
+        || !["connected", "display_error"].contains(&status.state.as_str()) {
+        return Err("Choose this droid's model once to connect it.".into());
+    }
+    let serial = status.board_id.as_deref().filter(|id| crate::droid_registry::valid_id(id)).ok_or("Invalid droid ID")?;
+    if engine.settings.droids.iter().any(|d| d.serial.eq_ignore_ascii_case(serial)) {
+        engine.select_droid(Some(serial),None)
+    } else { engine.select_droid(Some(serial),Some(model)) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,6 +124,29 @@ mod tests {
             assert_eq!(engine.settings.droids.len(), 1);
             assert_eq!(engine.settings.selected_device_serial.as_deref(), Some("BOARD_A"));
         }
+    }
+    #[test]
+    fn registry_hints_cannot_replace_factory_identity_or_saved_settings() {
+        let mut engine=Engine::new(Settings::default(),Instant::now());
+        let mut board=status("meep","0123456789ABCDEF");
+        assert!(adopt_hint(&mut engine,&board,"claw").is_err());
+        board.identity=None;
+        adopt_hint(&mut engine,&board,"meep").unwrap();
+        engine.settings.brightness=31;
+        engine.select_droid(None,None).unwrap();
+        adopt_hint(&mut engine,&board,"claw").unwrap();
+        assert_eq!(engine.settings.preferences.bot_model,"meep");
+        assert_eq!(engine.settings.brightness,31);
+        assert!(board.identity.is_none(),"a lookup is not factory identity");
+    }
+    #[test]
+    fn offline_or_unsupported_registry_hints_never_create_profiles() {
+        let mut engine=Engine::new(Settings::default(),Instant::now());
+        let mut board=status("boo","0123456789ABCDEF");board.identity=None;
+        assert!(adopt_hint(&mut engine,&board,"other").is_err());
+        engine.settings.preferences.offline_mode=true;
+        assert!(adopt_hint(&mut engine,&board,"boo").is_err());
+        assert!(engine.settings.droids.is_empty());
     }
     #[test]
     fn remembering_a_droid_preserves_edits_and_new_boards_are_isolated() {
