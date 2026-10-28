@@ -35,9 +35,9 @@
 
 .bot-preview__figure {
   position: relative;
-  width: 330px;
+  width: 280px;
   max-width: 100%;
-  height: 280px;
+  aspect-ratio: 330 / 280;
 }
 
 .bot-preview__housing {
@@ -84,39 +84,25 @@
 
 .bot-preview__screen {
   position: absolute;
-  display: grid;
-  place-items: center;
-  top: 93px;
+  display: block;
+  top: calc(111 / 280 * 100%);
   left: 50%;
   transform: translateX(-50%);
-  /* Oled measures this content box: 280 - 12 - 12 = 256 exact pixels. */
   box-sizing: border-box;
-  width: 280px;
-  max-width: calc(100% - 12px);
-  min-height: 152px;
-  padding: 12px;
-  border-radius: 19px;
+  width: calc(113 / 330 * 100%);
+  padding: 3px;
+  border-radius: 4px;
   background: #15222a;
-  box-shadow: 0 1px 0 #ffffff7a, inset 0 2px 4px #0008;
+  box-shadow: 0 1px 0 #ffffff7a, inset 0 1px 2px #0008;
 }
-
-.bot-preview--claw .bot-preview__screen {
-  top: 96px;
-  border-radius: 9px;
-  background: #302923;
-  box-shadow: 0 1px 0 #ffd49b, inset 0 2px 4px #0008;
-}
-
-.bot-preview--meep .bot-preview__screen {
-  top: 78px;
-  background: #1e322c;
-}
-
-.bot-preview__screen > .oled {
-  max-width: 100%;
-  margin: auto;
-  border-radius: 5px;
-}
+.bot-preview--claw .bot-preview__screen { top: calc(137 / 280 * 100%); width: calc(141 / 330 * 100%); background: #302923; }
+.bot-preview--meep .bot-preview__screen { top: calc(103 / 280 * 100%); width: calc(155 / 330 * 100%); background: #1e322c; }
+.bot-preview--nimbus .bot-preview__screen { top: calc(109 / 280 * 100%); width: calc(148 / 330 * 100%); background: #203641; }
+.bot-preview__screen > .oled { width: 100% !important; min-width: 0; max-width: 100%; margin: auto; border-radius: 1px; box-shadow: none; }
+.bot-preview__screen canvas { height: auto !important; aspect-ratio: 2; }
+.bot-preview__enlarge { border: 0; background: transparent; color: var(--ui-muted); font-size: 11px; padding: 7px 10px; text-decoration: underline; text-underline-offset: 3px; }
+.bot-preview__enlarged { width: 280px; max-width: 100%; padding: 12px; margin: 8px 0 12px; border-radius: 8px; background: #15222a; }
+.bot-preview__enlarged > .oled { max-width: 100%; }
 
 .bot-avatar {
   display: inline-block;
@@ -170,4 +156,3 @@ html[data-theme="dark"] .bot-preview__ground {
 }
 
 .bot-preview--nimbus,.bot-avatar--nimbus{--bot-preview-body:#e2f2f8;--bot-preview-edge:#84aebe;--bot-preview-limb:#c4e0ed;--bot-preview-joint:#80a6b8;--bot-preview-shine:#fff}
-.bot-preview--nimbus .bot-preview__screen{top:103px;background:#203641}

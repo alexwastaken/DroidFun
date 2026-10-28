@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import "./bot-preview.css";
 
 type BotModel = "boo" | "claw" | "meep" | "nimbus";
@@ -17,7 +17,8 @@ function botModel(model: string): BotModel {
 
 /** The housing is decorative; the real OLED canvas supplies its own accessible label. */
 function Housing({ model, miniature = false }: { model: BotModel; miniature?: boolean }) {
-  const screenY = model === "boo" ? 93 : model === "claw" ? 96 : model === "nimbus" ? 103 : 78;
+  // Match each enclosure's screen-to-body width, rather than a shared tablet-sized display.
+  const screen = {boo:{x:108.5,y:111,width:113},claw:{x:94.5,y:137,width:141},nimbus:{x:91,y:109,width:148},meep:{x:87.5,y:103,width:155}}[model];
   return <svg className="bot-preview__housing" viewBox="0 0 330 280" preserveAspectRatio="none" aria-hidden="true" focusable="false">
     <ellipse className="bot-preview__ground" cx="165" cy="274" rx={model === "boo" ? 125 : 105} ry="5" />
     {model === "boo" && <>
@@ -51,17 +52,17 @@ function Housing({ model, miniature = false }: { model: BotModel; miniature?: bo
       <rect className="bot-preview__body" x="14" y="43" width="302" height="211" rx="47" />
       <path className="bot-preview__shine" d="M35 84Q42 57 72 57H111" />
     </>}
-    {miniature && <>
-      <rect className="bot-preview__mini-screen" x="39" y={screenY + 8} width="252" height="128" rx={model === "claw" ? 7 : 19} />
+    {miniature && <g transform={`translate(${screen.x} ${screen.y}) scale(${screen.width / 252})`}>
+      <rect className="bot-preview__mini-screen" x="0" y="0" width="252" height="128" rx="5" />
       {model === "claw" ? <>
-        <rect className="bot-preview__mini-pixel" x="65" y={screenY + 35} width="112" height="12" rx="3" />
-        <rect className="bot-preview__mini-meter" x="65" y={screenY + 66} width="200" height="22" rx="4" />
-        <rect className="bot-preview__mini-pixel" x="65" y={screenY + 66} width="136" height="22" rx="4" />
+        <rect className="bot-preview__mini-pixel" x="26" y="27" width="112" height="12" rx="3" />
+        <rect className="bot-preview__mini-meter" x="26" y="58" width="200" height="22" rx="4" />
+        <rect className="bot-preview__mini-pixel" x="26" y="58" width="136" height="22" rx="4" />
       </> : <>
-        <rect className="bot-preview__mini-pixel" x="105" y={screenY + 41} width="26" height="48" rx="13" />
-        <rect className="bot-preview__mini-pixel" x="199" y={screenY + 41} width="26" height="48" rx="13" />
+        <rect className="bot-preview__mini-pixel" x="66" y="33" width="26" height="48" rx="13" />
+        <rect className="bot-preview__mini-pixel" x="160" y="33" width="26" height="48" rx="13" />
       </>}
-    </>}
+    </g>}
   </svg>;
 }
 
@@ -75,10 +76,13 @@ export function BotAvatar({ model }: BotProps) {
 
 export default function BotPreview({ model, children }: BotProps & { children: ReactNode }) {
   const selected = botModel(model);
+  const [enlarged, setEnlarged] = useState(false);
   return <section className={`bot-preview bot-preview--${selected}`} aria-label={`${names[selected]} screen preview`}>
     <div className="bot-preview__figure">
       <Housing model={selected} />
       <div className="bot-preview__screen">{children}</div>
     </div>
+    <button type="button" className="bot-preview__enlarge" aria-expanded={enlarged} onClick={() => setEnlarged(!enlarged)}>{enlarged ? "Close enlarged screen" : "Enlarge screen"}</button>
+    {enlarged && <div className="bot-preview__enlarged" aria-label="Enlarged screen preview">{children}</div>}
   </section>;
 }
