@@ -5,6 +5,7 @@ mod connection;
 mod core;
 mod display_test;
 mod droids;
+mod droid_registry;
 mod firmware_setup;
 mod host_display;
 pub mod linux_usb;
@@ -234,6 +235,7 @@ async fn select_robot(
         None
     };
     let mut chosen_model = bot_model;
+    let mut registry_ticket: Option<network::Ticket> = None;
     if let Some(ref value) = serial {
         let candidate = connection::robot_ports()?.into_iter()
             .find(|port| port.serial.eq_ignore_ascii_case(value))
@@ -245,15 +247,26 @@ async fn select_robot(
             let job = tauri::async_runtime::spawn_blocking(move || {
                 let _guard = guard;
                 let link = Link::connect(&candidate)?;
-                link.status.identity.map(|identity| identity.model)
-                    .ok_or_else(|| "Choose this droid’s model once so we can remember it.".to_string())
+                Ok::<_,String>(link.status)
             });
-            chosen_model = Some(tokio::time::timeout(Duration::from_secs(5), job).await
+            let status = tokio::time::timeout(Duration::from_secs(5), job).await
                 .map_err(|_| "Checking this droid took too long. Reconnect USB and try again.")?
-                .map_err(|_| "The droid check stopped. Try again.")??);
+                .map_err(|_| "The droid check stopped. Try again.")??;
+            chosen_model = status.identity.map(|identity| identity.model);
+            if chosen_model.is_none() {
+                if let Ok(ticket) = state.providers.request_ticket("droid_setup") {
+                    chosen_model = droid_registry::lookup(value,ticket.clone()).await.filter(|_|ticket.current());
+                    if chosen_model.is_some() { registry_ticket=Some(ticket); }
+                }
+            }
+            if chosen_model.is_none() { return Err("Choose this droid’s model once so we can remember it.".into()); }
+            if !connection::robot_ports()?.iter().any(|p|p.serial.eq_ignore_ascii_case(value)) { return Err("Reconnect your droid and try again.".into()); }
         }
     }
     let snapshot = mutate(&app, state, true, |engine| {
+        if registry_ticket.as_ref().is_some_and(|ticket| !ticket.current() || engine.settings.preferences.offline_mode) {
+            return Err("Online lookup was paused. Choose the model once or check the connection again.".into());
+        }
         engine.select_droid(serial.as_deref(), chosen_model.as_deref())
     })?;
     publish_connection(&app, ConnectionSnapshot {
@@ -1478,7 +1491,21 @@ fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
             probes.record_success(&candidate.serial);
             let mut status = link.status.clone();
             drop(link);
-            match mutate(app, app.state::<AppState>(), true, |engine| onboarding::adopt(engine, &status)) {
+            drop(_guard);
+            let first = mutate(app, app.state::<AppState>(), true, |engine| onboarding::adopt(engine, &status));
+            let result = if first.is_err() && status.identity.is_none() {
+                let state=app.state::<AppState>();
+                let ticket=state.providers.request_ticket("droid_setup");
+                if let Ok(ticket)=ticket {
+                    let hint=tauri::async_runtime::block_on(droid_registry::lookup(&candidate.serial,ticket.clone()));
+                    if let Some(model)=hint.filter(|_|ticket.current()) {
+                        if connection::robot_ports().is_ok_and(|ports|ports.iter().any(|p|p.serial.eq_ignore_ascii_case(&candidate.serial))) {
+                            mutate(app,app.state::<AppState>(),true,|engine|onboarding::adopt_hint(engine,&status,&model))
+                        } else { first }
+                    } else { first }
+                } else { first }
+            } else { first };
+            match result {
                 Ok(_) => { *cached = None; publish_connection(app, ConnectionSnapshot {state: "connecting".into(), detail: "Your droid was recognized. Connecting…".into(), ..status}); }
                 Err(error) => {
                     // HELLO is good even for older boards without a stored model.
