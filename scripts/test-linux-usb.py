@@ -129,6 +129,7 @@ def ui():
                 driver.js('document.querySelector(".header-settings").click();')
                 driver.wait('document.querySelector(".settings-tabs")')
                 driver.js('Array.from(document.querySelectorAll(".settings-tabs button")).find(b => b.textContent.trim() === "Droid").click();')
+                driver.wait('Array.from(document.querySelectorAll(".settings-editor button")).some(b => b.textContent.trim() === "Change model")')
                 driver.js('Array.from(document.querySelectorAll(".settings-editor button")).find(b => b.textContent.trim() === "Change model").click();')
         driver.wait('document.querySelectorAll(".bot-choice").length === 4 && !document.documentElement.hasAttribute("data-bot")')
         if capture_chooser: driver.capture('linux-bot-chooser.png')
@@ -141,7 +142,7 @@ def ui():
         driver.wait('window.__droidfunSmokeModel === '+json.dumps(model))
         assert driver.js('return document.documentElement.dataset.branding') == 'droidfun'
         driver.js('document.querySelector(".add-widget-controls button").click();')
-        widget_selector = json.dumps('select[aria-label="New widget type"]')
+        widget_selector = json.dumps('select[aria-label="New screen type"]')
         driver.wait('document.querySelector('+widget_selector+')')
         options = set(driver.js('return Array.from(document.querySelector('+widget_selector+').options).map(o => o.value);'))
         if model == 'claw':
