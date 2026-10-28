@@ -1,23 +1,23 @@
 {
-  "version": "0.7.0",
-  "notes": "DroidFun App 0.7.0 adds the same rotating 3D droids used on droidfun.io, bundled for offline use. Drag to turn them, use arrow keys, or pause motion. Reduced-motion preferences and a still-image fallback are supported.\n\nFactory-prepared and remembered droids are recognized locally. For older boards, the app can look up the model recorded by private Workshop using a limited setup endpoint. It receives only the model for that ID. No database credentials, private inventory access or customer connection history are included. Pause online data disables this lookup; unavailable lookups fall back to choosing the model once.\n\nExisting screens, factory firmware protection and signed app updates are preserved. The OLED preview remains the readable screen preview.\n\nThis prerelease is not notarized on macOS; Windows installers lack publisher signing. Linux updates use the website DEB or RPM packages.\n",
-  "pub_date": "2026-10-28T17:16:05Z",
+  "version": "0.7.1",
+  "notes": "The screen previews now use smaller displays matched to each droid’s enclosure, with slimmer bezels and a more compact illustration. Use Enlarge screen to read a separate larger pixel preview. The rotating 3D droids are unchanged.\n\nExisting playlists, preferences, device recognition and firmware remain unchanged. Mac and Windows support signed in-app updates; Linux uses the packages below. Mac packages remain ad-hoc signed without Apple notarization; Windows installers lack publisher code signing.\n",
+  "pub_date": "2026-10-28T17:58:58Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0ZuYUg1NGhadEZKSnB0UlZ6TG5FdXFaUmgyWk0vcmdTYXEzd3hRUXJPN3ZVSWRvb2p0WUdCSmJxQnBqdlJmOTh0QVh4UDltSXJtSnhLdlo0QXVERlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3MzI5CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjcuMApEaHE2aVZDbzJhOUZOLzBxWVRETHJWMEpQZ093NWlnZEsxdnpoNXkrMW1aVlA5TmNLZHVsTVBRcTNUVDE0YUVIQXhQMURHOUo0ZzhtNk1ZcTdaeTBBdz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.1/DroidFun-App-0.7.1-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0pwaW5kNGpZNzRzSjNRWFVhMjlHaElzMjgvRHBvREtkUGRNSVJGcVdXdWxFRWlLVXFUZERjNUh0disvSHkzYjAwZVFQQUJuYWFlZkJPb21UTWVBTHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjEwMjA5CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjcuMQpLM1VFNTFMemdWaDlQZnVWRDFRYzZSNEZXN3J3M1NQZnJkbllCYlhqWlJvemxxczM2Y1pnK21GMkh4a3g0L1QwakYvUW41dHArOVFlMThLUGs4MFJEQT09Cg=="
     },
     "darwin-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0ZuYUg1NGhadEZKSnB0UlZ6TG5FdXFaUmgyWk0vcmdTYXEzd3hRUXJPN3ZVSWRvb2p0WUdCSmJxQnBqdlJmOTh0QVh4UDltSXJtSnhLdlo0QXVERlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3MzI5CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjcuMApEaHE2aVZDbzJhOUZOLzBxWVRETHJWMEpQZ093NWlnZEsxdnpoNXkrMW1aVlA5TmNLZHVsTVBRcTNUVDE0YUVIQXhQMURHOUo0ZzhtNk1ZcTdaeTBBdz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.1/DroidFun-App-0.7.1-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0pwaW5kNGpZNzRzSjNRWFVhMjlHaElzMjgvRHBvREtkUGRNSVJGcVdXdWxFRWlLVXFUZERjNUh0disvSHkzYjAwZVFQQUJuYWFlZkJPb21UTWVBTHd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjEwMjA5CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjcuMQpLM1VFNTFMemdWaDlQZnVWRDFRYzZSNEZXN3J3M1NQZnJkbllCYlhqWlJvemxxczM2Y1pnK21GMkh4a3g0L1QwakYvUW41dHArOVFlMThLUGs4MFJEQT09Cg=="
     },
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09OU1NFV3N1Wng0OS9XbjF6TWFaWFJ6TjN4Y0xlVk4yOEVTeDcwV1hkMzgxN011UU13L1dpbWUvOXpjN1RBSGJXU1pXdHN3VHNqNVRrRURTN05KMGdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3MzExCWZpbGU6RHJvaWRGdW4gQXBwXzAuNy4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjcuMApTYklZcW1BMTVqTVQwYlI5aUFodnhWaDVENXRMQlpBbjlmbGZjSkpVVEZYQmx0ZUM0dkhVMG9ab3FPaDVDanRzeVJkdXVRcTM2THhjZ3JlWGVscHpDZz09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.1/DroidFun-App-0.7.1-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0hYV0hrdnNGdFZYMTRKeXE0TXZZUjFGQldqUXFmSXBCNkF5M1hPeTRoTmZ3bTRkbGJ5TCtCZEJGVm8vb2c2cXVpa0ZDRjNBS0pCOUZtQUx2SVpHQlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA5NjU2CWZpbGU6RHJvaWRGdW4gQXBwXzAuNy4xX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjcuMQpJZlBMamo3S1ZyOVhVNnlYb0h5WXlEUDcyNjRnZXNHVzllLzMxSmdub1cvcVE5UjZIOHlCd2RNTE5PdDIvaXRoSzJsNVB3eFlveVhiRFQxRGxia2JDQT09Cg=="
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.0/DroidFun-App-0.7.0-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0oyV2ZoWjBVa3MyUGlZQmttdDRJMjVRT2JxdlU5U1dyVmEydUZjZGZKNDNucGJtd1VPeisvZTUyVEFncUlBSGVOUm9RL0Y3bmtrV2g3NHdOYkFSV0E0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA3Mzc4CWZpbGU6RHJvaWRGdW4gQXBwXzAuNy4wX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNy4wCkRJazg1K2pOcXpINyt1eFErUm16M0M0NERHVWd4b0EyWU1iWDkzYlhiODFXNzR1bThCSmpraFNhR2lKeVgza0loL2U5MFl1UGxPRlVMeTFsbUtJdUNnPT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.7.1/DroidFun-App-0.7.1-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0p2SnNUZGJIN2hJM1Q5N2FXdGNTMkkveUQ5dCtTRmNzd2QwNCtOQ2UyVDREK0I2UC9tZldmenBYSk9xSjA1S2FZaU5lL0EwUkx2clp6ZmsweWdod1FvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjA5NjMwCWZpbGU6RHJvaWRGdW4gQXBwXzAuNy4xX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuNy4xCndkRUNYa25vekQvZkpUSStCMkhjb3pzZGdSZmo2RHFiaDRnb3JXY0J6a3ExNkpWbEY2MTB0azh5QTVEYUlyQUtqbm55M2dQc3FlVHVCaTM4T1BSYUJnPT0K"
     }
   }
 }
