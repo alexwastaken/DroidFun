@@ -1,3 +1,4 @@
+import SupportDiagnostics from "./SupportDiagnostics";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -58,6 +59,8 @@ export default function App() {
   const [testIssue, setTestIssue] = useState("");
   const [readingTest, setReadingTest] = useState(false);
   const [supportsDisplayTest, setSupportsDisplayTest] = useState(false);
+  const [supportOpen,setSupportOpen] = useState(false);
+  const [supportBusy,setSupportBusy] = useState(false);
   const [settingsSection, setSettingsSection] = useState("Display");
   const [settingsOpen, setSettingsOpen] = useState(() => Boolean((window as Window & { __deskbotOpenSettings?: boolean }).__deskbotOpenSettings));
   const [dragging, setDragging] = useState<string | null>(null);
@@ -69,8 +72,8 @@ export default function App() {
   const [saveError, setSaveError] = useState("");
   const model = state?.settings.preferences.botModel ?? "";
   const offline = state?.settings.preferences.offlineMode ?? false;
-  const appUpdates = useAppUpdates(Boolean(state) && !offline, actionBusy || installing);
-  const busy = actionBusy || appUpdates.operation === "restart" || appUpdates.status?.phase === "restarting";
+  const appUpdates = useAppUpdates(Boolean(state) && !offline, actionBusy || installing || supportBusy);
+  const busy = actionBusy || supportBusy || appUpdates.operation === "restart" || appUpdates.status?.phase === "restarting";
   const standaloneDraftKey = JSON.stringify({ orientation: state?.settings.preferences.orientation, brightness: state?.settings.brightness, selectedDeviceSerial: state?.settings.selectedDeviceSerial, connectedBoard: connection?.boardId, connectedPort: connection?.port, widgets: state?.settings.widgets.filter(w => ["face", "image"].includes(w.kind) || w.kind === "text" && w.config.textMotion !== "scroll") });
   useEffect(() => { setSavedToBot(""); setSaveError(""); }, [standaloneDraftKey]);
   useEffect(() => { setSelected(null); setEditor(null); setAdding(false); setAddKind(model === "claw" ? "codex" : "text"); setSavedToBot(""); setSaveError(""); }, [model, state?.settings.selectedDeviceSerial]);
@@ -252,8 +255,8 @@ export default function App() {
   if (!state) return <main className="loading">Waking up DroidFun App…{error && <p role="alert">{error}</p>}</main>;
   const openSettings = (section = "Display") => { setSettingsSection(section); setSettingsOpen(true); };
   const updateLink = <AppUpdateLink updates={appUpdates} onOpen={() => openSettings("App")}/>;
-  const settingsPanel = settingsOpen && <SettingsPanel initialSection={settingsSection} appUpdates={appUpdates} preferences={state.settings.preferences} connection={connection} onChangeBot={() => { setSettingsOpen(false); setChoosingBot(true); }} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />;
-  const connectionPanel = <BotConnection model={model} selectedSerial={state.settings.selectedDeviceSerial} profiles={(state.settings.droids ?? []).filter(d => botName(d.model))} connection={connection} ports={ports} setupDrives={setupDrives} busy={busy} scanning={scanning} scanFinished={scanFinished} scanIssue={scanIssue} installing={installing} setupNotice={setupNotice} setupError={setupError} testBoardId={testBoardId} testReport={testReport} testIssue={testIssue} readingTest={readingTest} supportsDisplayTest={supportsDisplayTest} onScan={scanPorts} onConnect={(serial, botModel) => void connectDroid(serial, botModel)} onUpdate={serial => void updateRobot(serial)} onTest={path => void startDisplayTest(path)} onReadTest={serial => void readTestReport(serial)} onRename={(serial, name) => void act("rename_droid", {serial, name})}/>;
+  const settingsPanel = <>{supportOpen && <SupportDiagnostics onBusy={setSupportBusy} onClose={() => setSupportOpen(false)} onReinstall={serial => void updateRobot(serial)}/>} {settingsOpen && <SettingsPanel initialSection={settingsSection} onDiagnostics={() => {setSettingsOpen(false);setSupportOpen(true);}} appUpdates={appUpdates} preferences={state.settings.preferences} connection={connection} onChangeBot={() => { setSettingsOpen(false); setChoosingBot(true); }} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />}</>;
+  const connectionPanel = <BotConnection model={model} selectedSerial={state.settings.selectedDeviceSerial} profiles={(state.settings.droids ?? []).filter(d => botName(d.model))} connection={connection} ports={ports} setupDrives={setupDrives} busy={busy} scanning={scanning} scanFinished={scanFinished} scanIssue={scanIssue} installing={installing} setupNotice={setupNotice} setupError={setupError} testBoardId={testBoardId} testReport={testReport} testIssue={testIssue} readingTest={readingTest} supportsDisplayTest={supportsDisplayTest} onDiagnostics={() => setSupportOpen(true)} onScan={scanPorts} onConnect={(serial, botModel) => void connectDroid(serial, botModel)} onUpdate={serial => void updateRobot(serial)} onTest={path => void startDisplayTest(path)} onReadTest={serial => void readTestReport(serial)} onRename={(serial, name) => void act("rename_droid", {serial, name})}/>;
   if (choosingBot) return <><BotPicker footer={updateLink} current={model} busy={busy} error={error} onCancel={() => setChoosingBot(false)} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />{settingsPanel}</>;
   if (!botName(model)) return <main className="app-shell welcome-shell">
     <header className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><button className="header-settings" onClick={() => openSettings("App")}>Settings</button></header>
