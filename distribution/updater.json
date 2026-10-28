@@ -1,23 +1,23 @@
 {
-  "version": "0.9.0",
-  "notes": "Run diagnostics is now directly under Connection and in Settings. Customers can check USB detection, fresh droid replies, reported screen health, repeated reconnects, display settings, playlist state and online-data availability. Results include clear codes and next steps, even when no droid is found.\n\nA temporary eight-second checkerboard tests screen visibility through the existing live-display protocol. It does not install firmware or change saved settings. Customers can record whether the pattern was visible, review a local support report and save it to send to DroidFun support. Reports include the droid hardware ID for Workshop identification and exclude credentials, account details, custom text/images and local paths. Nothing is sent automatically.\n\nVerified compatible standard legacy boards retain manual 1.2.4 recovery with a fresh native preflight. Factory, newer, custom, unidentified and swapped-wiring boards are protected from generic reinstalls. Firmware is unchanged. Existing custom text, scrolling and image screens remain available.\n",
-  "pub_date": "2026-10-28T21:00:30Z",
+  "version": "0.10.0",
+  "notes": "Switch droids with a compact menu and previous/next arrows at the top of the app.\n\nConnect up to four droids at once. Each keeps its own screens and display settings. A fifth waits for a free slot; older saved profiles remain intact. The selected droid receives live screens, while the others show their saved screens or fallback face.\n\nThis update preserves existing settings and factory firmware, including swapped-wiring boards.\n",
+  "pub_date": "2026-10-28T21:45:55Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.9.0/DroidFun-App-0.9.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NNVXVncllBdHFXTWRkajF2aElCWkhIdnZSdi9XWFI2eVg0amt5eXNydmY0VEwwZkpESGpocDRlT0dTYkVLaWlsdTN4bmpmQ290aUk3MXBOTFFnbmdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIxMDYzCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjkuMAp1UWV6NVBwWU9VUUR1U2RESHJGdk5sS1p2MEZTWHVtNEdjdHpBSVVBZ2h6REdSaGpUN3IxcG94MzhUUFZESVhNK3NOVVJUeC9OVll6b2xFNytjdGZEQT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09nNlh4UEh0MjVETmpNUnVqK0I4Q3laVGkvSFNWM2swelh1YWFiZDd0L1h2V3Z6MnR3QmcrV29idmdmZzNFUFVkeGpqbm95Wlg1UC9aYXMxQmdGUWd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIzNjcwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjAKVGUrMXo4NWQvYXFmcWtUSlQxVFBvTnl3UTZZdkdEVWhSYjJhYnREY3Y3cTRvWW5vQytnUWpMTHFTYkpmR2NNMEEzQWhlc212WEptSmZMZGk4cjNsQkE9PQo="
     },
     "darwin-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.9.0/DroidFun-App-0.9.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NNVXVncllBdHFXTWRkajF2aElCWkhIdnZSdi9XWFI2eVg0amt5eXNydmY0VEwwZkpESGpocDRlT0dTYkVLaWlsdTN4bmpmQ290aUk3MXBOTFFnbmdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIxMDYzCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjkuMAp1UWV6NVBwWU9VUUR1U2RESHJGdk5sS1p2MEZTWHVtNEdjdHpBSVVBZ2h6REdSaGpUN3IxcG94MzhUUFZESVhNK3NOVVJUeC9OVll6b2xFNytjdGZEQT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09nNlh4UEh0MjVETmpNUnVqK0I4Q3laVGkvSFNWM2swelh1YWFiZDd0L1h2V3Z6MnR3QmcrV29idmdmZzNFUFVkeGpqbm95Wlg1UC9aYXMxQmdGUWd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIzNjcwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjAKVGUrMXo4NWQvYXFmcWtUSlQxVFBvTnl3UTZZdkdEVWhSYjJhYnREY3Y3cTRvWW5vQytnUWpMTHFTYkpmR2NNMEEzQWhlc212WEptSmZMZGk4cjNsQkE9PQo="
     },
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.9.0/DroidFun-App-0.9.0-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0ZPV002WUlYQm1oYXRHSGpPZVJRY013QjFmcng4YmdNVno1ckdaZjhnSktMbS8xS29wTUs3SDhEVkl3dCtRUmNXWldidlF6dUFZSjBaV0ZMTXBHb0FNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIwNTY5CWZpbGU6RHJvaWRGdW4gQXBwXzAuOS4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjkuMApJVk50UHpSaDU5WGlnZEZIeUViV29QS281L3VhME1YMnpWTzlKRGFycmRWS0V5QXRzMW8zYVN2R2FxbHNKVGhsYXk3WGNUdVFqYjFHZDhzZys4NVdBQT09Cg=="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NQSzZTQ3dMOHY1OVRZbFRVT3JVYW1XQ1pxZm5UVElxS01lUFJ5SjdxZ0pxMlZWZFlwVWVnZmhhQis4WUdzd25sTjROcU9jRU8zM1BvL1NheU9VaVFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIyNjQ3CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuMF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC4wCkFiNElKTTJOd3Mxak1EL3E5ZDZQSUI2Qm5kcWJyWEhoS2JTU3RBQjl2cmZlb0g1bmpueml1d2tNaGlDeVM4WVM2eVQzZkRuK1FrMmJRekVJaFl4V0NRPT0K"
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.9.0/DroidFun-App-0.9.0-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0JtRWxvdFdIZHRxQzBSMDFzM1RRUFNNUG1zc05zTUpleVA4dGZPeEpyNjFIeTVwaFREanpCZFBTVFdOd1FIRytFTVJDbkpRVENteHNPTmRrTzRVTkFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIwNjM2CWZpbGU6RHJvaWRGdW4gQXBwXzAuOS4wX2FybTY0LXNldHVwLmV4ZQl2ZXJzaW9uOjAuOS4wCmUxVmVTcUZhaHkrMnMyNXcyQUY3NjhZZVRLZlZtcHhONlVmZGZ4aVR6Ui9CRFlzbWRlVnhGOFJrSTlYMHRsUldlWHBqV29rTTk0aWtrazJMZ2lzREFRPT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0JSZk1OQTNMOTdlc2U0djhpQ1VrVGRjSlVoWXE4cTNiQWhuWUZPTVFHRkhWekNIUE0yN0N1UEhnTWR4THlPaW1uaTJrWXYzVFhHYXExd0IzRGlXOUFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIyNjQ0CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuMF9hcm02NC1zZXR1cC5leGUJdmVyc2lvbjowLjEwLjAKeGRZM2ZwTEhzVVg5dlU4RG01QXFpZ0s1VytvRkhzbHg5V0QxbVVXZitJdndBcjVkK0RHK252K25nQUFVL2JTM3JweER5ajVKTk4yaW04UGFYNTIrQ1E9PQo="
     }
   }
 }
