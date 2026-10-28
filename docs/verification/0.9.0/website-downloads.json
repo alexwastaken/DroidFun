@@ -1,0 +1,55 @@
+{
+  "source": "2ac10739f795f17bdbde2636267abc736f0ea7e4",
+  "checkedAt": "2026-10-28T21:01:48.172Z",
+  "url": "https://droidfun.io/downloads",
+  "results": [
+    {
+      "id": "droidfun-controller-guide",
+      "filename": "Droid-Fun-Quick-Start-0.7.0.pdf",
+      "status": 200,
+      "bytes": 65327,
+      "sha256": "613c5505b3e3ed3bf291a2f180e9602da56b8b1d571822569158c0e8b14ab17a",
+      "verified": true
+    },
+    {
+      "id": "deskbot-020-macos",
+      "filename": "DroidFun-App-0.9.0-macOS-universal.dmg",
+      "status": 200,
+      "bytes": 23379093,
+      "sha256": "85db719bac9b2b6e404da9e676ca5474a11a48ba42fc4fceeddede0976ba555d",
+      "verified": true
+    },
+    {
+      "id": "deskbot-020-windows-x64",
+      "filename": "DroidFun-App-0.9.0-Windows-x64-setup.exe",
+      "status": 200,
+      "bytes": 6731644,
+      "sha256": "a19f31e34cb0ead8c1eb03cb2d62ae4782b8791b1646f0d0ccb1099b8eb12b6c",
+      "verified": true
+    },
+    {
+      "id": "deskbot-020-windows-arm64",
+      "filename": "DroidFun-App-0.9.0-Windows-ARM64-setup.exe",
+      "status": 200,
+      "bytes": 6247285,
+      "sha256": "d261a97c70f997a5eef8a7fd746885331e4198bb1ec812eaa908bb41d2e348e2",
+      "verified": true
+    },
+    {
+      "id": "deskbot-020-linux-deb",
+      "filename": "DroidFun-App-0.9.0-Linux-x86_64.deb",
+      "status": 200,
+      "bytes": 10452336,
+      "sha256": "88ee7113b263e8a01e49c8abdc3b9503fb80ed2124723a1da8ed1985b9b84079",
+      "verified": true
+    },
+    {
+      "id": "deskbot-020-linux-rpm",
+      "filename": "DroidFun-App-0.9.0-Linux-x86_64.rpm",
+      "status": 200,
+      "bytes": 10452648,
+      "sha256": "8cc025ed7de07a21635b0d96885e712250ba076a79d652d6f4dfcd5f5ae046b1",
+      "verified": true
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "scope": "Production UI with mocked native commands. Physical USB and report file dialogs are tested separately.",
+  "results": [
+    {
+      "name": "welcome",
+      "passed": true
+    },
+    {
+      "name": "no-usb",
+      "passed": true
+    },
+    {
+      "name": "factory",
+      "passed": true
+    },
+    {
+      "name": "claw",
+      "passed": true
+    },
+    {
+      "name": "swapped",
+      "passed": true
+    },
+    {
+      "name": "legacy",
+      "passed": true
+    },
+    {
+      "name": "bootloader",
+      "passed": true
+    },
+    {
+      "name": "linux-permission",
+      "passed": true
+    },
+    {
+      "name": "offline",
+      "passed": true
+    },
+    {
+      "name": "failed-check",
+      "passed": true
+    }
+  ]
+}

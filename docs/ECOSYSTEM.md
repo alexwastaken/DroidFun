@@ -1,4 +1,4 @@
-# Customer and Workshop handoff — 0.8.0 / 0.3.1
+# Customer and Workshop handoff — 0.9.0 / 0.3.1
 
 The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download.
 
@@ -27,6 +27,10 @@ Older firmware without a model can use a model-only lookup after Workshop regist
 Dashboard → Droids creates a one-use connection code for Workshop → Droid list. The paired Workshop lists registered IDs, models, firmware, wiring and preparation status; “Connected here” means physically attached to that Workshop computer. It inspects factory firmware before offering installation and queues records while offline. Older programmed boards can be recorded by reconnecting once and choosing their model, without reflashing. Marking a board prepared still requires reconnect and physical screen confirmations.
 
 The customer app contains no database credentials or inventory-list commands. The server returns only a model hint for the connected board ID; board IDs do not authenticate ownership. Full inventory and private notes require owner sign-in or a revocable inventory-scoped Workshop session. No customer connection history is collected. See [the registry boundaries](DROID_REGISTRY.md).
+
+## Customer troubleshooting
+
+Connection → Run diagnostics works offline and checks current USB replies, reported screen health and common display/source settings. A temporary live checkerboard uses the existing protocol without flashing firmware; customer visibility is separate from ACKs. Customers review and save a local JSON report, then attach it through the public support contact. No report is uploaded automatically and no database permissions are added. The hardware ID helps the owner match Workshop inventory; disconnected reports may show a remembered ID rather than proof of attachment. See [diagnostics and owner triage](SUPPORT.md).
 
 ## Updates and recovery
 

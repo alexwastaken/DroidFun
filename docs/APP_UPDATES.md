@@ -87,3 +87,7 @@ The installed Mac app completed 0.7.0 → 0.7.1 through Settings → App → Che
 ## 0.8.0 custom screens acceptance
 
 The [0.8.0 records](verification/0.8.0/README.md) cover all four platform packages, exact-source hashes and signed updater checks. The installed Mac 0.7.1 app fetched the public feed, downloaded 0.8.0, restarted automatically and matched the published executable with a strict code-signature check. Existing settings remained byte for byte unchanged. Native Add a screen offered Custom text and Upload an image, and a fresh update check reported up to date. Schema-3 migration and the private original-settings archive have separate native tests.
+
+## 0.9.0 diagnostics acceptance
+
+The [0.9.0 evidence](verification/0.9.0/README.md) records exact-source packages and signed updater checks on all platforms. The installed Mac 0.8.0 app updated through the public feed, restarted automatically and matched the published 0.9.0 executable with strict signature verification. Settings were unchanged byte for byte. A real no-device diagnostic ran for six seconds, correctly withheld physical-test/reinstall actions, saved the reviewed JSON through the native file dialog with owner-only permissions, and opened the fixed public support page in Chrome. A fresh update check reported up to date. The private exported report and its droid ID are not included in public evidence.

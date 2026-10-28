@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "scope": "Local mocked USB and native commands; production image conversion; physical transfer not asserted.",
+  "results": [
+    {
+      "name": "nimbus-text-scroll-upload-edit-reject-static-save",
+      "passed": true
+    },
+    {
+      "name": "boo-text-scroll-upload-edit-reject-static-save",
+      "passed": true
+    },
+    {
+      "name": "meep-text-scroll-upload-edit-reject-static-save",
+      "passed": true
+    },
+    {
+      "name": "claw-excludes-text-and-images",
+      "passed": true
+    }
+  ]
+}
