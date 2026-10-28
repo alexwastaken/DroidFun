@@ -17,7 +17,7 @@ Stationary text supports up to 128 printable ASCII characters and line breaks, p
 
 1. Choose **Add a screen → Upload an image**.
 2. Choose a PNG, JPG or still WebP file, up to 2 MB and 4 megapixels (no side over 4096 pixels).
-3. Choose **Fit whole image** or **Fill screen · crop edges**. Adjust the black-and-white threshold, optional dot shading and inversion using the exact OLED preview.
+3. Choose **Fit whole image** or **Fill screen · crop edges**. Automatic background keeps transparent icons visible; Light/Dark overrides are available. Adjust the black-and-white threshold, optional dot shading and inversion using the exact OLED preview.
 4. Give it a name and click **Apply**. Its first upload enables the screen automatically. It appears in the normal playlist, where you can preview, reorder, edit, disable or remove it and change its duration.
 
 The file is decoded and converted locally into 128 × 64 monochrome pixels. Only those pixels are saved; the original file, path and image metadata are not stored or uploaded to the website. Saved images remain available after restarting or removing the source file. To change fit or shading later, choose the original file again. Claw does not offer text or image screens.
