@@ -13,19 +13,19 @@ export const botName = (model: string) => botModels.find(bot => bot.id === model
 export const widgetOptions = (model: string) => model === "claw" ? usageOptions : generalOptions;
 export const widgetAllowed = (model: string, kind: string) => widgetOptions(model).some(option => option[0] === kind);
 
-export default function BotPicker({ current, busy, error, onSelect, onCancel, updates }: { current: string; busy: boolean; error: string; onSelect: (model: string) => Promise<void>; onCancel?: () => void; updates?: ReactNode }) {
+export default function BotPicker({ current, busy, error, onSelect, onCancel, footer }: { current: string; busy: boolean; error: string; onSelect: (model: string) => Promise<void>; onCancel?: () => void; footer?: ReactNode }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
   return <main className="app-shell bot-picker">
     <div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div>
-    {updates}
-    <div className="intro"><div className="eyebrow">LET’S GET STARTED</div><h1 ref={title} tabIndex={-1}>Which bot is yours?</h1><p>Choose your bot to see its screens and settings. You can change this any time.</p></div>
+    <div className="intro"><div className="eyebrow">CHOOSE A MODEL</div><h1 ref={title} tabIndex={-1}>Meet the droids.</h1><p>Choose a model to explore its screens. When you plug in a factory-prepared droid, we recognize it automatically.</p></div>
     <div className="bot-choices" aria-label="Choose your bot">{botModels.map(bot => <button key={bot.id} className="bot-choice" data-bot={bot.id} disabled={busy} aria-pressed={current === bot.id} onClick={() => onSelect(bot.id)}>
       <BotAvatar model={bot.id}/>
       <span className="bot-choice-copy"><strong>{bot.name}</strong><span>{bot.summary}</span><small>{bot.detail}</small></span><span aria-hidden="true">→</span>
     </button>)}</div>
-    <p className="bot-picker-note">Your saved widgets stay safe when you change bots. Only the selected bot’s screens will appear and play.</p>
+    <p className="bot-picker-note">Each droid has its own screens and settings. You can change your selection any time.</p>
     {busy && <p role="status">Getting your bot ready…</p>}{error && <p className="source-error" role="alert">{error}</p>}
-    {onCancel && <button className="settings-link" disabled={busy} onClick={onCancel}>Keep {botName(current)}</button>}
+    {onCancel && <button className="settings-link" disabled={busy} onClick={onCancel}>{botName(current) ? `Back to ${botName(current)}` : "Back to connection"}</button>}
+    <footer>{footer}</footer>
   </main>;
 }

@@ -10,6 +10,7 @@ mod host_display;
 pub mod linux_usb;
 mod local_widgets;
 mod network;
+mod onboarding;
 mod persistence;
 mod picoboot;
 mod platform;
@@ -219,11 +220,11 @@ fn list_robot_ports() -> Result<Vec<RobotPort>, String> {
 }
 
 #[tauri::command]
-fn select_robot(
+async fn select_robot(
     serial: Option<String>,
     bot_model: Option<String>,
     app: AppHandle,
-    state: State<AppState>,
+    state: State<'_, AppState>,
 ) -> Result<Snapshot, String> {
     // A timed-out USB operation can still own a blocked native driver call.
     // Do not let a manual Connect start the normal worker against that port.
@@ -232,16 +233,28 @@ fn select_robot(
     } else {
         None
     };
+    let mut chosen_model = bot_model;
     if let Some(ref value) = serial {
-        if !connection::robot_ports()?
-            .iter()
-            .any(|port| port.serial.eq_ignore_ascii_case(value))
-        {
-            return Err("That RP2040-Zero is not currently detected".into());
+        let candidate = connection::robot_ports()?.into_iter()
+            .find(|port| port.serial.eq_ignore_ascii_case(value))
+            .ok_or("That droid is not currently detected. Reconnect its cable and try again.")?;
+        let remembered = state.engine.lock().map_err(|_| "Settings are busy")?.settings.droids
+            .iter().any(|p| p.serial.eq_ignore_ascii_case(value));
+        if chosen_model.is_none() && !remembered {
+            let guard = _operation.clone();
+            let job = tauri::async_runtime::spawn_blocking(move || {
+                let _guard = guard;
+                let link = Link::connect(&candidate)?;
+                link.status.identity.map(|identity| identity.model)
+                    .ok_or_else(|| "Choose this droid’s model once so we can remember it.".to_string())
+            });
+            chosen_model = Some(tokio::time::timeout(Duration::from_secs(5), job).await
+                .map_err(|_| "Checking this droid took too long. Reconnect USB and try again.")?
+                .map_err(|_| "The droid check stopped. Try again.")??);
         }
     }
     let snapshot = mutate(&app, state, true, |engine| {
-        engine.select_droid(serial.as_deref(), bot_model.as_deref())
+        engine.select_droid(serial.as_deref(), chosen_model.as_deref())
     })?;
     publish_connection(&app, ConnectionSnapshot {
         state: if serial.is_some() { "connecting" } else { "preview" }.into(),
@@ -981,6 +994,23 @@ struct PreparedUpdate {
     board_id: String,
 }
 
+struct RecoveryTicket { path: String, serial: String, created: Instant }
+impl RecoveryTicket {
+    fn matches(&self, path: &str, serial: Option<&str>, now: Instant) -> bool {
+        self.path == path && serial.is_some_and(|id| id.eq_ignore_ascii_case(&self.serial))
+            && now.saturating_duration_since(self.created) < Duration::from_secs(300)
+    }
+}
+static CUSTOMER_RECOVERY: Mutex<Option<RecoveryTicket>> = Mutex::new(None);
+static DIAGNOSTIC_BOARD: Mutex<Option<String>> = Mutex::new(None);
+
+static DISCOVERY_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+#[tauri::command]
+fn rescan_robot() {
+    DISCOVERY_GENERATION.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+}
+
 static USB_OPERATION: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 pub(crate) struct UsbOperationGuard;
@@ -1097,7 +1127,11 @@ async fn prepare_robot_update(
     serial: Option<String>,
     app: AppHandle,
 ) -> Result<PreparedUpdate, String> {
+    if !picoboot::supported() {
+        return Err("This computer cannot verify a droid’s hardware identity before firmware recovery. Contact Droid Fun support for droid software service. App updates are available separately in Settings → App.".into());
+    }
     let preparation = UsbOperationGuard::acquire()?;
+    *CUSTOMER_RECOVERY.lock().map_err(|_| "Recovery state is busy")? = None;
     // An explicit serial permits restoring the diagnostic sketch, which does
     // not implement the normal app handshake. Resolve it against current USB
     // descriptors, then pass its identity through to the flash verification.
@@ -1126,8 +1160,8 @@ async fn prepare_robot_update(
                 && expected_port.as_ref().is_none_or(|path| &p.path == path)
         })
         .ok_or("Your bot is no longer on USB. Reconnect its cable and scan again.")?;
-    let serial = candidate.serial;
-    let port = candidate.path;
+    let serial = candidate.serial.clone();
+    let port = candidate.path.clone();
     let previous_selection = app
         .state::<AppState>()
         .engine
@@ -1138,7 +1172,7 @@ async fn prepare_robot_update(
         .clone();
     let before = list_setup_drives().await?;
     // Stop the normal link worker before opening the selected serial port.
-    select_robot(None, None, app.clone(), app.state::<AppState>())?;
+    select_robot(None, None, app.clone(), app.state::<AppState>()).await?;
     let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let worker_cancel = cancel.clone();
     let worker_guard = preparation.clone();
@@ -1151,6 +1185,18 @@ async fn prepare_robot_update(
         if restart_canceled(&worker_cancel) {
             return Err("USB restart was canceled before opening the port.".to_string());
         }
+        // Do not trust a caller-supplied serial or a stale UI status: inspect
+        // this exact board before sending the reset that enables a flash.
+        match Link::connect(&candidate) {
+            Ok(link) => onboarding::allow_customer_reflash(&link.status)?,
+            Err(_) => {
+                // The diagnostic sketch has no HELLO; its bounded identity-
+                // checked report is the only permitted non-runtime exception.
+                display_test::read(&candidate.serial, &worker_cancel)
+                    .map_err(|_| "Could not verify the installed droid software. Reconnect USB or contact Droid Fun support before reinstalling.".to_string())?;
+            }
+        }
+        if restart_canceled(&worker_cancel) { return Err("USB restart was canceled.".into()); }
         let mut usb = serialport::new(&port, 115200)
             .dtr_on_open(true)
             .timeout(Duration::from_millis(500))
@@ -1191,6 +1237,9 @@ async fn prepare_robot_update(
                 .filter(|d| !before.iter().any(|old| old.path == d.path))
                 .collect();
             if new.len() == 1 {
+                *CUSTOMER_RECOVERY.lock().map_err(|_| "Recovery state is busy")? = Some(RecoveryTicket {
+                    path: new[0].path.clone(), serial: serial.clone(), created: Instant::now()
+                });
                 return Ok(PreparedUpdate {
                     path: new[0].path.clone(),
                     board_id: serial,
@@ -1225,7 +1274,7 @@ async fn install_robot_firmware(
     let serial = install_image(path, expected_board_id, false, app.clone()).await?;
     // Persist the newly discovered board, replacing any old robot selection.
     // The link worker performs HELLO and OLED checks before saying connected.
-    select_robot(Some(serial), bot_model, app.clone(), app.state::<AppState>())
+    select_robot(Some(serial), bot_model, app.clone(), app.state::<AppState>()).await
 }
 
 #[tauri::command]
@@ -1239,6 +1288,12 @@ async fn install_display_test(
 
 #[tauri::command]
 async fn read_display_test(serial: String, app: AppHandle) -> Result<display_test::Report, String> {
+    // Suppress automatic HELLO probes of the standalone diagnostic sketch,
+    // including when the webview restores its unfinished-test marker.
+    if !connection::robot_ports()?.iter().any(|p| p.serial.eq_ignore_ascii_case(&serial)) {
+        return Err("Reconnect the droid running the screen test first.".into());
+    }
+    *DIAGNOSTIC_BOARD.lock().map_err(|_| "Diagnostic state is busy")? = Some(serial.clone());
     let operation = UsbOperationGuard::acquire()?;
     {
         let state = app.state::<AppState>();
@@ -1275,6 +1330,15 @@ async fn install_image(
     app: AppHandle,
 ) -> Result<String, String> {
     let operation = UsbOperationGuard::acquire()?;
+    if !path.starts_with("picoboot:") || !picoboot::supported() {
+        return Err("Droid recovery requires a verified direct USB connection. Contact Droid Fun support for help with this droid.".into());
+    }
+    // A bootloader cannot report its existing firmware or wiring. Only a
+    // fresh, identity-bound preflight may authorize customer recovery.
+    let ticket = CUSTOMER_RECOVERY.lock().map_err(|_| "Recovery state is busy")?.take();
+    if !ticket.is_some_and(|ticket| ticket.matches(&path, expected_board_id.as_deref(), Instant::now())) {
+        return Err("This droid is in recovery mode, so its installed software and screen wiring cannot be verified. Unplug and reconnect it. If it stays in recovery mode, contact Droid Fun support; new boards are prepared with Workshop.".into());
+    }
     {
         let state = app.state::<AppState>();
         let engine = state.engine.lock().map_err(|_| "State unavailable")?;
@@ -1290,7 +1354,7 @@ async fn install_image(
         }
         // Persist the paused selection across app restarts. The diagnostic
         // sketch runs independently and reports JSON rather than app packets.
-        select_robot(None, None, app.clone(), app.state::<AppState>())?;
+        select_robot(None, None, app.clone(), app.state::<AppState>()).await?;
     }
     let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let worker_cancel = cancel.clone();
@@ -1324,6 +1388,7 @@ async fn install_image(
             );
         }
     };
+    *DIAGNOSTIC_BOARD.lock().map_err(|_| "Diagnostic state is busy")? = if test {Some(serial.clone())} else {None};
     Ok(serial)
 }
 #[tauri::command]
@@ -1381,9 +1446,68 @@ fn tray_action(app: &AppHandle, id: &str) {
     }
 }
 
+fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
+    cached: &mut Option<ConnectionSnapshot>) {
+    let ports = match connection::robot_ports() {
+        Ok(ports) => ports,
+        Err(error) => { publish_connection(app, ConnectionSnapshot {state: "discovery_error".into(), detail: error, ..ConnectionSnapshot::default()}); return; }
+    };
+    probes.refresh(DISCOVERY_GENERATION.load(std::sync::atomic::Ordering::SeqCst), ports.iter().map(|p| p.serial.as_str()));
+    let [candidate] = ports.as_slice() else {
+        *cached = None;
+        publish_connection(app, ConnectionSnapshot {
+            state: if ports.is_empty() {"preview"} else {"choose_device"}.into(),
+            detail: if ports.is_empty() {"Plug your droid into this computer with a USB data cable."} else {"Choose the droid you want to use. Each keeps its own screens."}.into(),
+            ..ConnectionSnapshot::default()});
+        return;
+    };
+    if DIAGNOSTIC_BOARD.lock().ok().is_some_and(|id| id.as_deref().is_some_and(|id| id.eq_ignore_ascii_case(&candidate.serial))) {
+        publish_connection(app, ConnectionSnapshot {state: "diagnostic".into(), detail: "The screen test is running. Finish it to return to your normal screens.".into(), board_id: Some(candidate.serial.clone()), ..ConnectionSnapshot::default()});
+        return;
+    }
+    if !probes.ready(&candidate.serial, Instant::now()) {
+        if let Some(status) = cached.as_ref().filter(|c| c.board_id.as_deref().is_some_and(|id| id.eq_ignore_ascii_case(&candidate.serial))) {
+            publish_connection(app, status.clone());
+        }
+        return;
+    }
+    let Ok(_guard) = UsbOperationGuard::acquire() else {return;};
+    publish_connection(app, ConnectionSnapshot {state: "identifying".into(), detail: "Recognizing your droid…".into(), port: Some(candidate.path.clone()), board_id: Some(candidate.serial.clone()), ..ConnectionSnapshot::default()});
+    match Link::connect(candidate) {
+        Ok(link) => {
+            probes.record_success(&candidate.serial);
+            let mut status = link.status.clone();
+            drop(link);
+            match mutate(app, app.state::<AppState>(), true, |engine| onboarding::adopt(engine, &status)) {
+                Ok(_) => { *cached = None; publish_connection(app, ConnectionSnapshot {state: "connecting".into(), detail: "Your droid was recognized. Connecting…".into(), ..status}); }
+                Err(error) => {
+                    // HELLO is good even for older boards without a stored model.
+                    status.state = if status.identity.is_none() {"needs_model"} else {"discovery_error"}.into();
+                    status.detail = error;
+                    *cached = Some(status.clone()); publish_connection(app, status);
+                }
+            }
+        }
+        Err(error) => {
+            probes.record_failure(&candidate.serial, Instant::now());
+            let status = ConnectionSnapshot {
+                state: if error == linux_usb::PERMISSION_DETAIL {"permission_needed"} else {"setup_needed"}.into(),
+                detail: error, port: Some(candidate.path.clone()), board_id: Some(candidate.serial.clone()),
+                ..ConnectionSnapshot::default()};
+            *cached = Some(status.clone()); publish_connection(app, status);
+        }
+    }
+}
+
 fn connection_worker(app: AppHandle) {
     let mut backoff = 0;
+    let mut probes = onboarding::ProbeSchedule::default();
+    let mut discovered = None;
     loop {
+        if USB_OPERATION.load(std::sync::atomic::Ordering::SeqCst) {
+            std::thread::sleep(Duration::from_millis(100));
+            continue;
+        }
         if reliability::fault("link-interruption") {
             publish_connection(
                 &app,
@@ -1408,18 +1532,7 @@ fn connection_worker(app: AppHandle) {
                 })
         };
         let Some(serial) = selected else {
-            let detected = connection::robot_ports().unwrap_or_default().len();
-            publish_connection(
-                &app,
-                ConnectionSnapshot {
-                    detail: if detected > 0 {
-                        "RP2040-Zero detected. Choose Connect robot to check its sketch.".into()
-                    } else {
-                        "No RP2040-Zero USB serial device detected".into()
-                    },
-                    ..ConnectionSnapshot::default()
-                },
-            );
+            discover_droid(&app, &mut probes, &mut discovered);
             std::thread::sleep(Duration::from_secs(1));
             continue;
         };
@@ -1828,6 +1941,7 @@ pub fn run() {
             get_state,
             get_connection,
             list_robot_ports,
+            rescan_robot,
             linux_usb_status,
             setup_robot_access,
             select_robot,
@@ -1868,6 +1982,16 @@ pub fn run() {
 #[cfg(test)]
 mod usb_restart_tests {
     use super::*;
+    #[test]
+    fn customer_recovery_requires_matching_recent_verified_board() {
+        let now = Instant::now();
+        let ticket = RecoveryTicket {path: "picoboot:ABC".into(), serial: "ABC".into(), created: now};
+        assert!(ticket.matches("picoboot:ABC", Some("abc"), now));
+        assert!(!ticket.matches("picoboot:OTHER", Some("ABC"), now));
+        assert!(!ticket.matches("picoboot:ABC", Some("OTHER"), now));
+        assert!(!ticket.matches("picoboot:ABC", None, now));
+        assert!(!ticket.matches("picoboot:ABC", Some("ABC"), now + Duration::from_secs(300)));
+    }
     use std::sync::atomic::{AtomicBool, Ordering};
 
     // Only tests exercising the real process-wide guard need serialization.

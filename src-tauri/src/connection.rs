@@ -54,12 +54,44 @@ fn unique_robots(mut candidates: Vec<RobotPort>) -> Vec<RobotPort> {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DeviceIdentity {
+    pub model: String,
+    pub hardware_profile: String,
+    pub generation: u32,
+}
+
+fn validated_identity(value: Option<&serde_json::Value>) -> Option<DeviceIdentity> {
+    let value = value?;
+    let model = value.get("model")?.as_str()?;
+    let hardware_profile = value.get("hardwareProfile")?.as_str()?;
+    let generation = u32::try_from(value.get("generation")?.as_u64()?).ok()?;
+    if !crate::onboarding::FACTORY_MODELS.contains(&model)
+        || hardware_profile != crate::onboarding::HARDWARE_PROFILE
+        || generation == 0
+    {
+        return None;
+    }
+    Some(DeviceIdentity {
+        model: model.into(),
+        hardware_profile: hardware_profile.into(),
+        generation,
+    })
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConnectionSnapshot {
     pub state: String,
     pub detail: String,
     pub port: Option<String>,
     pub board_id: Option<String>,
     pub firmware: Option<String>,
+    pub pin_profile: Option<String>,
+    pub identity: Option<DeviceIdentity>,
+    pub provisioning_supported: bool,
+    pub firmware_managed: bool,
+    pub firmware_update_available: bool,
+    pub firmware_recovery_supported: bool,
     pub display_health: Option<String>,
     pub standalone_supported: bool,
     pub standalone_saved: bool,
@@ -74,6 +106,12 @@ impl Default for ConnectionSnapshot {
             port: None,
             board_id: None,
             firmware: None,
+            pin_profile: None,
+            identity: None,
+            provisioning_supported: false,
+            firmware_managed: false,
+            firmware_update_available: false,
+            firmware_recovery_supported: crate::picoboot::supported(),
             display_health: None,
             standalone_supported: false,
             standalone_saved: false,
@@ -86,6 +124,12 @@ impl Default for ConnectionSnapshot {
 #[serde(rename_all = "camelCase")]
 struct HelloAck {
     firmware: String,
+    #[serde(default)]
+    profile: Option<String>,
+    #[serde(default)]
+    identity: Option<serde_json::Value>,
+    #[serde(default)]
+    provisioning_supported: bool,
     board_id: String,
     width: u16,
     height: u16,
@@ -256,6 +300,9 @@ impl Link {
         if !ack.board_id.eq_ignore_ascii_case(&candidate.serial) {
             return Err("Firmware board ID does not match the selected USB device".into());
         }
+        let identity = validated_identity(ack.identity.as_ref());
+        let managed = crate::onboarding::managed_firmware(&ack.firmware, ack.profile.as_deref(), ack.provisioning_supported, ack.identity.is_some());
+        let firmware_update_available = !managed && crate::picoboot::supported() && crate::onboarding::older_firmware(&ack.firmware);
         Ok(Self {
             port,
             decoder,
@@ -283,6 +330,12 @@ impl Link {
                 port: Some(candidate.path.clone()),
                 board_id: Some(ack.board_id),
                 firmware: Some(ack.firmware),
+                pin_profile: ack.profile,
+                identity,
+                provisioning_supported: ack.provisioning_supported,
+                firmware_managed: managed,
+                firmware_update_available,
+                firmware_recovery_supported: crate::picoboot::supported(),
                 display_health: Some(ack.display_health),
                 standalone_supported: ack.standalone_supported,
                 standalone_saved: ack.standalone_saved,
@@ -422,6 +475,30 @@ impl Link {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn every_factory_identity_and_legacy_handshake_is_readable() {
+        for model in crate::onboarding::FACTORY_MODELS {
+            let data = serde_json::json!({"firmware":"1.3.2", "boardId":"ABC123", "width":128, "height":64,
+                "displayHealth":"ready", "profile":"GP4-GP5", "provisioningSupported":true,
+                "identity":{"model":model,"hardwareProfile":crate::onboarding::HARDWARE_PROFILE,"generation":1}});
+            let ack: HelloAck = serde_json::from_value(data).unwrap();
+            assert_eq!(validated_identity(ack.identity.as_ref()).unwrap().model, model);
+            assert!(crate::onboarding::managed_firmware(&ack.firmware, ack.profile.as_deref(), ack.provisioning_supported, ack.identity.is_some()));
+        }
+        let ack: HelloAck = serde_json::from_str(r#"{"firmware":"1.2.4","boardId":"ABC123","width":128,"height":64,"displayHealth":"ready"}"#).unwrap();
+        assert!(ack.identity.is_none());
+        assert!(!ack.provisioning_supported);
+        assert!(!crate::onboarding::managed_firmware(&ack.firmware, ack.profile.as_deref(), false, false));
+    }
+    #[test]
+    fn unknown_or_malformed_factory_identity_never_picks_a_model() {
+        let good = serde_json::json!({"model":"nimbus","hardwareProfile":crate::onboarding::HARDWARE_PROFILE,"generation":1});
+        for (key, value) in [("model",serde_json::json!("unknown")), ("hardwareProfile",serde_json::json!("unknown")), ("generation",serde_json::json!(0)), ("generation",serde_json::json!(4294967296u64))] {
+            let mut bad=good.clone(); bad[key]=value; assert!(validated_identity(Some(&bad)).is_none());
+        }
+        assert!(validated_identity(Some(&serde_json::Value::Null)).is_none());
+    }
+
     use super::*;
     #[test]
     fn frame_pacing_honors_old_boards_and_includes_transfer_time() {

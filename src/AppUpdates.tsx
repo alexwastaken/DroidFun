@@ -21,8 +21,8 @@ const activePhase = (phase?: UpdatePhase) => phase === "checking" || phase === "
 const releaseUrl = "https://droidfun.io/downloads";
 
 // Keep this hook in App so progress and restart readiness survive closing Settings.
-// Reading this status is local; only the Check button makes a network request.
-export function useAppUpdates() {
+// Check once when online, without downloading or interrupting droid setup.
+export function useAppUpdates(online: boolean, paused: boolean) {
   const [status, setStatus] = useState<AppUpdateStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [operation, setOperation] = useState<Operation>(null);
@@ -30,6 +30,7 @@ export function useAppUpdates() {
   const activeOperation = useRef<Operation>(null);
   const latestStatus = useRef(status);
   const revision = useRef(0);
+  const automaticCheckStarted = useRef(false);
   latestStatus.current = status;
 
   function receive(value: AppUpdateStatus) {
@@ -70,8 +71,19 @@ export function useAppUpdates() {
     return () => { disposed = true; unlisten?.(); };
   }, []);
 
+  useEffect(() => {
+    if (automaticCheckStarted.current || !online || paused || loading || !status?.supported || activePhase(status.phase)) return;
+    if (!["idle", "up_to_date", "error"].includes(status.phase)) return;
+    const timer = window.setTimeout(() => {
+      automaticCheckStarted.current = true;
+      void run("check");
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [online, paused, loading, status?.supported, status?.phase]);
+
   async function run(action: Exclude<Operation, null>, beforeRestart?: () => Promise<void>) {
     if (activeOperation.current || activePhase(latestStatus.current?.phase)) return;
+    if (action === "check") automaticCheckStarted.current = true;
     activeOperation.current = action;
     setOperation(action);
     setError("");
@@ -98,13 +110,12 @@ export function useAppUpdates() {
 
 export type AppUpdatesController = ReturnType<typeof useAppUpdates>;
 
-export default function AppUpdates({ updates, offline, pending, hasUnsavedSettings, beforeRestart, home = false, onResumeOnline }: {
+export default function AppUpdates({ updates, offline, pending, hasUnsavedSettings, beforeRestart, onResumeOnline }: {
   updates: AppUpdatesController;
   offline: boolean;
   pending: boolean;
   hasUnsavedSettings: boolean;
   beforeRestart: () => Promise<void>;
-  home?: boolean;
   onResumeOnline?: () => void;
 }) {
   const headingId = useId();
@@ -117,7 +128,7 @@ export default function AppUpdates({ updates, offline, pending, hasUnsavedSettin
   const downloaded = ((status?.downloadedBytes ?? 0) / (1024 * 1024)).toFixed(1);
   const date = status?.date ? new Date(status.date) : null;
   const releaseDate = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : "";
-  let summary = "Check when you’re ready. Updates are never downloaded automatically.";
+  let summary = "We check when you open DroidFun online. Downloads and restarts are always your choice.";
   if (!status) summary = loading ? "Reading app version…" : "Update controls could not be loaded.";
   else if (phase === "checking") summary = "Checking for updates…";
   else if (phase === "up_to_date") summary = "You’re up to date.";
@@ -130,10 +141,10 @@ export default function AppUpdates({ updates, offline, pending, hasUnsavedSettin
   else if (phase === "error") summary = "The update could not finish. You can try again.";
   const issue = error || (phase === "error" ? status?.message : "");
 
-  return <section className={`app-updates${home ? " home-app-updates" : ""}`} aria-labelledby={headingId} aria-busy={busy}>
+  return <section className="app-updates" aria-labelledby={headingId} aria-busy={busy}>
     <div className="app-updates-heading"><h3 id={headingId}>App updates</h3>{status && <span>Version {status.currentVersion}</span>}</div>
     <p role="status">{summary}</p>
-    {offline && status?.supported && !manual && !ready && phase !== "restarting" && <p className="app-update-note">Online data is paused. Resume it in the main controls to check for or download updates.</p>}
+    {offline && status?.supported && !manual && !ready && phase !== "restarting" && <p className="app-update-note">Online data is paused. Turn it back on in Data sources to check for updates.</p>}
     {phase === "downloading" && <div className="app-update-progress"><progress max={100} value={percent} aria-label="Update download"/><span>{percent === undefined ? `${downloaded} MB downloaded` : `${percent}% · ${downloaded} MB downloaded`}</span><p>You can close Settings while the download continues.</p></div>}
     {ready && phase !== "restarting" && <p>Your saved settings will be kept. {hasUnsavedSettings ? "Your changes in Settings will be saved before restarting." : "Restart when you’re ready to install the update."}</p>}
     {status?.version && status.notes && <details className="app-update-notes"><summary>What’s new in {status.version}{releaseDate ? ` · ${releaseDate}` : ""}</summary><div>{status.notes}</div></details>}
@@ -149,4 +160,11 @@ export default function AppUpdates({ updates, offline, pending, hasUnsavedSettin
       {(ready || phase === "restarting") && <button type="button" className="primary-control" disabled={busy || pending} onClick={() => void updates.restart(beforeRestart)}>{phase === "restarting" ? "Restarting…" : hasUnsavedSettings ? "Save settings and restart" : "Restart to update"}</button>}
     </div>
   </section>;
+}
+
+export function AppUpdateLink({ updates, onOpen }: { updates: AppUpdatesController; onOpen: () => void }) {
+  const phase = updates.status?.phase;
+  const label = updates.status?.readyToRestart ? "Update ready to install" : phase === "available" ? "App update available" : phase === "downloading" ? "Downloading app update…" : phase === "checking" ? "Checking for app updates…" : "Check for app updates";
+  const attention = phase === "available" || updates.status?.readyToRestart;
+  return <div className="app-version"><span>DroidFun{updates.status?.currentVersion ? ` ${updates.status.currentVersion}` : " App"}</span><button type="button" className={attention ? "update-available" : ""} onClick={onOpen}>{attention && <span aria-hidden="true">● </span>}{label}</button></div>;
 }

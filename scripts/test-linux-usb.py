@@ -121,9 +121,15 @@ def ui():
     rule_installed_before = RULE.read_bytes()
     themes_verified = []
     def choose_bot(model, capture_chooser=False):
-        driver.wait('window.__TAURI_INTERNALS__ && (document.querySelector(".bot-picker") || document.querySelector(".bot-controls"))')
+        driver.wait('window.__TAURI_INTERNALS__ && document.querySelector(".app-shell, .bot-picker")')
         if not driver.js('return Boolean(document.querySelector(".bot-picker"))'):
-            driver.js('Array.from(document.querySelectorAll(".bot-controls button")).find(b => ["Change model", "Change bot"].includes(b.textContent.trim())).click();')
+            if driver.js('return Boolean(document.querySelector(".welcome-explore button"))'):
+                driver.js('document.querySelector(".welcome-explore button").click();')
+            else:
+                driver.js('document.querySelector(".header-settings").click();')
+                driver.wait('document.querySelector(".settings-tabs")')
+                driver.js('Array.from(document.querySelectorAll(".settings-tabs button")).find(b => b.textContent.trim() === "Droid").click();')
+                driver.js('Array.from(document.querySelectorAll(".settings-editor button")).find(b => b.textContent.trim() === "Change model").click();')
         driver.wait('document.querySelectorAll(".bot-choice").length === 4 && !document.documentElement.hasAttribute("data-bot")')
         if capture_chooser: driver.capture('linux-bot-chooser.png')
         selector = '.bot-choice[data-bot="'+model+'"]'
@@ -149,9 +155,11 @@ def ui():
         driver.capture('linux-usb-'+model+'.png')
         themes_verified.append(model)
     try:
-        # The mandatory first-run chooser is the actual entry point now. Do not
-        # bypass it by setting the old setupComplete flag: that no longer selects
-        # a bot and would leave all USB controls hidden behind the chooser.
+        # A fresh customer sees a plug-in welcome. With no physical droid on
+        # CI, enter preview through the real Explore screens control.
+        driver.wait('document.querySelector(".welcome-shell") && document.querySelector("#robot-connection")')
+        assert not driver.js('return Boolean(document.querySelector(".bot-picker"))')
+        driver.capture('linux-welcome.png')
         choose_bot('meep', capture_chooser=True)
         # Headless CI has no active physical desktop. Explicit test-only polkit
         # authorization exercises real pkexec/helper IPC without a password.
@@ -190,7 +198,7 @@ def ui():
         choose_bot('boo')
         choose_bot('nimbus')
         choose_bot('meep')
-        print(json.dumps({'nativeButton':'passed','mandatoryBotChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        print(json.dumps({'nativeButton':'passed','plugInWelcome':'passed','optionalModelChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()
