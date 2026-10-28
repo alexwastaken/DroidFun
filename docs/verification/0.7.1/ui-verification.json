@@ -1,0 +1,1852 @@
+{
+  "passed": true,
+  "scope": "Browser fixtures with mocked Tauri commands; no physical USB or native installer asserted.",
+  "results": [
+    {
+      "name": "welcome-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/welcome-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "check_app_update",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "welcome-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/welcome-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "automatic-recognition-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/automatic-recognition-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "recognized-connected-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/recognized-connected-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "recognized-connected-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/recognized-connected-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "factory-mistake-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/factory-mistake-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "legacy-model-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/legacy-model-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "select_robot",
+          "args": {
+            "serial": "E661TEST001",
+            "botModel": "boo"
+          }
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "multiple-new-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/multiple-new-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "multiple-mixed-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/multiple-mixed-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "select_robot",
+          "args": {
+            "serial": "E661TEST002",
+            "botModel": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "multiple-remembered-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/multiple-remembered-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "select_robot",
+          "args": {
+            "serial": "E661TEST002",
+            "botModel": null
+          }
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "recovery-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/recovery-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "discovery-error-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/discovery-error-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "rescan_robot",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "updates-settings-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/updates-settings-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "updates-restart-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/updates-restart-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "install_app_update",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "set_preferences",
+          "args": {
+            "preferences": {
+              "botModel": "nimbus",
+              "offlineMode": false,
+              "orientation": 0,
+              "quietHours": {
+                "enabled": false,
+                "startMinute": 1320,
+                "endMinute": 420
+              },
+              "appearance": "dark",
+              "branding": "droidfun",
+              "launchAtLogin": false,
+              "windowMode": "auto",
+              "setupComplete": false,
+              "companionFace": true,
+              "companionAnimation": true,
+              "companionSpeed": "normal",
+              "companionGlances": true,
+              "companionMouth": true
+            }
+          }
+        },
+        {
+          "command": "restart_app_after_update",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "offline-updates-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/offline-updates-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "unsupported-recovery-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/unsupported-recovery-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "linux-update-installer-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/linux-update-installer-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        },
+        {
+          "command": "platform_info",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "supported-legacy-recovery-500",
+      "width": 500,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/supported-legacy-recovery-500.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "model-3d-boo-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/model-3d-boo-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "model-3d-claw-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/model-3d-claw-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "model-3d-meep-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/model-3d-meep-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "model-3d-nimbus-360",
+      "width": 360,
+      "passed": true,
+      "screenshot": "/Users/Second/Documents/ChatGPT/Droidfun/work/release-0.7.1/ui-qa/model-3d-nimbus-360.png",
+      "commands": [
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_state",
+          "args": {}
+        },
+        {
+          "command": "get_connection",
+          "args": {}
+        },
+        {
+          "command": "list_robot_ports",
+          "args": {}
+        },
+        {
+          "command": "list_setup_drives",
+          "args": {}
+        },
+        {
+          "command": "supports_display_test",
+          "args": {}
+        },
+        {
+          "command": "set_reduced_motion",
+          "args": {
+            "reduced": false
+          }
+        },
+        {
+          "command": "get_app_update_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        },
+        {
+          "command": "linux_usb_status",
+          "args": {}
+        }
+      ]
+    },
+    {
+      "name": "model-reduced-motion-360",
+      "passed": true
+    },
+    {
+      "name": "model-webgl-fallback",
+      "passed": true
+    },
+    {
+      "name": "screen-proportions-nimbus-360",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 125.5625,
+        "screenHeight": 65.78125,
+        "canvasWidth": 119.5625,
+        "canvasHeight": 59.78125,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-nimbus-500",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 125.5625,
+        "screenHeight": 65.78125,
+        "canvasWidth": 119.5625,
+        "canvasHeight": 59.78125,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-boo-360",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 95.875,
+        "screenHeight": 50.9375,
+        "canvasWidth": 89.875,
+        "canvasHeight": 44.9375,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-boo-500",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 95.875,
+        "screenHeight": 50.9375,
+        "canvasWidth": 89.875,
+        "canvasHeight": 44.9375,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-meep-360",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 131.5,
+        "screenHeight": 68.75,
+        "canvasWidth": 125.5,
+        "canvasHeight": 62.75,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-meep-500",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 131.5,
+        "screenHeight": 68.75,
+        "canvasWidth": 125.5,
+        "canvasHeight": 62.75,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-claw-360",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 119.625,
+        "screenHeight": 62.8125,
+        "canvasWidth": 113.625,
+        "canvasHeight": 56.8125,
+        "inside": true
+      }
+    },
+    {
+      "name": "screen-proportions-claw-500",
+      "passed": true,
+      "geometry": {
+        "bodyWidth": 280,
+        "screenWidth": 119.625,
+        "screenHeight": 62.8125,
+        "canvasWidth": 113.625,
+        "canvasHeight": 56.8125,
+        "inside": true
+      }
+    }
+  ]
+}

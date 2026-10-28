@@ -1,0 +1,24 @@
+{
+  "version": "0.7.1",
+  "source": "386967a5491ecc0a77dfa05cce0891e21eb876ff",
+  "archiveSha256": "0fcc7b3747c508417cac413ef9ab089243e79295c186b5c82af4491533f4be87",
+  "executableSha256": "6d2ac7ca7efea28e8d2275cd2000a8c31bd1484564e6b3bf830a189fb7eaa5de",
+  "bundleVersion": "0.7.1",
+  "minimumSystemVersion": "13.0",
+  "codeSignatureVerified": true,
+  "architectures": [
+    {
+      "architecture": "arm64",
+      "command": "LC_BUILD_VERSION",
+      "minimumOS": "13.0",
+      "sdk": "14.5"
+    },
+    {
+      "architecture": "x86_64",
+      "command": "LC_BUILD_VERSION",
+      "minimumOS": "13.0",
+      "sdk": "14.5"
+    }
+  ],
+  "launchPerformed": false
+}

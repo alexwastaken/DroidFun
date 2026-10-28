@@ -1,0 +1,17 @@
+{
+  "source": "386967a5491ecc0a77dfa05cce0891e21eb876ff",
+  "fromVersion": "0.7.0",
+  "toVersion": "0.7.1",
+  "publicFeedUsed": true,
+  "automaticRelaunchObserved": true,
+  "matchesPublishedUniversalExecutable": true,
+  "installedExecutableSha256": "6d2ac7ca7efea28e8d2275cd2000a8c31bd1484564e6b3bf830a189fb7eaa5de",
+  "strictCodeSignatureVerified": true,
+  "settingsUnchanged": true,
+  "settingsSha256Before": "3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05",
+  "settingsSha256After": "3452f1ad4ba8801388f97a510ff3e12d0f032a49c3e3aee2e3af456307562c05",
+  "physicalUsbChecked": false,
+  "nativeProportionalPreviewVerified": true,
+  "nativeEnlargeAndCloseVerified": true,
+  "followupUpdateCheck": "up_to_date"
+}

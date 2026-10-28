@@ -1,4 +1,4 @@
-# Customer and Workshop handoff — 0.7.0 / 0.3.1
+# Customer and Workshop handoff — 0.7.1 / 0.3.1
 
 The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download.
 
