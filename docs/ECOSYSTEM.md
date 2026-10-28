@@ -1,4 +1,4 @@
-# Customer and Workshop handoff — 0.7.0 / 0.3.0
+# Customer and Workshop handoff — 0.7.0 / 0.3.1
 
 The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download.
 
@@ -9,6 +9,10 @@ The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private prepar
 3. Complete the unplug/reconnect check and confirm the physical screen is readable. Software checks cannot substitute for those physical steps.
 
 Workshop uses factory 1.3.2 (standard GP4 SDA / GP5 SCL) or 1.3.2-mistake (GP5 SDA / GP4 SCL). Both persist the product model and report it over the standard HELLO protocol. Product codes: Boo 1, Claw 2, Meep 3, Nimbus 4. The identity hardwareProfile names the board family; the HELLO profile identifies the actual screen pins.
+
+## Wipe and reinstall in private Workshop
+
+Workshop 0.3.1 offers **Prepare a droid → Prepare and verify → Wipe and reinstall**. Review the connected board, selected model and actual wiring, confirm erasing its contents, then choose **Erase board and reinstall**. This verifies a supported 2 MiB RP2040 flash, writes and reads back a complete fresh flash image, then provisions the selected model and startup face. Firmware remains 1.3.2 standard or 1.3.2-mistake. The hardware ID and private inventory notes remain; preparation checks must be completed again. A normal reinstall is separate and does not promise whole-flash erasure. Physical wipe acceptance remains open; no board was attached during software verification.
 
 ## Customer setup
 
