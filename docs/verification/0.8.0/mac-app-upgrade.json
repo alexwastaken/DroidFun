@@ -1,0 +1,21 @@
+{
+  "version": "0.8.0",
+  "source": "0ad2d9eea69b9a12b2b31da1556b6b524c272760",
+  "previousVersion": "0.7.1",
+  "checkedAt": "2026-10-28T20:10:53.955737+00:00",
+  "publicFeedOfferedUpdate": true,
+  "signedDownloadCompleted": true,
+  "automaticRestartObservedBeforeAppAcquisition": true,
+  "installedBundleVersion": "0.8.0",
+  "codeSignatureVerified": true,
+  "executableMatchesPublishedArchive": true,
+  "executableSha256": "5b30ce7a63e99e4f0d732a800c1524ac05781438a114af3bdebf6b4f0cd78e55",
+  "settingsByteForByteUnchanged": true,
+  "nativeScreenChoices": [
+    "Custom text",
+    "Upload an image"
+  ],
+  "existingPlaylistVisible": true,
+  "followUpUpdateCheck": "up-to-date",
+  "physicalBoardAttached": false
+}

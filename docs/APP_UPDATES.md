@@ -83,3 +83,7 @@ No physical board was attached, so this verifies the Mac desktop upgrade rather 
 ## Recorded 0.7.1 acceptance
 
 The installed Mac app completed 0.7.0 → 0.7.1 through Settings → App → Check → Download → Restart using the public feed. Automatic restart was observed before any manual launch. The installed executable matched the verified universal package, strict ad-hoc signing passed and saved settings were unchanged. The corrected screen proportions and enlarge/close control were verified in the native app. A follow-up manual check reported the app up to date. See the [acceptance record](verification/0.7.1/mac-app-upgrade.json) and [release evidence](verification/0.7.1/README.md). Firmware is unchanged; no physical USB acceptance is claimed. Existing platform-signing and Windows in-app upgrade limits remain.
+
+## 0.8.0 custom screens acceptance
+
+The [0.8.0 records](verification/0.8.0/README.md) cover all four platform packages, exact-source hashes and signed updater checks. The installed Mac 0.7.1 app fetched the public feed, downloaded 0.8.0, restarted automatically and matched the published executable with a strict code-signature check. Existing settings remained byte for byte unchanged. Native Add a screen offered Custom text and Upload an image, and a fresh update check reported up to date. Schema-3 migration and the private original-settings archive have separate native tests.

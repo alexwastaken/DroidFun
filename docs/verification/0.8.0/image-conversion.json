@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "name": "image/png-real-decode-and-oled-packing",
+      "passed": true
+    },
+    {
+      "name": "image/jpeg-real-decode-and-oled-packing",
+      "passed": true
+    },
+    {
+      "name": "image/webp-real-decode-and-oled-packing",
+      "passed": true
+    },
+    {
+      "name": "not-a-raster",
+      "passed": true
+    },
+    {
+      "name": "oversized-file",
+      "passed": true
+    },
+    {
+      "name": "truncated-png",
+      "passed": true
+    },
+    {
+      "name": "dimension-limits-before-decoding",
+      "passed": true
+    },
+    {
+      "name": "dither-output-bounded",
+      "passed": true
+    },
+    {
+      "name": "black-transparent-icon-visible",
+      "passed": true
+    },
+    {
+      "name": "white-transparent-icon-visible",
+      "passed": true
+    }
+  ]
+}
