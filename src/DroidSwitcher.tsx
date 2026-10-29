@@ -7,7 +7,8 @@ export default function DroidSwitcher({ ports, profiles, selectedSerial, busy, o
   ports: RobotPort[]; profiles: DroidProfile[]; selectedSerial: string | null;
   busy: boolean; onSelect: (serial: string) => void;
 }) {
-  if (ports.length < 2 && profiles.length < 2) return null;
+  const differentDroidAttached = Boolean(selectedSerial) && ports.some(p => !same(selectedSerial, p.serial));
+  if (ports.length < 2 && profiles.length < 2 && !differentDroidAttached) return null;
   const choices = ports.filter(p => p.connectable !== false);
   const index = choices.findIndex(p => same(selectedSerial, p.serial));
   const profile = profiles.find(p => same(selectedSerial, p.serial));

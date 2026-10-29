@@ -11,6 +11,7 @@ pub struct ProbeSchedule {
     generation: u64,
     successful: HashSet<String>,
     failed: HashMap<String, (u8, Instant)>,
+    busy: HashMap<String, Instant>,
 }
 
 impl ProbeSchedule {
@@ -18,18 +19,23 @@ impl ProbeSchedule {
         if self.generation != generation {
             self.successful.clear();
             self.failed.clear();
+            self.busy.clear();
             self.generation = generation;
         }
-        let attached: HashSet<_> = attached.collect();
+        let attached: HashSet<_> = attached.map(str::to_ascii_uppercase).collect();
         self.successful
             .retain(|serial| attached.contains(serial.as_str()));
         self.failed
             .retain(|serial, _| attached.contains(serial.as_str()));
+        self.busy.retain(|serial, _| attached.contains(serial.as_str()));
     }
 
     pub fn ready(&self, serial: &str, now: Instant) -> bool {
-        !self.successful.contains(serial)
-            && self.failed.get(serial).is_none_or(|(attempts, last)| {
+        let serial = serial.to_ascii_uppercase();
+        !self.successful.contains(&serial)
+            && self.busy.get(&serial).is_none_or(|last|
+                now.saturating_duration_since(*last) >= Duration::from_secs(2))
+            && self.failed.get(&serial).is_none_or(|(attempts, last)| {
                 *attempts < 3
                     && now.saturating_duration_since(*last)
                         >= Duration::from_secs(u64::from(*attempts) * 2)
@@ -37,14 +43,26 @@ impl ProbeSchedule {
     }
 
     pub fn record_success(&mut self, serial: &str) {
-        self.successful.insert(serial.into());
-        self.failed.remove(serial);
+        let serial = serial.to_ascii_uppercase();
+        self.successful.insert(serial.clone());
+        self.failed.remove(&serial);
+        self.busy.remove(&serial);
     }
 
     pub fn record_failure(&mut self, serial: &str, now: Instant) {
-        let failed = self.failed.entry(serial.into()).or_insert((0, now));
+        let serial = serial.to_ascii_uppercase();
+        self.busy.remove(&serial);
+        let failed = self.failed.entry(serial).or_insert((0, now));
         failed.0 = failed.0.saturating_add(1);
         failed.1 = now;
+    }
+
+    pub fn record_busy(&mut self, serial: &str, now: Instant) {
+        // Another app owning USB says nothing about this board's firmware.
+        // Keep trying at a calm cadence so quitting that app is sufficient.
+        let serial = serial.to_ascii_uppercase();
+        self.failed.remove(&serial);
+        self.busy.insert(serial, now);
     }
 }
 
@@ -202,6 +220,26 @@ mod tests {
         assert!(probes.ready("board", now + Duration::from_secs(2)));
         probes.record_success("board");
         assert!(!probes.ready("board", now + Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn busy_usb_retries_after_other_app_closes_without_exhausting_handshake_attempts() {
+        let mut probes = ProbeSchedule::default();
+        let now = Instant::now();
+        for seconds in [0, 2, 4, 6, 8, 10] {
+            let attempt = now + Duration::from_secs(seconds);
+            assert!(probes.ready("BOARD", attempt));
+            probes.record_busy("board", attempt);
+            probes.refresh(0, ["BoArD"].into_iter());
+            assert!(!probes.ready("BOARD", attempt + Duration::from_millis(1999)));
+        }
+        assert!(probes.ready("board", now + Duration::from_secs(12)));
+        probes.record_success("board");
+        probes.refresh(0, ["BOARD"].into_iter());
+        assert!(!probes.ready("BoArD", now + Duration::from_secs(60)));
+        probes.refresh(0, [].into_iter());
+        probes.refresh(0, ["board"].into_iter());
+        assert!(probes.ready("board", now + Duration::from_secs(60)));
     }
 
     #[test]

@@ -1,6 +1,6 @@
-# Customer and Workshop handoff — 0.10.0 / 0.3.1
+# Customer and Workshop handoff — public 0.10.0 / private 0.3.2
 
-The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download.
+The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download. Local customer repair candidate 0.10.1 is installed and verified on a Mac, but is not public while Apple signing/notarization remains pending. See [the repair acceptance](verification/0.10.1/README.md).
 
 ## Before shipping
 
@@ -8,11 +8,13 @@ The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private prepar
 2. For a new/unidentified board, select the actual model and wiring and explicitly install the bundled factory firmware. A bootloader alone cannot prove the board is blank. Current prepared boards can be checked without reinstalling.
 3. Complete the unplug/reconnect check and confirm the physical screen is readable. Software checks cannot substitute for those physical steps.
 
+Workshop 0.3.2 makes the existing program explicit (“Nimbus already programmed”), provides a nearby reset review, and retains the last confirmed details while the customer app uses USB. Quit the customer app using the Workshop button to obtain a fresh check before preparation. A failed inspection retries twice; it is not evidence that firmware is missing.
+
 Workshop uses factory 1.3.2 (standard GP4 SDA / GP5 SCL) or 1.3.2-mistake (GP5 SDA / GP4 SCL). Both persist the product model and report it over the standard HELLO protocol. Product codes: Boo 1, Claw 2, Meep 3, Nimbus 4. The identity hardwareProfile names the board family; the HELLO profile identifies the actual screen pins.
 
 ## Wipe and reinstall in private Workshop
 
-Workshop 0.3.1 offers **Prepare a droid → Prepare and verify → Wipe and reinstall**. Review the connected board, selected model and actual wiring, confirm erasing its contents, then choose **Erase board and reinstall**. This verifies a supported 2 MiB RP2040 flash, writes and reads back a complete fresh flash image, then provisions the selected model and startup face. Firmware remains 1.3.2 standard or 1.3.2-mistake. The hardware ID and private inventory notes remain; preparation checks must be completed again. A normal reinstall is separate and does not promise whole-flash erasure. Physical wipe acceptance remains open; no board was attached during software verification.
+Workshop 0.3.2 offers **Prepare a droid → Prepare and verify → Wipe and reinstall**. Review the connected board, selected model and actual wiring, confirm erasing its contents, then choose **Erase board and reinstall**. This verifies a supported 2 MiB RP2040 flash, writes and reads back a complete fresh flash image, then provisions the selected model and startup face. Firmware remains 1.3.2 standard or 1.3.2-mistake. The hardware ID and private inventory notes remain; preparation checks must be completed again. A normal reinstall is separate and does not promise whole-flash erasure. Physical whole-flash wipe acceptance remains open. The 0.3.2 reset review was checked with an attached Nimbus and cancelled without writing.
 
 ## Customer setup
 

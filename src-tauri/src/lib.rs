@@ -1634,7 +1634,7 @@ fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
         return;
     }
     let Ok(_guard) = UsbOperationGuard::acquire() else {return;};
-    publish_connection(app, ConnectionSnapshot {state: "identifying".into(), detail: "Recognizing your droid…".into(), port: Some(candidate.path.clone()), board_id: Some(candidate.serial.clone()), ..ConnectionSnapshot::default()});
+    publish_connection(app, connection::opening_status(candidate, cached.clone().unwrap_or_default()));
     match Link::connect(candidate) {
         Ok(link) => {
             probes.record_success(&candidate.serial);
@@ -1665,9 +1665,13 @@ fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
             }
         }
         Err(error) => {
-            probes.record_failure(&candidate.serial, Instant::now());
+            if error == connection::USB_IN_USE_DETAIL {
+                probes.record_busy(&candidate.serial, Instant::now());
+            } else {
+                probes.record_failure(&candidate.serial, Instant::now());
+            }
             let status = ConnectionSnapshot {
-                state: if error == linux_usb::PERMISSION_DETAIL {"permission_needed"} else {"setup_needed"}.into(),
+                state: connection::failure_state(&error).into(),
                 detail: error, port: Some(candidate.path.clone()), board_id: Some(candidate.serial.clone()),
                 ..ConnectionSnapshot::default()};
             *cached = Some(status.clone()); publish_connection(app, status);
@@ -1716,18 +1720,22 @@ fn connection_worker(app: AppHandle) {
             std::thread::sleep(Duration::from_secs(1));
             continue;
         };
-        let candidate = robot_choices(&app.state::<AppState>())
-            .ok()
-            .and_then(|ports| ports.into_iter().find(|p| p.connectable && p.port.serial.eq_ignore_ascii_case(&serial)))
+        let choices = match robot_choices(&app.state::<AppState>()) {
+            Ok(choices) => choices,
+            Err(error) => {
+                publish_connection(&app, ConnectionSnapshot {state: "discovery_error".into(), detail: error, board_id: Some(serial.clone()), ..ConnectionSnapshot::default()});
+                std::thread::sleep(Duration::from_secs(1));
+                continue;
+            }
+        };
+        let another_available = choices.iter().any(|p| p.connectable && !p.port.serial.eq_ignore_ascii_case(&serial));
+        let candidate = choices.into_iter()
+            .find(|p| p.connectable && p.port.serial.eq_ignore_ascii_case(&serial))
             .map(|p|p.port);
         let Some(candidate) = candidate else {
             publish_connection(
                 &app,
-                ConnectionSnapshot {
-                    state: "reconnecting".into(),
-                    detail: "Waiting for your bot. Reconnecting automatically when USB returns.".into(),
-                    ..ConnectionSnapshot::default()
-                },
+                connection::absent_selection_status(&serial, another_available),
             );
             std::thread::sleep(Duration::from_secs(1));
             continue;
@@ -1746,12 +1754,7 @@ fn connection_worker(app: AppHandle) {
             .unwrap_or_default();
         publish_connection(
             &app,
-            ConnectionSnapshot {
-                state: "connecting".into(),
-                detail: "Checking the DroidFun App firmware handshake".into(),
-                port: Some(candidate.path.clone()),
-                ..previous
-            },
+            connection::opening_status(&candidate, previous.clone()),
         );
         match Link::connect(&candidate) {
             Ok(mut link) => {
@@ -1827,26 +1830,18 @@ fn connection_worker(app: AppHandle) {
                 }
             }
             Err(error) => {
-                let setup = error.contains("No DroidFun App reply")
-                    || error.contains("No reply from the bot after two attempts")
-                    || error.contains("invalid DroidFun App handshake");
+                let failure_state = connection::failure_state(&error);
                 publish_connection(
                     &app,
                     ConnectionSnapshot {
-                        state: if error == linux_usb::PERMISSION_DETAIL {
-                            "permission_needed"
-                        } else if setup {
-                            "setup_needed"
-                        } else {
-                            "reconnecting"
-                        }
-                        .into(),
+                        state: failure_state.into(),
                         detail: error,
                         port: Some(candidate.path),
-                        ..ConnectionSnapshot::default()
+                        board_id: Some(serial.clone()),
+                        ..previous
                     },
                 );
-                if setup {
+                if failure_state == "setup_needed" {
                     std::thread::sleep(Duration::from_secs(10));
                     continue;
                 }
@@ -1933,9 +1928,13 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            show_window(app)
+            if app.try_state::<AppState>().is_some() { show_window(app); }
         }))
         .setup(|app| {
+            // Tauri runs setup from a native launch callback. Returning an error
+            // there can abort across the callback boundary and trigger macOS's
+            // repeated reopen dialog. Preserve settings and explain the failure.
+            let result = (|| -> Result<(), Box<dyn std::error::Error>> {
             app_update::initialize(app.handle());
             let settings_path = app.path().app_config_dir()?.join("settings.json");
             // An already enabled integration follows app updates without changing Claude settings.
@@ -2078,10 +2077,21 @@ pub fn run() {
                 });
             }
             Ok(())
+            })();
+            if let Err(error) = result {
+                use tauri_plugin_dialog::DialogExt;
+                let handle = app.handle().clone();
+                app.dialog()
+                    .message(format!("DroidFun App could not open.\n\n{error}\n\nYour saved settings have been kept. If another copy is installed, open the latest DroidFun App from Applications."))
+                    .title("DroidFun App needs attention")
+                    .kind(tauri_plugin_dialog::MessageDialogKind::Error)
+                    .show(move |_| handle.exit(1));
+            }
+            Ok(())
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                let state = window.state::<AppState>();
+                let Some(state) = window.try_state::<AppState>() else { return; };
                 let mode = state
                     .engine
                     .lock()
@@ -2161,6 +2171,16 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("DroidFun App could not start")
         .run(|app, event| {
+            // Finder and Dock reopen an existing macOS process through this
+            // event; they do not necessarily launch a second instance. Restore
+            // controls that were closed while the USB engine stayed running.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = &event {
+                if app.try_state::<AppState>().is_some() {
+                    show_window(app);
+                }
+                return;
+            }
             if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
                 // Ordinary Quit cannot stop a bundle replacement halfway
                 // through. The explicit updater restart remains permitted.
@@ -2168,7 +2188,7 @@ pub fn run() {
                     api.prevent_exit();
                     return;
                 }
-                let state = app.state::<AppState>();
+                let Some(state) = app.try_state::<AppState>() else { return; };
                 if code.is_none() && state.platform.tray_available {
                     // Last control window closed; explicit Quit uses exit(0).
                     api.prevent_exit();

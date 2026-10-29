@@ -30,7 +30,7 @@ function fixture(t) {
     fs.writeFileSync(file,data);fs.writeFileSync(`${file}.sig`,signFixture(data,version,original));
     const updater=collectUpdater(file,directory,version,platform,publicKey);
     const checked=[updater.assetName,updater.signatureName].map(name=>digest(path.join(directory,name)));
-    evidence.push({version,platform,applicationCommit:source,tests:{passed:80,failed:0},architectures:['arm64','x86_64'],adHocSignatureVerified:true,smoke:{result:'passed',installedBinaryMatchesPackage:true,nativeWindowCreated:true},updater,assets:checked});
+    evidence.push({version,platform,applicationCommit:source,tests:{passed:80,failed:0},architectures:['arm64','x86_64'],signingMode:'developer-id',distribution:'public',codeSignatureVerified:true,developerIdSigned:true,notarized:true,stapled:true,gatekeeperAccepted:true,helperSigned:true,librarySigned:true,helperRuntimeVerified:true,verifiedContainers:['dmg','zip','updater'],smoke:{result:'passed',installedBinaryMatchesPackage:true,nativeWindowCreated:true},updater,assets:checked});
     assets.push(...checked.map(a=>({...a,size:a.bytes,state:'uploaded',digest:`sha256:${a.sha256}`,browser_download_url:`https://github.com/alexwastaken/DroidFun/releases/download/v${version}/${a.name}`})));
   }
   const release={draft:false,prerelease:true,tag_name:`v${version}`,target_commitish:source,published_at:'2026-10-25T12:00:00Z',html_url:`https://github.com/alexwastaken/DroidFun/releases/tag/v${version}`,assets};
@@ -76,6 +76,13 @@ test('feed rejects draft, stale source, missing platform and changed published b
   assert.throws(()=>generate({...input,release}),/Published asset/);
   release.assets[0]=input.release.assets[0];release.assets.push(input.release.assets[0]);
   assert.throws(()=>generate({...input,release}),/Published asset/);
+});
+test('feed refuses an internal or unnotarized Mac release even with a valid updater signature',t=>{
+  const input=fixture(t);
+  for(const change of [{signingMode:'internal-adhoc'},{notarized:false},{stapled:false},{helperSigned:false},{verifiedContainers:['dmg','zip']}]){
+    const evidence=structuredClone(input.evidence);Object.assign(evidence[0],change);
+    assert.throws(()=>generate({...input,evidence}),/Public Mac distribution/);
+  }
 });
 test('evidence rejects modified local bytes, signatures and stale metadata',t=>{
   const input=fixture(t),item=input.evidence[0];

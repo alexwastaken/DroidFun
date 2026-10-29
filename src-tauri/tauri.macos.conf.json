@@ -1,7 +1,12 @@
 {
   "bundle": {
     "resources": {
-      "resources/picotool-macos-universal/": "picotool-macos-universal/"
+      "resources/picotool-macos-universal/*.md": "picotool-macos-universal/",
+      "resources/picotool-macos-universal/*.txt": "picotool-macos-universal/",
+      "resources/picotool-macos-universal/*.tar.gz": "picotool-macos-universal/",
+      "resources/picotool-macos-universal/*.tar.bz2": "picotool-macos-universal/",
+      "resources/picotool-macos-universal/*SHA256SUMS": "picotool-macos-universal/",
+      "resources/picotool-macos-universal/build-helper.sh": "picotool-macos-universal/build-helper.sh"
     }
   }
 }
