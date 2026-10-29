@@ -46,3 +46,10 @@ plist = "=1.10.1"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_JobObjects", "Win32_System_Pipes", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+glib = "=0.18.5"
+
+[patch.crates-io]
+# GTK3 still requires 0.18; see the audited two-line security backport's provenance.
+glib = { path = "../vendor/glib" }

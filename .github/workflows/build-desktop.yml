@@ -127,6 +127,13 @@ jobs:
         run: node --test ../pipeline/scripts/updater-release.test.cjs
       - name: Run native behavior tests
         run: node ../pipeline/scripts/native-package-evidence.cjs test
+      - name: Check GLib security backport with optimization
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$DESKBOT_ARTIFACT_DIR"
+          cargo test --release --locked --manifest-path src-tauri/Cargo.toml --test glib_variant_str_iter --target "${{ matrix.target }}" 2>&1 | tee "$DESKBOT_ARTIFACT_DIR/glib-security-backport-Linux-x86_64.txt"
       - name: Build native installer packages
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ runner.os == 'Windows' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}

@@ -123,7 +123,13 @@ fn show_panel(app: &AppHandle, anchor: bool, open_settings: bool) {
             .find(|w| w.label == "main")?;
         tauri::WebviewWindowBuilder::from_config(app, config)
             .ok()?
-            .on_navigation(|url| crate::web_security::local_navigation(url, cfg!(dev)))
+            .on_navigation(|url| {
+                if crate::web_security::local_navigation(url, cfg!(dev)) { return true; }
+                // WebKit checks navigation before its new-window callback.
+                // Open approved help externally while always denying it here.
+                let _ = crate::web_security::open_public_link(url);
+                false
+            })
             .on_new_window(|url, _| {
                 let _ = crate::web_security::open_public_link(&url);
                 tauri::webview::NewWindowResponse::Deny
