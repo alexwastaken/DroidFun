@@ -23,7 +23,7 @@ mod support;
 #[cfg(windows)]
 mod windows_claude_terminal;
 
-use connection::{ConnectionSnapshot, Link, RobotPort};
+use connection::{ConnectionSnapshot, Link};
 use core::{Engine, Location, Preferences, Settings, Snapshot, SourceConfig, Widget};
 use providers::{Providers, UsageWindow};
 use std::{
@@ -255,7 +255,7 @@ async fn select_robot(
         let candidate = choice.port;
         let remembered = state.engine.lock().map_err(|_| "Settings are busy")?.settings.droids
             .iter().any(|p| p.serial.eq_ignore_ascii_case(value));
-        if chosen_model.is_none() && !remembered {
+        if !remembered {
             let guard = _operation.clone();
             let job = tauri::async_runtime::spawn_blocking(move || {
                 let _guard = guard;
@@ -265,7 +265,11 @@ async fn select_robot(
             let status = tokio::time::timeout(Duration::from_secs(5), job).await
                 .map_err(|_| "Checking this droid took too long. Reconnect USB and try again.")?
                 .map_err(|_| "The droid check stopped. Try again.")??;
-            chosen_model = status.identity.as_ref().map(|identity| identity.model.clone());
+            // Even a previously opened manual model prompt must yield to
+            // the identity this physical board reports now.
+            if let Some(model) = onboarding::verified_model(&status) {
+                chosen_model = Some(model.into());
+            }
             if chosen_model.is_none() {
                 if let Ok(ticket) = state.providers.request_ticket("droid_setup") {
                     chosen_model = droid_registry::lookup(value,ticket.clone()).await.filter(|_|ticket.current());
@@ -1638,21 +1642,30 @@ fn tray_action(app: &AppHandle, id: &str) {
     }
 }
 
-fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
-    cached: &mut Option<ConnectionSnapshot>) {
-    let ports: Vec<RobotPort> = match robot_choices(&app.state::<AppState>()) {
-        Ok(ports) => ports.into_iter().filter(|p| p.connectable).map(|p| p.port).collect(),
-        Err(error) => { publish_connection(app, ConnectionSnapshot {state: "discovery_error".into(), detail: error, ..ConnectionSnapshot::default()}); return; }
+fn discover_droid(app: &AppHandle, choices: &[connection_slots::PortChoice],
+    probes: &mut onboarding::ProbeSchedule, cached: &mut Option<ConnectionSnapshot>) {
+    let selected = match app.state::<AppState>().engine.lock() {
+        Ok(engine) => engine.settings.selected_device_serial.clone(),
+        Err(_) => return,
     };
-    probes.refresh(DISCOVERY_GENERATION.load(std::sync::atomic::Ordering::SeqCst), ports.iter().map(|p| p.serial.as_str()));
-    let [candidate] = ports.as_slice() else {
+    let Some(intent) = onboarding::AutoSelection::capture(selected.as_deref(), choices) else {
         *cached = None;
-        publish_connection(app, ConnectionSnapshot {
-            state: if ports.is_empty() {"preview"} else {"choose_device"}.into(),
-            detail: if ports.is_empty() {"Plug your droid into this computer with a USB data cable."} else {"Choose the droid you want to use. Each keeps its own screens."}.into(),
-            ..ConnectionSnapshot::default()});
+        // A manual choice made during enumeration wins. The worker will
+        // connect it on its next pass, without publishing an old status.
+        if selected.as_deref().is_some_and(|id| choices.iter().any(|p| p.port.serial.eq_ignore_ascii_case(id))) {
+            return;
+        }
+        let available = choices.iter().any(|p| p.connectable);
+        publish_connection(app, if let Some(serial) = selected {
+            connection::absent_selection_status(&serial, available)
+        } else { ConnectionSnapshot {
+            state: if available {"choose_device"} else {"preview"}.into(),
+            detail: if available {"Choose the droid you want to use. Each keeps its own screens."} else {"Plug your droid into this computer with a USB data cable."}.into(),
+            ..ConnectionSnapshot::default()
+        }});
         return;
     };
+    let Some(candidate) = choices.iter().find(|p| p.port.serial.eq_ignore_ascii_case(intent.candidate_serial())).map(|p| &p.port) else { return; };
     if DIAGNOSTIC_BOARD.lock().ok().is_some_and(|id| id.as_deref().is_some_and(|id| id.eq_ignore_ascii_case(&candidate.serial))) {
         publish_connection(app, ConnectionSnapshot {state: "diagnostic".into(), detail: "The screen test is running. Finish it to return to your normal screens.".into(), board_id: Some(candidate.serial.clone()), ..ConnectionSnapshot::default()});
         return;
@@ -1667,34 +1680,59 @@ fn discover_droid(app: &AppHandle, probes: &mut onboarding::ProbeSchedule,
     publish_connection(app, connection::opening_status(candidate, cached.clone().unwrap_or_default()));
     match Link::connect(candidate) {
         Ok(link) => {
-            probes.record_success(&candidate.serial);
             let mut status = link.status.clone();
             drop(link);
-            drop(_guard);
-            let first = mutate(app, app.state::<AppState>(), true, |engine| onboarding::adopt(engine, &status));
-            let result = if first.is_err() && status.identity.is_none() {
+            // USB may have changed while HELLO was in flight. Keep the
+            // operation guard through adoption, and recheck both the current
+            // selection and the attached set before changing any profile.
+            let Ok(current) = robot_choices(&app.state::<AppState>()) else { return; };
+            let first = mutate(app, app.state::<AppState>(), true, |engine| intent.adopt(engine, &status, &current));
+            if first.as_ref().is_err_and(|e| e == onboarding::AUTO_SELECTION_CHANGED) {
+                *cached = None;
+                return;
+            }
+            let result = if first.as_ref().is_err_and(|e| e == onboarding::MODEL_REQUIRED) {
                 let state=app.state::<AppState>();
                 let ticket=state.providers.request_ticket("droid_setup");
                 if let Ok(ticket)=ticket {
                     let hint=tauri::async_runtime::block_on(droid_registry::lookup(&candidate.serial,ticket.clone()));
                     if let Some(model)=hint.filter(|_|ticket.current()) {
-                        if connection::robot_ports().is_ok_and(|ports|ports.iter().any(|p|p.serial.eq_ignore_ascii_case(&candidate.serial))) {
-                            mutate(app,app.state::<AppState>(),true,|engine|onboarding::adopt_hint(engine,&status,&model))
-                        } else { first }
+                        let Ok(current) = robot_choices(&app.state::<AppState>()) else { return; };
+                        mutate(app,app.state::<AppState>(),true,|engine| {
+                            if !ticket.current() { return Err(onboarding::AUTO_SELECTION_CHANGED.into()); }
+                            intent.adopt_hint(engine,&status,&current,&model)
+                        })
                     } else { first }
                 } else { first }
             } else { first };
+            if result.as_ref().is_err_and(|e| e == onboarding::AUTO_SELECTION_CHANGED) {
+                *cached = None;
+                return;
+            }
             match result {
-                Ok(_) => { *cached = None; publish_connection(app, ConnectionSnapshot {state: "connecting".into(), detail: "Your droid was recognized. Connecting…".into(), ..status}); }
+                Ok(_) => { probes.record_success(&candidate.serial); *cached = None; publish_connection(app, ConnectionSnapshot {state: "connecting".into(), detail: "Your droid was recognized. Connecting…".into(), ..status}); }
                 Err(error) => {
+                    let Ok(current) = robot_choices(&app.state::<AppState>()) else { return; };
+                    let still_current = app.state::<AppState>().engine.lock().is_ok_and(|engine|
+                        intent.is_current(engine.settings.selected_device_serial.as_deref(), &current));
+                    if !still_current { *cached = None; return; }
+                    // A failed save/temporary error should remain retryable.
+                    // Only a valid legacy HELLO needing a model is cached.
+                    let needs_model = error == onboarding::MODEL_REQUIRED;
+                    if needs_model { probes.record_success(&candidate.serial); }
+                    else { probes.record_failure(&candidate.serial, Instant::now()); }
                     // HELLO is good even for older boards without a stored model.
-                    status.state = if status.identity.is_none() {"needs_model"} else {"discovery_error"}.into();
+                    status.state = if needs_model {"needs_model"} else {"discovery_error"}.into();
                     status.detail = error;
                     *cached = Some(status.clone()); publish_connection(app, status);
                 }
             }
         }
         Err(error) => {
+            let Ok(current) = robot_choices(&app.state::<AppState>()) else { return; };
+            let still_current = app.state::<AppState>().engine.lock().is_ok_and(|engine|
+                intent.is_current(engine.settings.selected_device_serial.as_deref(), &current));
+            if !still_current { *cached = None; return; }
             if error == connection::USB_IN_USE_DETAIL {
                 probes.record_busy(&candidate.serial, Instant::now());
             } else {
@@ -1745,28 +1783,26 @@ fn connection_worker(app: AppHandle) {
                         .then(|| engine.settings.selected_device_serial.clone()).flatten()
                 })
         };
-        let Some(serial) = selected else {
-            discover_droid(&app, &mut probes, &mut discovered);
-            std::thread::sleep(Duration::from_secs(1));
-            continue;
-        };
         let choices = match robot_choices(&app.state::<AppState>()) {
             Ok(choices) => choices,
             Err(error) => {
-                publish_connection(&app, ConnectionSnapshot {state: "discovery_error".into(), detail: error, board_id: Some(serial.clone()), ..ConnectionSnapshot::default()});
+                publish_connection(&app, ConnectionSnapshot {state: "discovery_error".into(), detail: error, board_id: selected.clone(), ..ConnectionSnapshot::default()});
                 std::thread::sleep(Duration::from_secs(1));
                 continue;
             }
         };
-        let another_available = choices.iter().any(|p| p.connectable && !p.port.serial.eq_ignore_ascii_case(&serial));
-        let candidate = choices.into_iter()
+        probes.refresh(DISCOVERY_GENERATION.load(std::sync::atomic::Ordering::SeqCst),
+            selected.as_deref(), choices.iter().filter(|p| p.connectable).map(|p| p.port.serial.as_str()));
+        let Some(serial) = selected else {
+            discover_droid(&app, &choices, &mut probes, &mut discovered);
+            std::thread::sleep(Duration::from_secs(1));
+            continue;
+        };
+        let candidate = choices.iter()
             .find(|p| p.connectable && p.port.serial.eq_ignore_ascii_case(&serial))
-            .map(|p|p.port);
+            .map(|p|p.port.clone());
         let Some(candidate) = candidate else {
-            publish_connection(
-                &app,
-                connection::absent_selection_status(&serial, another_available),
-            );
+            discover_droid(&app, &choices, &mut probes, &mut discovered);
             std::thread::sleep(Duration::from_secs(1));
             continue;
         };

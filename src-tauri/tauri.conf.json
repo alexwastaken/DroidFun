@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "DroidFun App",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "identifier": "com.deskbot.companion",
   "build": {
     "beforeDevCommand": "npm run dev",
