@@ -1,6 +1,6 @@
 # Public customer readiness
 
-Assessment date: 2026-10-29. This records source review and local checks for the 0.10.6 candidate. It does not certify a published release or completed testing on other operating systems.
+Assessment date: 2026-10-29. This records source review, local checks and hosted-runner verification for the 0.10.6 internal candidate. It does not certify a published release or physical-device acceptance on every operating system.
 
 ## Fresh customer setup
 
@@ -25,16 +25,44 @@ An older board without firmware identity may use a remembered model, a bounded p
 | Fresh customer UI | 21 browser scenarios passed at 360/500 px: empty profiles, no USB, all four factory models online/offline, update network failure, absent account software, explicit Apply and cancellation. Native replies and account failures were simulated. |
 | Bundled visuals | All four models retained usable controls and local posters with WebGL disabled. No external presentation asset requests, unhandled page errors or horizontal overflow occurred in the fixtures. |
 | Native regression suite | 177 passed, one existing live-account test ignored. Includes fresh factory recognition with both wiring variants, independent customer profiles, legacy offline selection, and saving preferences before first connection. |
-| Release and boundary guards | 22 tests passed, covering release evidence and source-level customer permission/CSP/registry restrictions. |
+| Release and boundary guards | 23 tests passed, covering release evidence and source-level customer permission/CSP/registry restrictions. |
 | Frontend build | TypeScript and production frontend build passed. |
+| Installed Apple Silicon app | Internal 0.10.6 passed bundle, helper and read-only DMG checks. The installed app rendered its local 3D model, received state updates, opened/canceled Settings, and opened help in the system browser while retaining its local controls. All saved settings remained identical. This was an existing user profile, not a fresh Mac account. |
 
 The UI fixture report identifies its base version as 0.10.5; it exercised the candidate's two UI changes before the 0.10.6 version bump. Fixtures used synthetic IDs and no real accounts or hardware. These results do not demonstrate another customer's clean-machine installation.
+
+## Native installer verification
+
+Application and pipeline source: `a23ef5635687481142e496b726fcba3472ec1555`.
+The [Windows/Linux run](https://github.com/alexwastaken/DroidFun/actions/runs/40972606529)
+passed on Windows x64, Windows ARM64 and Ubuntu 24.04 x86_64. Each package was
+installed and launched on its native runner. Linux also passed the optimized
+GLib backport regression and installed-app IPC, external-browser and scoped USB
+permission checks. These hosted runners had no physical droids or owner accounts.
+
+The [universal Mac run](https://github.com/alexwastaken/DroidFun/actions/runs/40973815077)
+passed on `68795c116a0e845c2ad3654e66582088ebbf2db8`; only Mac packaging code/tests
+changed after the verified Windows/Linux source. Both CPU architectures, ad-hoc
+code signatures, helper execution, and matching DMG/ZIP contents were verified.
+The staging step supplies the helper under every target filename required by
+Tauri. These packages remain internal and are not Developer ID signed or notarized.
+
+| Native target | Behavior tests | Additional verification |
+| --- | --- | --- |
+| Windows x64 | 169 passed, one ignored | Fresh installer, matching payload/CPU, native window, updater signature |
+| Windows ARM64 | 169 passed, one ignored | Fresh installer, matching payload/CPU, native window, updater signature |
+| Linux x86_64 | 170 passed, one ignored | Two optimized GLib regressions; fresh DEB install, actual IPC/browser restrictions, scoped USB rules, removal/reinstall preservation; RPM architecture metadata |
+| macOS universal | 177 passed, one ignored | Intel/Apple Silicon build, helper runtime and internal DMG/ZIP verification; local Apple Silicon acceptance is recorded separately |
+
+[Compact verification record and package hashes](verification/0.10.6/public-customer.json)
+preserve the exact commits, runs, checks and limitations. No installers were
+uploaded to a release and the website/updater still point to v0.10.0.
 
 ## Remaining release gates
 
 - macOS Developer ID signing and notarization remain blocked on owner enrollment and credentials. An internal ad-hoc build does not remove Apple's trust warning. See [Mac signing](MAC_SIGNING.md).
 - Windows installers currently lack a publisher code-signing certificate. Updater signatures do not provide Windows publisher trust or guarantee that SmartScreen will accept a fresh download.
-- Operating-system CI and fresh installer checks for this candidate remain pending. Verify the exact release source, package contents, helper execution, USB permissions, launch behavior and update installation on every supported target.
+- Hosted Windows/Linux installation and universal Mac packaging checks passed as recorded above. Fresh-machine hardware, human trust prompts, update installation, and Intel Mac runtime still require release acceptance.
 - Real four-droid operation, prolonged reconnect behavior, and clean-machine hardware acceptance across supported operating systems are not verified by this audit. Earlier single-board checks are not a substitute.
 - Publishing installers, the website catalog and the updater feed requires separate release evidence. This document does not authorize or claim publication.
 

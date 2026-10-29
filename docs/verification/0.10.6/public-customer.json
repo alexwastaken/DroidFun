@@ -1,0 +1,267 @@
+{
+  "assessmentDate": "2026-10-29",
+  "version": "0.10.6",
+  "distribution": "internal candidate; not published",
+  "localChecks": {
+    "nativePassed": 177,
+    "nativeIgnored": 1,
+    "freshProfileUiScenariosPassed": 21,
+    "releaseBoundaryTestsPassed": 23
+  },
+  "installedAppleSilicon": {
+    "installedVersion": "0.10.6",
+    "executableSha256": "28034b10e904c5a759c5e1132cffc8b8c831051567a70f73b510d7a576383536",
+    "sourceMatchesInstalled": true,
+    "settingsIdenticalAfterInstall": true,
+    "dmgVerified": true,
+    "installedAt": "2026-10-29T23:22:24.691298+00:00",
+    "settingsIdenticalAfterLaunchAndUiChecks": true,
+    "nativeUiChecks": {
+      "settingsOpenedAndCanceled": true,
+      "bundled3DRendered": true,
+      "stateEventsUpdating": true,
+      "zeroConnectedCounter": true,
+      "approvedHelpOpenedInSystemBrowser": true,
+      "appStayedAtLocalOrigin": true,
+      "nativeControlsAfterHelp": true
+    },
+    "physicalUsbChecked": false
+  },
+  "platforms": [
+    {
+      "version": "0.10.6",
+      "platform": "Windows-x64",
+      "target": "x86_64-pc-windows-msvc",
+      "applicationCommit": "a23ef5635687481142e496b726fcba3472ec1555",
+      "pipelineCommit": "a23ef5635687481142e496b726fcba3472ec1555",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/40972606529",
+      "runner": {
+        "os": "Windows",
+        "architecture": "X64",
+        "image": "20261021.278.1"
+      },
+      "tests": {
+        "passed": 169,
+        "failed": 0
+      },
+      "architecture": "x64",
+      "smoke": {
+        "result": "passed",
+        "installedBinaryMatchesPackage": true,
+        "aliveSeconds": 15,
+        "installerExitCode": 0,
+        "installedBinaryArchitecture": "x64",
+        "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+        "nativeWindowCreated": true
+      },
+      "signed": false,
+      "assets": [
+        {
+          "name": "DroidFun-App-0.10.6-Windows-x64-setup.exe",
+          "bytes": 6749142,
+          "sha256": "bbf12a7a475e40eb176721362c680fc72ec42bb0e37c612efad3edc21c84bbcd"
+        },
+        {
+          "name": "DroidFun-App-0.10.6-Windows-x64-setup.exe.sig",
+          "bytes": 444,
+          "sha256": "fef366d9be7740873f7e19115365a1ded686f964bce24283e56742fde3aa71eb"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ],
+      "updaterSignatureVerified": true
+    },
+    {
+      "version": "0.10.6",
+      "platform": "Windows-ARM64",
+      "target": "aarch64-pc-windows-msvc",
+      "applicationCommit": "a23ef5635687481142e496b726fcba3472ec1555",
+      "pipelineCommit": "a23ef5635687481142e496b726fcba3472ec1555",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/40972606529",
+      "runner": {
+        "os": "Windows",
+        "architecture": "ARM64",
+        "image": "20261026.197.1"
+      },
+      "tests": {
+        "passed": 169,
+        "failed": 0
+      },
+      "architecture": "ARM64",
+      "smoke": {
+        "installedBinaryArchitecture": "ARM64",
+        "result": "passed",
+        "nativeWindowCreated": true,
+        "aliveSeconds": 15,
+        "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+        "installerExitCode": 0,
+        "installedBinaryMatchesPackage": true
+      },
+      "signed": false,
+      "assets": [
+        {
+          "name": "DroidFun-App-0.10.6-Windows-ARM64-setup.exe",
+          "bytes": 6272797,
+          "sha256": "27a3071356b174505dddff5a34f81097c1f45439660513cc063ce74e3ec7aa74"
+        },
+        {
+          "name": "DroidFun-App-0.10.6-Windows-ARM64-setup.exe.sig",
+          "bytes": 448,
+          "sha256": "8b062428c1b4752f0e8e2e6be44b0584acbbb4d6ee2f396fda08334fdd25d98e"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ],
+      "updaterSignatureVerified": true
+    },
+    {
+      "version": "0.10.6",
+      "platform": "Linux-x86_64",
+      "target": "x86_64-unknown-linux-gnu",
+      "applicationCommit": "a23ef5635687481142e496b726fcba3472ec1555",
+      "pipelineCommit": "a23ef5635687481142e496b726fcba3472ec1555",
+      "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/40972606529",
+      "runner": {
+        "os": "Linux",
+        "architecture": "X64",
+        "image": "20261026.354.1"
+      },
+      "tests": {
+        "passed": 170,
+        "failed": 0
+      },
+      "architecture": "x86_64",
+      "smoke": {
+        "result": "passed",
+        "debInstalled": true,
+        "automaticUsbRuleInstalled": true,
+        "repairButtonRealIpc": true,
+        "plugInWelcome": true,
+        "optionalModelChooser": true,
+        "botSelectionRealIpc": true,
+        "automaticBotThemes": [
+          "claw",
+          "meep",
+          "boo",
+          "nimbus"
+        ],
+        "botSpecificWidgetOptions": true,
+        "scopedUaccessFixture": true,
+        "removalAndReinstallPreserveUserFiles": true,
+        "noGroupChanges": true,
+        "installedBinaryMatchesPackage": true,
+        "rpmMetadataArchitecture": "x86_64",
+        "nativeWindowCreated": true,
+        "aliveSeconds": 15,
+        "runnerPolicyDirectoryFixture": true,
+        "environment": "Ubuntu 24.04, isolated fresh XDG configuration, Xvfb and D-Bus; hosted runner policy ancestors normalized to ordinary root:root 0755; no tray host, robot or account credentials"
+      },
+      "signed": false,
+      "assets": [
+        {
+          "name": "DroidFun-App-0.10.6-Linux-x86_64.deb",
+          "bytes": 10482048,
+          "sha256": "a08c1a860c80632aee5e0e02da45ad1b3bbf717336462871864fcb8cbfbeb070"
+        },
+        {
+          "name": "DroidFun-App-0.10.6-Linux-x86_64.rpm",
+          "bytes": 10483097,
+          "sha256": "43750c8494edc98e1b0dc6d40e6fefa1097330a606e2a656bdc86341966dd2c4"
+        }
+      ],
+      "remaining": [
+        "Physical robot USB behavior",
+        "Live account sign-in and usage on this OS",
+        "Human tray and window interaction",
+        "Installation/upgrade/uninstall acceptance beyond recorded checks",
+        "Code signing"
+      ],
+      "optimizedGlibRegression": {
+        "passed": 2,
+        "failed": 0
+      },
+      "nativeIpcBoundary": {
+        "customerReadAllowed": true,
+        "eventEmitDenied": true,
+        "newWebviewDenied": true,
+        "workshopRegistryUnavailable": true
+      },
+      "nativeBrowserBoundary": {
+        "approvedBlankAndSameWindowLinksHandedOff": true,
+        "unapprovedLinksDenied": true,
+        "noEmbeddedRemoteWindow": true,
+        "customerIpcStillWorks": true
+      },
+      "physicalRobot": "not_available"
+    }
+  ],
+  "universalMac": {
+    "version": "0.10.6",
+    "platform": "macOS-universal",
+    "productName": "DroidFun App",
+    "identifier": "com.deskbot.companion",
+    "applicationCommit": "68795c116a0e845c2ad3654e66582088ebbf2db8",
+    "architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "tests": {
+      "passed": 177,
+      "failed": 0
+    },
+    "signingMode": "internal-adhoc",
+    "distribution": "internal",
+    "adHocSignatureVerified": true,
+    "codeSignatureVerified": true,
+    "developerIdSigned": false,
+    "notarized": false,
+    "stapled": false,
+    "gatekeeperAccepted": false,
+    "helperSigned": false,
+    "librarySigned": false,
+    "helperRuntimeVerified": true,
+    "verifiedContainers": [
+      "dmg",
+      "zip"
+    ],
+    "assets": [
+      {
+        "name": "DroidFun-App-0.10.6-macOS-universal-INTERNAL.dmg",
+        "bytes": 23412220,
+        "sha256": "4489cde3232b93abbf78285dadfd907faabff310b57eec0b15b0f755259e9ab2"
+      },
+      {
+        "name": "DroidFun-App-0.10.6-macOS-universal-INTERNAL.zip",
+        "bytes": 23411376,
+        "sha256": "7791e5120c4920311a6bb3862e2024554e521ee3766a9fec57b423d440b46698"
+      }
+    ],
+    "remaining": [
+      "Local launch and upgrade verification",
+      "USB robot connection verification",
+      "Intel Mac runtime",
+      "Internal testing only: Developer ID signing and Apple notarization are absent"
+    ],
+    "pipelineCommit": "68795c116a0e845c2ad3654e66582088ebbf2db8",
+    "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/40973815077",
+    "runConclusion": "success"
+  },
+  "limits": [
+    "No physical droids on hosted runners",
+    "Four-device physical acceptance pending",
+    "Mac Developer ID signing and notarization unavailable",
+    "Windows publisher signing unavailable",
+    "Website and updater remain v0.10.0",
+    "Remaining dependency maintenance notices documented in PUBLIC_CUSTOMER_READINESS.md"
+  ]
+}
