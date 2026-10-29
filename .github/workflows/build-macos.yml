@@ -81,6 +81,8 @@ jobs:
         run: npm ci
       - name: Check frontend
         run: npm run check
+      - name: Check public customer security boundary
+        run: node --test scripts/public-boundary.test.cjs
       - name: Check updater release tooling
         run: node --test scripts/updater-release.test.cjs scripts/mac-release.test.cjs
       - name: Check firmware behavior with sanitizers

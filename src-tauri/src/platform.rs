@@ -59,12 +59,24 @@ pub fn info() -> PlatformInfo {
         os: std::env::consts::OS.into(),
         tray_available: true,
         explanation: if cfg!(target_os = "macos") {
-            "Open DroidFun App from the menu bar. Relaunching the app always restores its controls."
+            "DroidFun keeps your droid running when the controls close. Open controls, Settings or Quit from its menu-bar icon."
         } else {
             "Open DroidFun App from the notification area or application launcher."
         }
         .into(),
     }
+}
+
+pub fn apply_window_mode(app: &AppHandle, mode: &str) -> tauri::Result<()> {
+    #[cfg(target_os = "macos")]
+    app.set_activation_policy(if mode == "window" {
+        tauri::ActivationPolicy::Regular
+    } else {
+        tauri::ActivationPolicy::Accessory
+    })?;
+    #[cfg(not(target_os = "macos"))]
+    let _ = (app, mode);
+    Ok(())
 }
 
 pub fn clamp_panel(
@@ -111,6 +123,17 @@ fn show_panel(app: &AppHandle, anchor: bool, open_settings: bool) {
             .find(|w| w.label == "main")?;
         tauri::WebviewWindowBuilder::from_config(app, config)
             .ok()?
+            .on_navigation(|url| {
+                if crate::web_security::local_navigation(url, cfg!(dev)) { return true; }
+                // WebKit checks navigation before its new-window callback.
+                // Open approved help externally while always denying it here.
+                let _ = crate::web_security::open_public_link(url);
+                false
+            })
+            .on_new_window(|url, _| {
+                let _ = crate::web_security::open_public_link(&url);
+                tauri::webview::NewWindowResponse::Deny
+            })
             .initialization_script(if open_settings {
                 "window.__deskbotOpenSettings = true;"
             } else {

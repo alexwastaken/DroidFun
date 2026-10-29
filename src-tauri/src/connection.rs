@@ -10,6 +10,7 @@ const WAVESHARE_PID: u16 = 0x0003;
 
 pub const USB_IN_USE_DETAIL: &str = "This droid’s USB connection is in use by another app. Quit Workshop or any serial monitor, then choose Check connection. The droid does not need to be reset.";
 pub const NO_REPLY_DETAIL: &str = "USB was detected, but the droid did not reply. Close other apps using it, reconnect its USB data cable, then choose Check connection. This does not mean its firmware is missing.";
+pub const INVALID_IDENTITY_DETAIL: &str = "The droid’s installed model identity could not be verified. Reconnect USB and choose Check connection. If this continues, contact DroidFun support before changing its model or firmware.";
 
 fn open_error(error: serialport::Error) -> String {
     // serialport uses an OS exclusive handle on Windows and TIOCEXCL/flock
@@ -36,6 +37,8 @@ pub fn failure_state(error: &str) -> &'static str {
         "device_busy"
     } else if error == crate::linux_usb::PERMISSION_DETAIL {
         "permission_needed"
+    } else if error == INVALID_IDENTITY_DETAIL {
+        "discovery_error"
     } else if error == NO_REPLY_DETAIL
         || error.contains("invalid DroidFun App handshake")
         || error.contains("firmware or screen size is incompatible")
@@ -114,6 +117,13 @@ fn validated_identity(value: Option<&serde_json::Value>) -> Option<DeviceIdentit
         hardware_profile: hardware_profile.into(),
         generation,
     })
+}
+
+fn checked_hello_identity(value: Option<&serde_json::Value>) -> Result<Option<DeviceIdentity>, String> {
+    // Missing/null identity is the legacy protocol. A present but unsupported
+    // identity must not silently become a legacy model question or lookup.
+    let Some(value) = value.filter(|value| !value.is_null()) else { return Ok(None); };
+    validated_identity(Some(value)).map(Some).ok_or_else(|| INVALID_IDENTITY_DETAIL.into())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -367,7 +377,7 @@ impl Link {
         if !ack.board_id.eq_ignore_ascii_case(&candidate.serial) {
             return Err("Firmware board ID does not match the selected USB device".into());
         }
-        let identity = validated_identity(ack.identity.as_ref());
+        let identity = checked_hello_identity(ack.identity.as_ref())?;
         let managed = crate::onboarding::managed_firmware(&ack.firmware, ack.profile.as_deref(), ack.provisioning_supported, ack.identity.is_some());
         let firmware_update_available = !managed && crate::picoboot::supported() && crate::onboarding::older_firmware(&ack.firmware);
         Ok(Self {
@@ -631,6 +641,51 @@ mod tests {
             let mut bad=good.clone(); bad[key]=value; assert!(validated_identity(Some(&bad)).is_none());
         }
         assert!(validated_identity(Some(&serde_json::Value::Null)).is_none());
+    }
+
+    #[test]
+    fn malformed_present_identity_is_rejected_instead_of_treated_as_legacy() {
+        let good = serde_json::json!({"model":"claw","hardwareProfile":crate::onboarding::HARDWARE_PROFILE,"generation":1});
+        let mut invalid = vec![serde_json::json!({}), serde_json::json!([]), serde_json::json!("claw"), serde_json::json!(false)];
+        for (key, value) in [
+            ("model", serde_json::json!("unknown")),
+            ("model", serde_json::Value::Null),
+            ("hardwareProfile", serde_json::json!("unknown-wiring")),
+            ("generation", serde_json::json!(0)),
+            ("generation", serde_json::json!(-1)),
+            ("generation", serde_json::json!(1.5)),
+            ("generation", serde_json::json!("1")),
+            ("generation", serde_json::json!(4294967296u64)),
+        ] {
+            let mut value_with_error = good.clone();
+            value_with_error[key] = value;
+            invalid.push(value_with_error);
+        }
+        for value in invalid {
+            assert_eq!(checked_hello_identity(Some(&value)).unwrap_err(), INVALID_IDENTITY_DETAIL);
+        }
+        assert_eq!(failure_state(INVALID_IDENTITY_DETAIL), "discovery_error");
+    }
+
+    #[test]
+    fn handshake_identity_boundary_preserves_legacy_and_both_factory_wirings() {
+        for identity in [None, Some(serde_json::Value::Null)] {
+            let mut data = serde_json::json!({"firmware":"1.2.4","boardId":"ABC123","width":128,"height":64,"displayHealth":"ready"});
+            if let Some(identity) = identity { data["identity"] = identity; }
+            let ack: HelloAck = serde_json::from_value(data).unwrap();
+            assert_eq!(checked_hello_identity(ack.identity.as_ref()).unwrap(), None);
+        }
+        for model in crate::onboarding::FACTORY_MODELS {
+            for (firmware, profile) in [("1.3.2", "GP4-GP5"), ("1.3.2-mistake", "GP5-SDA-GP4-SCL")] {
+                let data = serde_json::json!({"firmware":firmware,"profile":profile,"boardId":"ABC123","width":128,"height":64,"displayHealth":"ready",
+                    "identity":{"model":model,"hardwareProfile":crate::onboarding::HARDWARE_PROFILE,"generation":7}});
+                let ack: HelloAck = serde_json::from_value(data).unwrap();
+                let identity = checked_hello_identity(ack.identity.as_ref()).unwrap().unwrap();
+                assert_eq!(identity.model, model);
+                assert_eq!(identity.generation, 7);
+                assert_eq!(ack.profile.as_deref(), Some(profile));
+            }
+        }
     }
 
     use super::*;

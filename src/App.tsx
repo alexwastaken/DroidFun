@@ -1,5 +1,5 @@
 import SupportDiagnostics from "./SupportDiagnostics";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -73,12 +73,34 @@ export default function App() {
   const [savedToBot, setSavedToBot] = useState("");
   const [saveError, setSaveError] = useState("");
   const model = state?.settings.preferences.botModel ?? "";
+  const resolvedDroid = useRef<string | null>(null);
+  const recognizedModel = connection && ["connected", "display_error"].includes(connection.state)
+    && Boolean(connection.boardId && state?.settings.selectedDeviceSerial)
+    && connection.boardId?.toLowerCase() === state?.settings.selectedDeviceSerial?.toLowerCase()
+    && connection.identity?.hardwareProfile === "rp2040-zero-gp4-gp5-ssd1306"
+    && connection.identity.generation > 0 && botName(connection.identity.model) ? connection.identity.model : "";
   const offline = state?.settings.preferences.offlineMode ?? false;
   const appUpdates = useAppUpdates(Boolean(state) && !offline, actionBusy || installing || supportBusy);
   const busy = actionBusy || supportBusy || appUpdates.operation === "restart" || appUpdates.status?.phase === "restarting";
   const standaloneDraftKey = JSON.stringify({ orientation: state?.settings.preferences.orientation, brightness: state?.settings.brightness, selectedDeviceSerial: state?.settings.selectedDeviceSerial, connectedBoard: connection?.boardId, connectedPort: connection?.port, widgets: state?.settings.widgets.filter(w => ["face", "image"].includes(w.kind) || w.kind === "text" && w.config.textMotion !== "scroll") });
   useEffect(() => { setSavedToBot(""); setSaveError(""); }, [standaloneDraftKey]);
   useEffect(() => { setSelected(null); setEditor(null); setAdding(false); setAddKind(model === "claw" ? "codex" : "text"); setSavedToBot(""); setSaveError(""); }, [model, state?.settings.selectedDeviceSerial]);
+  useEffect(() => {
+    if (!state) return;
+    const current = `${state.settings.selectedDeviceSerial?.toLowerCase() ?? ""}\0${model}`;
+    const previous = resolvedDroid.current;
+    resolvedDroid.current = current;
+    // Keep an initial menu-bar Settings request, but never apply an old draft to a new droid.
+    if (previous === null || previous === current) return;
+    setSettingsOpen(false); setChoosingBot(false); setPendingModelSerial("");
+    setSetupError(message => message === "Choose this droid’s model below to finish connecting it." ? "" : message);
+  }, [model, state?.settings.selectedDeviceSerial]);
+  useEffect(() => {
+    if (pendingModelSerial && recognizedModel && connection?.boardId?.toLowerCase() === pendingModelSerial.toLowerCase()) {
+      setPendingModelSerial("");
+      setSetupError(message => message === "Choose this droid’s model below to finish connecting it." ? "" : message);
+    }
+  }, [pendingModelSerial, recognizedModel, connection?.boardId]);
   useEffect(() => { if (pendingModelSerial && !ports.some(p => p.connectable !== false && p.serial.toLowerCase() === pendingModelSerial.toLowerCase())) setPendingModelSerial(""); }, [ports, pendingModelSerial]);
   const previewKey = selected ? JSON.stringify({ widget: state?.settings.widgets.find(w => w.id === selected), data: state?.data?.[selected] }) : "";
 
@@ -263,10 +285,10 @@ export default function App() {
   if (!state) return <main className="loading">Waking up DroidFun App…{error && <p role="alert">{error}</p>}</main>;
   const openSettings = (section = "Display") => { setSettingsSection(section); setSettingsOpen(true); };
   const updateLink = <AppUpdateLink updates={appUpdates} onOpen={() => openSettings("App")}/>;
-  const settingsPanel = <>{supportOpen && <SupportDiagnostics onBusy={setSupportBusy} onClose={() => setSupportOpen(false)} onReinstall={serial => void updateRobot(serial)}/>} {settingsOpen && <SettingsPanel initialSection={settingsSection} onDiagnostics={() => {setSettingsOpen(false);setSupportOpen(true);}} appUpdates={appUpdates} preferences={state.settings.preferences} connection={connection} onChangeBot={() => { setSettingsOpen(false); setChoosingBot(true); }} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />}</>;
+  const settingsPanel = <>{supportOpen && <SupportDiagnostics onBusy={setSupportBusy} onClose={() => setSupportOpen(false)} onReinstall={serial => void updateRobot(serial)}/>} {settingsOpen && <SettingsPanel recognizedModel={recognizedModel} initialSection={settingsSection} onDiagnostics={() => {setSettingsOpen(false);setSupportOpen(true);}} appUpdates={appUpdates} preferences={state.settings.preferences} connection={connection} onChangeBot={() => { setSettingsOpen(false); setChoosingBot(true); }} onClose={() => setSettingsOpen(false)} onApply={p => act("set_preferences",{preferences:p})} onReset={() => act("reset_deskbot")} />}</>;
   const connectionPanel = <BotConnection model={model} selectedSerial={state.settings.selectedDeviceSerial} profiles={(state.settings.droids ?? []).filter(d => botName(d.model))} connection={connection} ports={ports} setupDrives={setupDrives} busy={busy} scanning={scanning} scanFinished={scanFinished} scanIssue={scanIssue} installing={installing} setupNotice={setupNotice} setupError={setupError} testBoardId={testBoardId} testReport={testReport} testIssue={testIssue} readingTest={readingTest} supportsDisplayTest={supportsDisplayTest} pendingModelSerial={pendingModelSerial} onDiagnostics={() => setSupportOpen(true)} onScan={scanPorts} onConnect={(serial, botModel) => void connectDroid(serial, botModel)} onUpdate={serial => void updateRobot(serial)} onTest={path => void startDisplayTest(path)} onReadTest={serial => void readTestReport(serial)} onRename={(serial, name) => void act("rename_droid", {serial, name})}/>;
   const droidSwitcher = <DroidSwitcher ports={ports} profiles={state.settings.droids ?? []} selectedSerial={state.settings.selectedDeviceSerial} busy={busy || installing || scanning || Boolean(testBoardId)} onSelect={serial => void connectDroid(serial)}/>;
-  if (choosingBot) return <><BotPicker footer={updateLink} current={model} busy={busy} error={error} onCancel={() => setChoosingBot(false)} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />{settingsPanel}</>;
+  if (choosingBot) return <><BotPicker selectedDroidName={(state.settings.droids ?? []).find(d => d.serial.toLowerCase() === state.settings.selectedDeviceSerial?.toLowerCase())?.name} footer={updateLink} current={model} busy={busy} error={error} onCancel={() => setChoosingBot(false)} onSelect={async botModel => { if (await act("set_bot_model", { botModel })) { setChoosingBot(false); setSettingsOpen(false); } }} />{settingsPanel}</>;
   if (!botName(model)) return <main className="app-shell welcome-shell">
     <header className="topline"><div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div><button className="header-settings" onClick={() => openSettings("App")}>Settings</button></header>
     {droidSwitcher}
@@ -305,7 +327,7 @@ export default function App() {
     {connectionPanel}
     {offline && <div className="offline-banner"><span>Online data is paused. Local screens still work over USB.</span><button className="text-action" disabled={busy} onClick={() => act("set_offline_mode", { offline: false })}>Resume online data</button></div>}
     <section className="screen-studio" aria-label="Your droid screen">
-    {sampleUsage && <div className="display-test-card"><strong>A sample screen is ready</strong><p>These allowance numbers are demo data. Connect your account to show your own Codex or Claude usage.</p><button className="edit-button" disabled={busy} onClick={() => setEditor(sampleUsage)}>Set up live usage</button></div>}
+    {sampleUsage && <div className="display-test-card"><strong>A sample screen is ready</strong><p>These allowance numbers are demo data. Connect your account to show your own Codex or Claude usage.</p><button className="edit-button" disabled={busy} onClick={() => setEditor({ ...sampleUsage, config: { ...sampleUsage.config, mode: "live", window: sampleUsage.kind === "claude" ? "five_hour" : sampleUsage.config.window } })}>Set up live usage</button></div>}
     <BotPreview model={model}><Oled frame={visibleFrame} brightness={state.displayOn || selected ? state.settings.brightness : 0} orientation={state.settings.preferences.orientation} description={`${screenTitle} OLED preview. ${liveCard?.headline ?? visibleWidget?.headline ?? ""}. ${liveCard?.footer ?? visibleWidget?.footer ?? ""}. ${liveCard?.detail ?? visibleWidget?.config.faceExpression ?? ""}`} /></BotPreview>
     <div className="screen-caption"><div><div className="eyebrow">{connection?.state === "connected" ? "ON YOUR DROID" : "SCREEN PREVIEW"} {sourceLabel && <span className="demo-text">· {sourceLabel.toUpperCase().replaceAll("_", " ")}</span>}</div><h2>{screenTitle}</h2><span className="caption-sub">{selectedWidget ? "Local preview only — cycle continues" : `${status}${!idle && state.playback === "running" && state.displayOn ? ` · ${state.remainingSec}s left` : ""}`}</span></div><span className={`status-dot ${state.displayOn ? "" : "off"}`} /></div>
     {visibleWidget?.config.mode === "live" && visibleWidget.kind !== "text" && visibleWidget.kind !== "image" && visibleWidget.kind !== "face" && <div className="live-source-detail"><span>{offline && !isLocal ? "Live data is paused. Any preview values are saved data, not a current reading." : (liveCard?.detail ?? "Waiting for this source to be configured or refreshed.")}</span>{liveCard?.observedAt ? <small>{visibleWidget.kind === "stock" ? "Quote age" : "Report age"}: {reportAge(liveCard.observedAt)}</small> : null}{!isLocal && !offline && <button disabled={busy || offline} onClick={() => act("refresh_widget", { id: visibleWidget.id })}>{["codex", "claude"].includes(visibleWidget.kind) ? "Refresh usage" : "Refresh data"}</button>}</div>}
