@@ -123,6 +123,11 @@ fn show_panel(app: &AppHandle, anchor: bool, open_settings: bool) {
             .find(|w| w.label == "main")?;
         tauri::WebviewWindowBuilder::from_config(app, config)
             .ok()?
+            .on_navigation(|url| crate::web_security::local_navigation(url, cfg!(dev)))
+            .on_new_window(|url, _| {
+                let _ = crate::web_security::open_public_link(&url);
+                tauri::webview::NewWindowResponse::Deny
+            })
             .initialization_script(if open_settings {
                 "window.__deskbotOpenSettings = true;"
             } else {

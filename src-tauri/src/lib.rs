@@ -20,6 +20,7 @@ mod protocol;
 mod providers;
 mod reliability;
 mod support;
+mod web_security;
 #[cfg(windows)]
 mod windows_claude_terminal;
 
@@ -1092,24 +1093,8 @@ fn record_support_observation(report_id: String, observation: support::Observati
 
 #[tauri::command]
 fn open_support_page() -> Result<(),String> {
-    // No URL or shell input is accepted from the webview. Merely opening this
-    // public page sends no report, board ID or customer information.
-    const URL: &str="https://droidfun.io/downloads#droid-support";
-    static OPENING: std::sync::atomic::AtomicBool=std::sync::atomic::AtomicBool::new(false);
-    if OPENING.swap(true,std::sync::atomic::Ordering::SeqCst) {return Ok(());}
-    #[cfg(target_os="macos")]
-    let mut command={let mut c=std::process::Command::new("/usr/bin/open");c.arg(URL);c};
-    #[cfg(target_os="windows")]
-    let mut command={
-        use std::os::windows::process::CommandExt;
-        let mut c=std::process::Command::new("rundll32.exe");c.args(["url.dll,FileProtocolHandler",URL]).creation_flags(0x08000000);c
-    };
-    #[cfg(target_os="linux")]
-    let mut command={let mut c=std::process::Command::new("xdg-open");c.arg(URL);c};
-    match command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()).spawn() {
-        Ok(mut child)=>{std::thread::spawn(move || {let _=child.wait();OPENING.store(false,std::sync::atomic::Ordering::SeqCst);});Ok(())},
-        Err(_)=>{OPENING.store(false,std::sync::atomic::Ordering::SeqCst);Err("Open droidfun.io/downloads in your browser and choose Droid not found, or screen not responding? for support.".into())},
-    }
+    // No URL, board ID or report content is accepted from the webview.
+    web_security::open_public_link(&"https://droidfun.io/downloads#droid-support".parse().expect("fixed support URL"))
 }
 
 #[tauri::command]

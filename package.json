@@ -1,13 +1,14 @@
 {
   "name": "droidfun-app",
   "private": true,
-  "version": "0.10.5",
+  "version": "0.10.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "tauri": "node scripts/tauri.cjs",
     "check": "tsc --noEmit",
+    "test:public-boundary": "node --test scripts/public-boundary.test.cjs",
     "release": "node scripts/release.cjs"
   },
   "dependencies": {

@@ -240,6 +240,134 @@ mod tests {
         intent.adopt_hint(engine, status, &attached, model)
     }
     #[test]
+    fn fresh_customers_use_all_prepared_models_and_wirings_without_accounts_or_online_lookup() {
+        for model in FACTORY_MODELS {
+            for (firmware, pins) in [("1.3.2", "GP4-GP5"), ("1.3.2-mistake", "GP5-SDA-GP4-SCL")] {
+                for offline in [false, true] {
+                    let mut settings = Settings::default();
+                    assert!(settings.droids.is_empty());
+                    assert!(settings.selected_device_serial.is_none());
+                    assert!(settings.preferences.bot_model.is_empty());
+                    assert!(!settings.preferences.setup_complete);
+                    settings.preferences.offline_mode = offline;
+                    let policy = crate::network::Policy::new("", offline);
+                    if offline { assert!(policy.ticket("droid_setup").is_err()); }
+                    let mut engine = Engine::new(settings, Instant::now());
+                    let id = "0123456789ABCDEF";
+                    let attached = only(id);
+                    let mut prepared = status(model, id);
+                    prepared.firmware = Some(firmware.into());
+                    prepared.pin_profile = Some(pins.into());
+                    prepared.provisioning_supported = true;
+                    prepared.firmware_managed = true;
+                    let before = prepared.clone();
+                    // This synchronous path reads only HELLO and fresh local
+                    // settings: no registry ticket, provider or Workshop exists.
+                    AutoSelection::capture(None, &attached).unwrap()
+                        .adopt(&mut engine, &prepared, &attached).unwrap();
+                    let snapshot = engine.snapshot();
+                    assert_eq!(snapshot.settings.preferences.bot_model, model);
+                    assert_eq!(snapshot.settings.preferences.offline_mode, offline);
+                    assert_eq!(snapshot.settings.selected_device_serial.as_deref(), Some(id));
+                    assert_eq!(snapshot.settings.droids.len(), 1);
+                    assert!(snapshot.settings.preferences.setup_complete);
+                    assert_eq!(snapshot.settings.brightness, 85);
+                    assert!(snapshot.display_on && snapshot.total_sec > 0);
+                    assert!(snapshot.frame.iter().any(|byte| *byte != 0));
+                    assert_eq!(snapshot.current_id, if model == "claw" { "codex" } else { "face" });
+                    assert!(snapshot.data.is_empty(), "the first screen needs no account or cached provider reading");
+                    for widget in &snapshot.settings.widgets {
+                        assert_eq!(widget.config.mode, "demo");
+                        assert!(widget.config.cli_path.is_empty() && widget.config.session_id.is_empty());
+                        assert!(widget.config.claude_profile.is_empty() && widget.config.claude_report_directory.is_empty());
+                        assert!(widget.config.location.is_none() && widget.config.symbol.is_empty());
+                    }
+                    assert_eq!(prepared, before, "recognition must preserve firmware and wiring identity");
+                    assert!(allow_customer_reflash(&prepared).is_err(), "factory and Mistake firmware stay protected");
+                }
+            }
+        }
+    }
+    #[test]
+    fn a_new_customer_profile_does_not_inherit_another_installations_state() {
+        let mut previous = Engine::new(Settings::default(), Instant::now());
+        let previous_id = "AAAAAAAAAAAAAAAA";
+        let attached = only(previous_id);
+        AutoSelection::capture(None, &attached).unwrap()
+            .adopt(&mut previous, &status("nimbus", previous_id), &attached).unwrap();
+        previous.settings.brightness = 12;
+        previous.settings.preferences.quiet_hours.enabled = true;
+        previous.settings.widgets[0].label = "Private screen".into();
+        previous.settings.widgets[0].config.custom_text = "Private draft".into();
+        crate::droids::rename(&mut previous.settings, previous_id, "Private droid").unwrap();
+
+        let mut customer = Engine::new(Settings::default(), Instant::now());
+        let customer_id = "BBBBBBBBBBBBBBBB";
+        let attached = only(customer_id);
+        AutoSelection::capture(None, &attached).unwrap()
+            .adopt(&mut customer, &status("claw", customer_id), &attached).unwrap();
+        assert_eq!(customer.settings.droids.len(), 1);
+        assert_eq!(customer.settings.droids[0].serial, customer_id);
+        assert_eq!(customer.settings.droids[0].name, "Claw 1");
+        assert_eq!(customer.settings.brightness, 85);
+        assert!(!customer.settings.preferences.quiet_hours.enabled);
+        let serialized = serde_json::to_string(&customer.settings).unwrap();
+        assert!(!serialized.contains(previous_id));
+        assert!(!serialized.contains("Private"));
+    }
+    #[test]
+    fn an_unidentified_legacy_board_can_be_set_up_locally_without_workshop_or_registry() {
+        let mut settings = Settings::default();
+        settings.preferences.offline_mode = true;
+        let mut engine = Engine::new(settings, Instant::now());
+        let id = "0123456789ABCDEF";
+        let attached = only(id);
+        let mut legacy = status("claw", id);
+        legacy.firmware = Some("1.2.4".into());
+        legacy.identity = None;
+        let original = serde_json::to_value(&engine.settings).unwrap();
+        assert_eq!(AutoSelection::capture(None, &attached).unwrap()
+            .adopt(&mut engine, &legacy, &attached).unwrap_err(), MODEL_REQUIRED);
+        assert_eq!(serde_json::to_value(&engine.settings).unwrap(), original);
+        // The customer's explicit one-time model choice is the local fallback.
+        engine.select_droid(Some(id), Some("claw")).unwrap();
+        assert_eq!(engine.settings.preferences.bot_model, "claw");
+        assert!(engine.settings.preferences.offline_mode);
+        assert!(engine.snapshot().total_sec > 0);
+        assert!(legacy.identity.is_none());
+    }
+    #[test]
+    fn saving_app_preferences_before_first_connection_keeps_claw_setup_ready_after_restart() {
+        let directory = std::env::temp_dir().join(format!("droidfun-first-customer-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let path = directory.join("settings.json");
+        let mut settings = Settings::default();
+        settings.preferences.launch_at_login = true;
+        settings.preferences.appearance = "dark".into();
+        settings.preferences.offline_mode = true;
+        crate::persistence::save(&path, &settings).unwrap();
+        let saved = std::fs::read(&path).unwrap();
+        let restored = crate::persistence::load(&path).unwrap();
+        assert!(!restored.preferences.setup_complete, "app preferences do not finish first-droid setup");
+        assert_eq!(std::fs::read(&path).unwrap(), saved);
+        let mut engine = Engine::new(restored, Instant::now());
+        let id = "0123456789ABCDEF";
+        let attached = only(id);
+        AutoSelection::capture(None, &attached).unwrap()
+            .adopt(&mut engine, &status("claw", id), &attached).unwrap();
+        let snapshot = engine.snapshot();
+        assert_eq!(snapshot.current_id, "codex");
+        assert!(snapshot.total_sec > 0 && snapshot.frame.iter().any(|byte| *byte != 0));
+        assert!(snapshot.settings.preferences.launch_at_login && snapshot.settings.preferences.offline_mode);
+        assert_eq!(snapshot.settings.preferences.appearance, "dark");
+        crate::persistence::save(&path, &engine.settings).unwrap();
+        let reopened = crate::persistence::load(&path).unwrap();
+        assert!(reopened.preferences.setup_complete);
+        assert_eq!(reopened.preferences.bot_model, "claw");
+        assert_eq!(reopened.widgets, engine.settings.widgets);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
     fn replacement_selection_restores_each_boards_settings_in_both_directions() {
         let mut engine = Engine::new(Settings::default(), Instant::now());
         engine.select_droid(Some("NIMBUS_BOARD"), Some("nimbus")).unwrap();

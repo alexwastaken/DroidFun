@@ -116,6 +116,44 @@ class Driver:
             try: os.kill(pid,signal.SIGTERM)
             except ProcessLookupError: pass
 
+def customer_boundary(driver):
+    # Exercise the installed Tauri ACL, not a JavaScript mock. The allowed
+    # read proves IPC is functional; forbidden calls must fail at authorization
+    # rather than merely failing argument validation. No network or USB writes.
+    driver.wait('window.__TAURI_INTERNALS__')
+    driver.js('''
+      window.__droidfunBoundary = null;
+      (async () => {
+        const results = [];
+        try {
+          const state = await window.__TAURI_INTERNALS__.invoke("get_state");
+          results.push({command: "get_state", allowed: Boolean(state && state.settings)});
+        } catch (error) { results.push({command: "get_state", allowed: false, error: String(error)}); }
+        for (const [command, args] of [
+          ["plugin:event|emit", {event: "droidfun-security-fixture", payload: null}],
+          ["plugin:webview|create_webview_window", {options: {label: "security-fixture", title: "Security fixture", url: "about:blank", visible: false}}],
+          ["workshop_registry_state", {}]
+        ]) {
+          try {
+            await window.__TAURI_INTERNALS__.invoke(command, args);
+            results.push({command, allowed: true});
+          } catch (error) { results.push({command, allowed: false, error: String(error)}); }
+        }
+        window.__droidfunBoundary = results;
+      })();
+    ''')
+    driver.wait('Array.isArray(window.__droidfunBoundary) && window.__droidfunBoundary.length === 4')
+    results = driver.js('return window.__droidfunBoundary;')
+    assert results[0]['allowed'], 'Public customer commands were not reachable through real IPC'
+    for result in results[1:]:
+        assert not result['allowed'], 'Forbidden native command was allowed: '+result['command']
+        reason = result.get('error', '').lower()
+        if result['command'].startswith('plugin:'):
+            assert 'not allowed' in reason, 'Expected a real permission denial: '+str(result)
+        else:
+            assert 'not allowed' in reason or 'not found' in reason, 'Workshop command failed for the wrong reason: '+str(result)
+    return {'customerReadAllowed': True, 'eventEmitDenied': True, 'newWebviewDenied': True, 'workshopRegistryUnavailable': True}
+
 def ui():
     driver=Driver()
     rule_installed_before = RULE.read_bytes()
@@ -160,6 +198,7 @@ def ui():
         # CI, enter preview through the real Explore screens control.
         driver.wait('document.querySelector(".welcome-shell") && document.querySelector("#robot-connection")')
         assert not driver.js('return Boolean(document.querySelector(".bot-picker"))')
+        boundary_verified = customer_boundary(driver)
         driver.capture('linux-welcome.png')
         choose_bot('meep', capture_chooser=True)
         # Headless CI has no active physical desktop. Explicit test-only polkit
@@ -199,7 +238,7 @@ def ui():
         choose_bot('boo')
         choose_bot('nimbus')
         choose_bot('meep')
-        print(json.dumps({'nativeButton':'passed','plugInWelcome':'passed','optionalModelChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        print(json.dumps({'nativeButton':'passed','plugInWelcome':'passed','optionalModelChooser':'passed','botSelectionRealIpc':True,'nativeIpcBoundary':boundary_verified,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()

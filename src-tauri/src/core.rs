@@ -30,7 +30,7 @@ pub fn remote_kind(kind: &str) -> bool {
     matches!(kind, "weather" | "stock" | "codex" | "claude")
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Widget {
     pub id: String,

@@ -121,6 +121,8 @@ jobs:
         run: npm ci
       - name: Check frontend
         run: npm run check
+      - name: Check public customer security boundary
+        run: node --test scripts/public-boundary.test.cjs
       - name: Check updater release tooling
         run: node --test ../pipeline/scripts/updater-release.test.cjs
       - name: Run native behavior tests
