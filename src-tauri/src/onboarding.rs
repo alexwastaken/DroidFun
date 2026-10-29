@@ -92,21 +92,41 @@ pub fn allow_customer_reflash(status: &ConnectionSnapshot) -> Result<(), String>
     } else { Ok(()) }
 }
 
+/// Only a current, validated firmware reply can supply a model. Registry hints,
+/// cached reconnecting states and friendly names are not firmware identity.
+pub fn verified_model(status: &ConnectionSnapshot) -> Option<&str> {
+    let identity = status.identity.as_ref()?;
+    (["connected", "display_error"].contains(&status.state.as_str())
+        && FACTORY_MODELS.contains(&identity.model.as_str())
+        && identity.hardware_profile == HARDWARE_PROFILE
+        && identity.generation > 0)
+        .then_some(identity.model.as_str())
+}
+
+/// Correct the selected board's local model from its fresh HELLO without
+/// selecting another board or resetting its playlist and display preferences.
+/// The caller persists the correction with the normal profile transaction.
+pub fn reconcile_factory_model(engine: &mut Engine, status: &ConnectionSnapshot) -> Result<bool, String> {
+    let Some(model) = verified_model(status) else { return Ok(false); };
+    let same_board = engine.settings.selected_device_serial.as_deref()
+        .zip(status.board_id.as_deref())
+        .is_some_and(|(selected, replied)| !selected.is_empty() && selected.eq_ignore_ascii_case(replied));
+    if !same_board || engine.settings.preferences.bot_model == model { return Ok(false); }
+    engine.set_bot_model(model)?;
+    Ok(true)
+}
+
 /// Called only with a single attached board and a validated HELLO. Existing
-/// profiles take precedence over factory defaults; manual selection is never
-/// replaced. New profiles use the normal isolated-profile transaction.
+/// profiles restore their settings; manual board selection is never replaced.
+/// New profiles use the normal isolated-profile transaction.
 pub fn adopt(engine: &mut Engine, status: &ConnectionSnapshot) -> Result<(), String> {
     if engine.settings.selected_device_serial.is_some() { return Err("A droid is already selected".into()); }
     let serial = status.board_id.as_deref().ok_or("Missing board identity")?;
     let known = engine.settings.droids.iter().any(|p| p.serial.eq_ignore_ascii_case(serial));
     if known { return engine.select_droid(Some(serial), None); }
-    let identity = status.identity.as_ref().ok_or("Choose your model once to connect this droid")?;
-    if !["connected", "display_error"].contains(&status.state.as_str())
-        || !FACTORY_MODELS.contains(&identity.model.as_str())
-        || identity.hardware_profile != HARDWARE_PROFILE || identity.generation == 0 {
-        return Err("The droid's factory identity could not be verified".into());
-    }
-    engine.select_droid(Some(serial), Some(&identity.model))
+    if status.identity.is_none() { return Err("Choose your model once to connect this droid".into()); }
+    let model = verified_model(status).ok_or("The droid's factory identity could not be verified")?;
+    engine.select_droid(Some(serial), Some(model))
 }
 
 /// Registry hints select a local profile, never fabricate firmware identity or
@@ -141,6 +161,92 @@ mod tests {
             assert_eq!(engine.settings.preferences.bot_model, model);
             assert_eq!(engine.settings.droids.len(), 1);
             assert_eq!(engine.settings.selected_device_serial.as_deref(), Some("BOARD_A"));
+        }
+    }
+    #[test]
+    fn selected_claw_corrects_a_stale_model_without_resetting_either_profile() {
+        let mut engine = Engine::new(Settings::default(), Instant::now());
+        engine.select_droid(Some("NIMBUS_BOARD"), Some("nimbus")).unwrap();
+        engine.settings.brightness = 31;
+        engine.settings.widgets[0].label = "Nimbus screen".into();
+        engine.select_droid(Some("CLAW_BOARD"), Some("claw")).unwrap();
+        crate::droids::rename(&mut engine.settings, "CLAW_BOARD", "Office Claw").unwrap();
+        // Reproduce an accidental model change after Claw was first named.
+        engine.set_bot_model("nimbus").unwrap();
+        engine.settings.brightness = 63;
+        engine.settings.preferences.orientation = 180;
+        engine.settings.preferences.quiet_hours.enabled = true;
+        engine.settings.preferences.companion_animation = false;
+        engine.settings.preferences.offline_mode = true;
+        engine.settings.preferences.launch_at_login = true;
+        engine.settings.manual_display_off = true;
+        engine.settings.widgets[0].label = "Preserved custom label".into();
+        engine.settings.widgets.iter_mut().find(|w| w.kind == "codex").unwrap().enabled = false;
+        crate::droids::remember(&mut engine.settings).unwrap();
+        let mut expected = serde_json::to_value(&engine.settings).unwrap();
+        expected["preferences"]["botModel"] = "claw".into();
+        let reply = status("claw", "claw_board");
+        assert!(reconcile_factory_model(&mut engine, &reply).unwrap());
+        assert_eq!(serde_json::to_value(&engine.settings).unwrap(), expected,
+            "a model correction must preserve all screens, flags and preferences");
+        assert!(!reconcile_factory_model(&mut engine, &reply).unwrap(), "a matching model is already reconciled");
+
+        // The normal save transaction remembers the corrected model, while
+        // another board's complete saved profile remains byte-for-byte equal.
+        let nimbus = serde_json::to_value(&engine.settings.droids[0]).unwrap();
+        crate::droids::remember(&mut engine.settings).unwrap();
+        assert_eq!(serde_json::to_value(&engine.settings.droids[0]).unwrap(), nimbus);
+        assert_eq!(engine.settings.droids[1].name, "Office Claw");
+        assert_eq!(engine.settings.droids[1].model, "claw");
+        let corrected = serde_json::to_value(&engine.settings).unwrap();
+        engine.select_droid(Some("NIMBUS_BOARD"), None).unwrap();
+        assert_eq!(engine.settings.preferences.bot_model, "nimbus");
+        assert_eq!(engine.settings.brightness, 31);
+        engine.select_droid(Some("CLAW_BOARD"), None).unwrap();
+        assert_eq!(serde_json::to_value(&engine.settings).unwrap(), corrected);
+    }
+    #[test]
+    fn model_reconciliation_ignores_missing_invalid_stale_and_unrelated_identity() {
+        let mut original = Engine::new(Settings::default(), Instant::now());
+        original.select_droid(Some("SELECTED_BOARD"), Some("nimbus")).unwrap();
+        crate::droids::rename(&mut original.settings, "SELECTED_BOARD", "Claw 1").unwrap();
+        let valid = status("claw", "SELECTED_BOARD");
+        let mut cases = vec![status("nimbus", "SELECTED_BOARD"), status("claw", "OTHER_BOARD")];
+        let mut missing_id = valid.clone(); missing_id.board_id = None; cases.push(missing_id);
+        let mut missing_identity = valid.clone(); missing_identity.identity = None; cases.push(missing_identity);
+        for state in ["preview", "connecting", "reconnecting", "device_busy", "disconnected", "choose_device"] {
+            let mut stale = valid.clone(); stale.state = state.into(); cases.push(stale);
+        }
+        let mut invalid_model = valid.clone(); invalid_model.identity.as_mut().unwrap().model = "other".into(); cases.push(invalid_model);
+        let mut invalid_hardware = valid.clone(); invalid_hardware.identity.as_mut().unwrap().hardware_profile = "unknown-wiring".into(); cases.push(invalid_hardware);
+        let mut invalid_generation = valid.clone(); invalid_generation.identity.as_mut().unwrap().generation = 0; cases.push(invalid_generation);
+        for reply in cases {
+            let mut engine = original.clone();
+            let before = serde_json::to_value(engine.snapshot()).unwrap();
+            assert!(!reconcile_factory_model(&mut engine, &reply).unwrap(), "{:?}", reply);
+            assert_eq!(serde_json::to_value(engine.snapshot()).unwrap(), before);
+        }
+        for selected in [None, Some(String::new())] {
+            let mut engine = original.clone();
+            engine.settings.selected_device_serial = selected;
+            let before = serde_json::to_value(engine.snapshot()).unwrap();
+            assert!(!reconcile_factory_model(&mut engine, &valid).unwrap());
+            assert_eq!(serde_json::to_value(engine.snapshot()).unwrap(), before);
+        }
+    }
+    #[test]
+    fn verified_factory_models_include_screen_errors_but_never_cached_states() {
+        for model in FACTORY_MODELS {
+            for state in ["connected", "display_error"] {
+                let mut reply = status(model, "SELECTED_BOARD"); reply.state = state.into();
+                assert_eq!(verified_model(&reply), Some(model));
+                let mut engine = Engine::new(Settings::default(), Instant::now());
+                engine.select_droid(Some("SELECTED_BOARD"), Some(if model == "nimbus" { "boo" } else { "nimbus" })).unwrap();
+                assert!(reconcile_factory_model(&mut engine, &reply).unwrap());
+                assert_eq!(engine.settings.preferences.bot_model, model);
+                reply.state = "reconnecting".into();
+                assert_eq!(verified_model(&reply), None);
+            }
         }
     }
     #[test]

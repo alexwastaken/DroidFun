@@ -463,7 +463,18 @@ fn set_bot_model(
     app: AppHandle,
     state: State<AppState>,
 ) -> Result<Snapshot, String> {
-    mutate(&app, state, true, |e| e.set_bot_model(&bot_model))
+    let connection = state.connection.lock().map_err(|_| "Connection is busy")?.clone();
+    mutate(&app, state, true, |e| {
+        if connection.board_id.as_deref().is_some_and(|id|
+            e.settings.selected_device_serial.as_deref().is_some_and(|selected| selected.eq_ignore_ascii_case(id))) {
+            if let Some(model) = onboarding::verified_model(&connection) {
+                if model != bot_model {
+                    return Err("This droid identifies its model automatically. Use the droid menu to switch to another connected droid.".into());
+                }
+            }
+        }
+        e.set_bot_model(&bot_model)
+    })
 }
 #[tauri::command]
 fn set_offline_mode(
@@ -906,7 +917,13 @@ fn set_preferences(
         }
         .map_err(|_| "Could not update start at login")?;
     }
-    let result = mutate(&app, state, true, |e| e.set_preferences(preferences));
+    let result = mutate(&app, state, true, |e| {
+        // Model changes use the dedicated command. A settings form opened
+        // before factory identification must not restore its stale model.
+        let mut preferences = preferences;
+        preferences.bot_model = e.settings.preferences.bot_model.clone();
+        e.set_preferences(preferences)
+    });
     if result.is_err() {
         let _ = if old {
             app.autolaunch().enable()
@@ -1772,6 +1789,26 @@ fn connection_worker(app: AppHandle) {
         match Link::connect(&candidate) {
             Ok(mut link) => {
                 backoff = 0;
+                // A remembered board may have been prepared for a different
+                // model since its profile was saved. Trust a verified HELLO
+                // before sending any screens, without replacing its playlist.
+                let model_changed = onboarding::verified_model(&link.status).is_some_and(|model| {
+                    app.state::<AppState>().engine.lock().is_ok_and(|e|
+                        e.settings.selected_device_serial.as_deref().is_some_and(|id| id.eq_ignore_ascii_case(&serial))
+                        && e.settings.preferences.bot_model != model)
+                });
+                if model_changed {
+                    if let Err(error) = mutate(&app, app.state::<AppState>(), true, |e|
+                        onboarding::reconcile_factory_model(e, &link.status).map(|_| ())) {
+                        publish_connection(&app, ConnectionSnapshot {
+                            state: "discovery_error".into(), detail: error,
+                            ..link.status.clone()
+                        });
+                        drop(link);
+                        std::thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                }
                 if let Ok(mut metrics) = app.state::<AppState>().link_metrics.lock() { *metrics = connection::LinkMetrics::default(); }
                 publish_connection(&app, link.status.clone());
                 loop {
