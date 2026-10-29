@@ -59,12 +59,24 @@ pub fn info() -> PlatformInfo {
         os: std::env::consts::OS.into(),
         tray_available: true,
         explanation: if cfg!(target_os = "macos") {
-            "Open DroidFun App from the menu bar. Relaunching the app always restores its controls."
+            "DroidFun keeps your droid running when the controls close. Open controls, Settings or Quit from its menu-bar icon."
         } else {
             "Open DroidFun App from the notification area or application launcher."
         }
         .into(),
     }
+}
+
+pub fn apply_window_mode(app: &AppHandle, mode: &str) -> tauri::Result<()> {
+    #[cfg(target_os = "macos")]
+    app.set_activation_policy(if mode == "window" {
+        tauri::ActivationPolicy::Regular
+    } else {
+        tauri::ActivationPolicy::Accessory
+    })?;
+    #[cfg(not(target_os = "macos"))]
+    let _ = (app, mode);
+    Ok(())
 }
 
 pub fn clamp_panel(

@@ -1,6 +1,6 @@
 # Customer and Workshop handoff — public 0.10.0 / private 0.3.2
 
-The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download. Local customer repair candidate 0.10.1 is installed and verified on a Mac, but is not public while Apple signing/notarization remains pending. See [the repair acceptance](verification/0.10.1/README.md).
+The current lineup is Nimbus, Boo, Meep and Claw. Workshop is the private preparation tool; DroidFun App is the customer download. Local customer candidate 0.10.2 adds Mac menu-bar operation to the 0.10.1 USB repairs. It is not public while Apple signing/notarization remains pending. See [menu-bar scope and checks](verification/0.10.2/README.md) and [USB repair acceptance](verification/0.10.1/README.md).
 
 ## Before shipping
 

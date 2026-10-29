@@ -34,7 +34,7 @@ use std::{
 };
 use tauri::{
     menu::{Menu, MenuItem},
-    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State, WindowEvent,
 };
 use tauri_plugin_autostart::ManagerExt as AutostartExt;
@@ -889,11 +889,16 @@ fn set_preferences(
     state: State<AppState>,
 ) -> Result<Snapshot, String> {
     preferences.validate()?;
+    let previous_mode = state.engine.lock().map_err(|_| "Settings are busy")?
+        .settings.preferences.window_mode.clone();
+    let next_mode = preferences.window_mode.clone();
     let old = app
         .autolaunch()
         .is_enabled()
         .map_err(|_| "Could not read startup registration")?;
-    if old != preferences.launch_at_login {
+    // Refresh an enabled registration too: the app may have moved since it
+    // was first enabled. Customers still explicitly choose start at login.
+    if preferences.launch_at_login || old != preferences.launch_at_login {
         if preferences.launch_at_login {
             app.autolaunch().enable()
         } else {
@@ -908,6 +913,10 @@ fn set_preferences(
         } else {
             app.autolaunch().disable()
         };
+    }
+    if result.is_ok() && previous_mode != next_mode {
+        platform::apply_window_mode(&app, &next_mode)
+            .map_err(|_| "Settings saved. Reopen DroidFun App to apply its window mode.")?;
     }
     result
 }
@@ -962,6 +971,10 @@ fn reset_deskbot(app: AppHandle, state: State<AppState>) -> Result<Snapshot, Str
     });
     if result.is_err() && startup {
         let _ = app.autolaunch().enable();
+    }
+    if result.is_ok() {
+        platform::apply_window_mode(&app, "auto")
+            .map_err(|_| "Defaults restored. Reopen DroidFun App to apply its window mode.")?;
     }
     result
 }
@@ -1587,7 +1600,7 @@ fn show_window(app: &AppHandle) {
 
 fn tray_action(app: &AppHandle, id: &str) {
     match id {
-        "open" => show_window(app),
+        "open" => platform::show(app, cfg!(target_os = "macos")),
         "settings" => {
             platform::show_settings(app);
         }
@@ -1921,14 +1934,15 @@ fn provider_worker(app: AppHandle, kind: &str) {
 }
 
 pub fn run() {
-    tauri::Builder::default()
+    let mut app = tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--background"]),
         ))
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            if app.try_state::<AppState>().is_some() { show_window(app); }
+        .plugin(tauri_plugin_single_instance::init(|app, args, _| {
+            if !args.iter().any(|arg| arg == "--background")
+                && app.try_state::<AppState>().is_some() { show_window(app); }
         }))
         .setup(|app| {
             // Tauri runs setup from a native launch callback. Returning an error
@@ -2001,20 +2015,24 @@ pub fn run() {
                     include_bytes!("../icons/64x64.png").as_slice()
                 })?)
                 .icon_as_template(cfg!(target_os = "macos"))
-                .show_menu_on_left_click(false)
+                .show_menu_on_left_click(cfg!(target_os = "macos"))
                 .on_menu_event(|app, event| tray_action(app, event.id.as_ref()))
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
                         ..
                     } = event
                     {
-                        platform::show(tray.app_handle(), true);
+                        if !cfg!(target_os = "macos") {
+                            platform::show(tray.app_handle(), true);
+                        }
                     }
                 });
             tray.build(app)?;
             let state = app.state::<AppState>();
             let prefs = state.engine.lock().unwrap().settings.preferences.clone();
+            platform::apply_window_mode(app.handle(), &prefs.window_mode)?;
             if background
                 && (state.platform.tray_available || prefs.window_mode == "background")
                 && prefs.window_mode != "window"
@@ -2079,6 +2097,8 @@ pub fn run() {
             Ok(())
             })();
             if let Err(error) = result {
+                // Startup failures must have a visible, reachable explanation.
+                let _ = platform::apply_window_mode(app.handle(), "window");
                 use tauri_plugin_dialog::DialogExt;
                 let handle = app.handle().clone();
                 app.dialog()
@@ -2169,8 +2189,13 @@ pub fn run() {
             ,timer_action,time_zones
         ])
         .build(tauri::generate_context!())
-        .expect("DroidFun App could not start")
-        .run(|app, event| {
+        .expect("DroidFun App could not start");
+    // LSUIElement alone is overridden by the native runtime's Regular default.
+    // Set the initial policy before its event loop starts to avoid a Dock flash.
+    // Setup restores Regular only for the customer's explicit window mode.
+    #[cfg(target_os = "macos")]
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    app.run(|app, event| {
             // Finder and Dock reopen an existing macOS process through this
             // event; they do not necessarily launch a second instance. Restore
             // controls that were closed while the USB engine stayed running.
