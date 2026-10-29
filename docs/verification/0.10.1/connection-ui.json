@@ -1,0 +1,43 @@
+{
+  "sourceVersion": "0.10.1",
+  "scope": "Local browser fixtures; native USB acceptance recorded separately",
+  "passed": 7,
+  "failed": 0,
+  "scenarios": [
+    {
+      "name": "different-single-droid-chooser",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "remembered-droid-unplugged",
+      "width": 440,
+      "passed": true
+    },
+    {
+      "name": "usb-owned-by-another-app",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "busy-legacy-never-offers-flashing",
+      "width": 440,
+      "passed": true
+    },
+    {
+      "name": "usb-no-reply-actionable",
+      "width": 440,
+      "passed": true
+    },
+    {
+      "name": "fresh-multiple-droids",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "factory-nimbus-recognized",
+      "width": 440,
+      "passed": true
+    }
+  ]
+}

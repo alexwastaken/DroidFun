@@ -1,5 +1,5 @@
 name: Build DroidFun App for Mac
-run-name: DroidFun App macOS · ${{ inputs.source_ref }}
+run-name: DroidFun App macOS · ${{ inputs.signing_mode || 'developer-id' }} · ${{ inputs.source_ref }}
 
 # Manual only: publication and website downloads remain a separate step.
 on:
@@ -20,6 +20,13 @@ on:
           - macos-14
           - macos-15
         default: macos-14
+      signing_mode:
+        description: Public Apple-trusted release or private testing package
+        type: choice
+        options:
+          - developer-id
+          - internal-adhoc
+        default: developer-id
 
 permissions:
   contents: read
@@ -36,6 +43,7 @@ jobs:
     timeout-minutes: 60
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      DROIDFUN_MAC_SIGNING_MODE: ${{ inputs.signing_mode || 'developer-id' }}
     steps:
       - name: Check out requested application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -47,6 +55,23 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - name: Check public signing credentials before building
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          UPLOAD_TO_DRAFT: ${{ inputs.upload_to_draft }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$DROIDFUN_MAC_SIGNING_MODE" == internal-adhoc && "$UPLOAD_TO_DRAFT" == true ]]; then
+            echo 'Internal ad-hoc packages cannot be uploaded to a public-release draft.' >&2
+            exit 1
+          fi
+          node scripts/mac-release-policy.cjs --mac-signing "$DROIDFUN_MAC_SIGNING_MODE"
       - name: Set up Rust for Apple Silicon and Intel
         run: |
           rustup toolchain install 1.99.0 --profile minimal
@@ -57,7 +82,7 @@ jobs:
       - name: Check frontend
         run: npm run check
       - name: Check updater release tooling
-        run: node --test scripts/updater-release.test.cjs
+        run: node --test scripts/updater-release.test.cjs scripts/mac-release.test.cjs
       - name: Check firmware behavior with sanitizers
         shell: bash
         run: |
@@ -76,14 +101,29 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
-        run: npm run release -- --target universal-apple-darwin --updater
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$DROIDFUN_MAC_SIGNING_MODE" == developer-id ]]; then
+            npm run release -- --target universal-apple-darwin --mac-signing developer-id --updater
+          else
+            npm run release -- --target universal-apple-darwin --mac-signing internal-adhoc
+          fi
       - name: Verify and collect Mac packages
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: node scripts/mac-package-evidence.cjs
       - name: Upload packages for installation verification
         if: ${{ !inputs.upload_to_draft }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: DroidFun-App-macOS-universal
+          name: DroidFun-App-macOS-universal-${{ inputs.signing_mode || 'developer-id' }}
           path: packages/
           if-no-files-found: error
           retention-days: 14
@@ -97,6 +137,7 @@ jobs:
           sparse-checkout: |
             scripts/upload-draft-packages.cjs
             scripts/updater-assets.cjs
+            scripts/mac-release-policy.cjs
           sparse-checkout-cone-mode: false
       - name: Upload verified packages to existing draft
         if: ${{ inputs.upload_to_draft }}

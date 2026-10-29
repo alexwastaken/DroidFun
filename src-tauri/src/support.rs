@@ -171,6 +171,8 @@ pub fn build(
             "Droid selection changed",
             "Keep one droid selected throughout the check, then run it again.",
         );
+    } else if c.state == "device_busy" && f.target_present {
+        add("DF-LINK-06", "attention", "USB is in use by another app", "Quit Workshop, any other DroidFun app copy, or serial monitor, then choose Check connection. A busy USB connection does not require reinstalling firmware.");
     } else if verified && f.acknowledged_commands > 0 {
         add("DF-LINK-00", "passed", "Droid replied during this check", "The app received fresh replies. This proves USB communication, not that pixels are physically visible.");
     } else if f.target_present {
@@ -241,7 +243,7 @@ pub fn build(
     next_steps.push("Save this reviewed report and attach it to your message to DroidFun support. Nothing is sent automatically.");
     Report { format_version: 2, report_id: id, created_at: crate::core::unix_now(), app_version: env!("CARGO_PKG_VERSION"), os: std::env::consts::OS, architecture: std::env::consts::ARCH,
         symptom, board_id: bounded(c.board_id.as_deref(),128), model: bounded(c.identity.as_ref().map(|i|i.model.as_str()).or(Some(s.settings.preferences.bot_model.as_str())),16), firmware: bounded(c.firmware.as_deref(),64), wiring: bounded(c.pin_profile.as_deref(),32),
-        connection_state: if ["connected","display_error","permission_needed","reconnecting","preview","setup_needed","choose_device","needs_model","identifying","connecting","diagnostic","discovery_error"].contains(&c.state.as_str()) { c.state.clone() } else { "unknown".into() },
+        connection_state: if ["connected","display_error","permission_needed","device_busy","disconnected","reconnecting","preview","setup_needed","choose_device","needs_model","identifying","connecting","diagnostic","discovery_error"].contains(&c.state.as_str()) { c.state.clone() } else { "unknown".into() },
         model_source: if c.identity.is_some() {"droid_last_reported"} else {"app_selection"}, standalone_supported:c.standalone_supported, saved_screens:c.standalone_count,
         runtime_devices: f.runtime_devices, recovery_devices: f.recovery_devices, enumeration_complete: f.enumeration_complete, observed_seconds: 6, connection_changes:f.connection_changes, acknowledged_commands:f.acknowledged_commands,
         brightness:s.settings.brightness, screen_on:s.display_on, enabled_screens:enabled, unavailable_sources:unavailable, checks,next_steps,
@@ -344,6 +346,22 @@ mod tests {
         c.firmware = None;
         let r = build("test".into(), Symptom::Other, &c, &snapshot(), facts());
         assert!(!r.can_reinstall && !r.can_test_screen);
+    }
+
+    #[test]
+    fn busy_usb_keeps_its_diagnosis_without_offering_firmware_repair() {
+        let mut c = connection();
+        c.state = "device_busy".into();
+        let report = build("test".into(), Symptom::Disconnects, &c, &snapshot(), facts());
+        assert_eq!(report.connection_state, "device_busy");
+        assert!(report.checks.iter().any(|c| c.code == "DF-LINK-06"));
+        assert!(!report.checks.iter().any(|c| c.code == "DF-LINK-01"));
+        assert!(!report.can_test_screen && !report.can_reinstall, "cached firmware is not a fresh connection");
+        c.state = "disconnected".into();
+        let mut f = facts(); f.target_present = false; f.runtime_devices = 0;
+        let report = build("test".into(), Symptom::Disconnects, &c, &snapshot(), f);
+        assert_eq!(report.connection_state, "disconnected");
+        assert!(!report.can_test_screen && !report.can_reinstall);
     }
     #[test]
     fn factory_and_swapped_wiring_never_offer_generic_recovery() {

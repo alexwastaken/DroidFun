@@ -226,7 +226,7 @@ export default function App() {
     if (installing) return;
     if (setupNotice && connection?.state === "connected") setSetupNotice("Your bot is connected. Check its physical screen, then choose what to display below.");
     if (setupNotice && connection?.state === "display_error") setSetupNotice("USB setup is complete. Your bot responds, but its screen needs attention.");
-    if (setupNotice && ["reconnecting", "preview", "setup_needed"].includes(connection?.state ?? "")) setSetupNotice("");
+    if (setupNotice && ["reconnecting", "disconnected", "choose_device", "device_busy", "preview", "setup_needed"].includes(connection?.state ?? "")) setSetupNotice("");
   }, [connection?.state, setupNotice, installing]);
 
   useEffect(() => {

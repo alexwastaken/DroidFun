@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {execFileSync} = require('node:child_process');
 const {assetNames, validateUpdaterEvidence, SEMVER} = require('./updater-assets.cjs');
+const {requirePublicMac}=require('./mac-release-policy.cjs');
 const REPO = 'alexwastaken/DroidFun';
 const PLATFORMS = {
   'macOS-universal': ['darwin-aarch64', 'darwin-x86_64'],
@@ -21,7 +22,7 @@ function generate({version, source, release, evidence, directory, publicKey, not
     const item = records[0];
     if (item.version !== version || item.applicationCommit !== source || !(item.tests?.passed > 0) || item.tests.failed !== 0) throw new Error(`Source/test evidence mismatch: ${platform}`);
     if (platform === 'macOS-universal') {
-      if (item.adHocSignatureVerified !== true || !item.architectures?.includes('arm64') || !item.architectures?.includes('x86_64')) throw new Error('Universal Mac verification is required');
+      requirePublicMac(item);
     } else if (item.smoke?.result !== 'passed' || item.smoke.installedBinaryMatchesPackage !== true || item.smoke.nativeWindowCreated !== true) throw new Error(`Native install verification is required: ${platform}`);
     const verified = validateUpdaterEvidence(item, directory, publicKey);
     const names = assetNames(version, platform);

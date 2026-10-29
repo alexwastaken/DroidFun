@@ -1,0 +1,42 @@
+{
+  "version": "0.10.1",
+  "scope": "private local arm64 repair build",
+  "publicRelease": false,
+  "developerIdSigned": false,
+  "notarized": false,
+  "strictSignatureVerified": true,
+  "settingsPreserved": true,
+  "executableSha256": "b0a4d71d85414edebec66f68344d6f28588168c8605593e9e02e901251929259",
+  "obsoleteGlobalAppRemoved": true,
+  "helperRuntimeVerified": true,
+  "date": "2026-10-29",
+  "windowReopenedFromFinder": true,
+  "sameProcessAndUsbConnectionAfterWindowReopen": true,
+  "physicalNimbus": {
+    "firmware": "1.3.2",
+    "autoRecognized": true,
+    "liveUsbRepliesVerified": true,
+    "screenControllerReportedReady": true,
+    "firmwareUnchanged": true
+  },
+  "tests": {
+    "native": {
+      "passed": 155,
+      "failed": 0,
+      "ignored": 1
+    },
+    "browser": {
+      "passed": 49,
+      "failed": 0
+    },
+    "releaseTools": {
+      "passed": 17,
+      "failed": 0
+    }
+  },
+  "remaining": [
+    "Apple Developer ID credentials and notarization",
+    "Fresh website download Gatekeeper acceptance",
+    "Public cross-platform packaging and upgrade acceptance"
+  ]
+}

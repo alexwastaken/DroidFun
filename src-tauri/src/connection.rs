@@ -8,6 +8,44 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 const WAVESHARE_VID: u16 = 0x2e8a;
 const WAVESHARE_PID: u16 = 0x0003;
 
+pub const USB_IN_USE_DETAIL: &str = "This droid’s USB connection is in use by another app. Quit Workshop or any serial monitor, then choose Check connection. The droid does not need to be reset.";
+pub const NO_REPLY_DETAIL: &str = "USB was detected, but the droid did not reply. Close other apps using it, reconnect its USB data cable, then choose Check connection. This does not mean its firmware is missing.";
+
+fn open_error(error: serialport::Error) -> String {
+    // serialport uses an OS exclusive handle on Windows and TIOCEXCL/flock
+    // on Unix. A failed exclusive open is not evidence of missing firmware.
+    let description = error.description.to_ascii_lowercase();
+    if error.kind() == serialport::ErrorKind::Io(std::io::ErrorKind::WouldBlock)
+        || description.contains("resource busy")
+        || description.contains("exclusive lock")
+        || description.contains("sharing violation")
+        || description.contains("being used by another process")
+    {
+        USB_IN_USE_DETAIL.into()
+    } else if cfg!(target_os = "linux")
+        && error.kind() == serialport::ErrorKind::Io(std::io::ErrorKind::PermissionDenied)
+    {
+        crate::linux_usb::PERMISSION_DETAIL.into()
+    } else {
+        format!("Could not open droid USB connection: {error}. Close other USB apps and check the cable, then choose Check connection.")
+    }
+}
+
+pub fn failure_state(error: &str) -> &'static str {
+    if error == USB_IN_USE_DETAIL {
+        "device_busy"
+    } else if error == crate::linux_usb::PERMISSION_DETAIL {
+        "permission_needed"
+    } else if error == NO_REPLY_DETAIL
+        || error.contains("invalid DroidFun App handshake")
+        || error.contains("firmware or screen size is incompatible")
+    {
+        "setup_needed"
+    } else {
+        "reconnecting"
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RobotPort {
@@ -120,6 +158,39 @@ impl Default for ConnectionSnapshot {
     }
 }
 
+pub fn opening_status(candidate: &RobotPort, previous: ConnectionSnapshot) -> ConnectionSnapshot {
+    let same_board = previous.board_id.as_deref()
+        .is_some_and(|id| id.eq_ignore_ascii_case(&candidate.serial));
+    // Passive retries should keep the actionable reason visible. Otherwise a
+    // busy port flashes "connecting" every few seconds and looks like a loop.
+    if same_board && previous.port.as_deref() == Some(&candidate.path)
+        && ["device_busy", "permission_needed", "setup_needed", "reconnecting", "display_error"]
+            .contains(&previous.state.as_str())
+    {
+        return previous;
+    }
+    ConnectionSnapshot {
+        state: "connecting".into(),
+        detail: "Checking your droid’s installed software…".into(),
+        port: Some(candidate.path.clone()),
+        board_id: Some(candidate.serial.clone()),
+        ..if same_board { previous } else { ConnectionSnapshot::default() }
+    }
+}
+
+pub fn absent_selection_status(serial: &str, another_available: bool) -> ConnectionSnapshot {
+    ConnectionSnapshot {
+        state: if another_available { "choose_device" } else { "disconnected" }.into(),
+        detail: if another_available {
+            "Your selected droid is unplugged. Choose one of the plugged-in droids at the top to connect it."
+        } else {
+            "Your selected droid is unplugged. Connect it with a USB data cable; it will reconnect automatically."
+        }.into(),
+        board_id: Some(serial.into()),
+        ..ConnectionSnapshot::default()
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct HelloAck {
@@ -167,19 +238,24 @@ fn session_id() -> u32 {
     ((nanos as u32) ^ ((nanos >> 32) as u32) ^ std::process::id()).max(1)
 }
 
-fn exchange(
-    port: &mut dyn SerialPort,
+fn exchange<T: std::io::Read + std::io::Write + ?Sized>(
+    port: &mut T,
     decoder: &mut Decoder,
     request: &Packet,
     expected: u8,
 ) -> Result<Packet, String> {
     let wire = request.encode()?;
-    for _ in 0..2 {
+    for attempt in 0..2 {
         port.write_all(&wire)
             .map_err(|e| format!("USB write failed: {e}"))?;
         let deadline = Instant::now()
             + Duration::from_millis(if request.kind == protocol::SAVED_COMMIT {
                 3000
+            } else if request.kind == protocol::HELLO && attempt == 0 {
+                // A just-enumerated board may still be starting its display
+                // or enabling CDC replies after DTR. Give its first HELLO
+                // time to answer without repeatedly closing/reopening USB.
+                1500
             } else {
                 500
             });
@@ -216,7 +292,7 @@ fn exchange(
         }
         decoder.reset();
     }
-    Err("No reply from the bot after two attempts. Reconnect it and check its firmware.".into())
+    Err(NO_REPLY_DETAIL.into())
 }
 
 #[derive(Clone, Default, Serialize)]
@@ -266,16 +342,7 @@ impl Link {
         let mut port = serialport::new(&candidate.path, 115_200)
             .timeout(Duration::from_millis(50))
             .open()
-            .map_err(|error| {
-                if cfg!(target_os = "linux")
-                    && error.kind()
-                        == serialport::ErrorKind::Io(std::io::ErrorKind::PermissionDenied)
-                {
-                    crate::linux_usb::PERMISSION_DETAIL.to_string()
-                } else {
-                    format!("Could not open robot port: {error}")
-                }
-            })?;
+            .map_err(open_error)?;
         port.write_data_terminal_ready(true)
             .map_err(|error| format!("Could not enable USB serial replies: {error}"))?;
         let mut decoder = Decoder::new();
@@ -475,6 +542,73 @@ impl Link {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn busy_usb_is_not_reported_as_missing_firmware() {
+        for error in [
+            serialport::Error::new(serialport::ErrorKind::NoDevice, "Resource busy"),
+            serialport::Error::new(serialport::ErrorKind::NoDevice, "Unable to acquire exclusive lock on serial port"),
+            serialport::Error::new(serialport::ErrorKind::Io(std::io::ErrorKind::WouldBlock), "Try again"),
+        ] {
+            assert_eq!(open_error(error), USB_IN_USE_DETAIL);
+        }
+        assert_eq!(failure_state(USB_IN_USE_DETAIL), "device_busy");
+        assert_eq!(failure_state(NO_REPLY_DETAIL), "setup_needed");
+        assert_ne!(open_error(serialport::Error::new(serialport::ErrorKind::Io(std::io::ErrorKind::NotFound), "No such file")), USB_IN_USE_DETAIL);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn native_exclusive_serial_open_reports_the_other_app() {
+        // Pseudo terminals exercise the native locking error without touching
+        // a physical droid or changing any firmware/settings.
+        let (_master, mut owner) = serialport::TTYPort::pair().unwrap();
+        owner.set_exclusive(true).unwrap();
+        let candidate = RobotPort {path: owner.name().unwrap(), serial: "TEST".into(), product: "Test".into(), vid: WAVESHARE_VID, pid: WAVESHARE_PID};
+        assert_eq!(Link::connect(&candidate).err().unwrap(), USB_IN_USE_DETAIL);
+    }
+
+    #[test]
+    fn retries_keep_the_reason_visible_and_preserve_verified_wiring() {
+        let candidate = RobotPort {path: "test-port".into(), serial: "BOARD".into(), product: "Test".into(), vid: WAVESHARE_VID, pid: WAVESHARE_PID};
+        for state in ["device_busy", "permission_needed", "setup_needed", "reconnecting", "display_error"] {
+            let previous = ConnectionSnapshot {state: state.into(), detail: "Previous diagnosis".into(),
+                board_id: Some("board".into()), port: Some(candidate.path.clone()), firmware: Some("1.3.2-mistake".into()),
+                pin_profile: Some("GP5-SDA-GP4-SCL".into()), firmware_managed: true, ..ConnectionSnapshot::default()};
+            assert_eq!(opening_status(&candidate, previous.clone()), previous);
+            let mut other = candidate.clone(); other.serial = "OTHER".into();
+            let new_status = opening_status(&other, previous);
+            assert_eq!(new_status.state, "connecting");
+            assert!(new_status.firmware.is_none(), "never copy a different droid's firmware evidence");
+        }
+        assert_eq!(absent_selection_status("BOARD", false).state, "disconnected");
+        assert_eq!(absent_selection_status("BOARD", true).state, "choose_device");
+        assert_eq!(absent_selection_status("BOARD", true).board_id.as_deref(), Some("BOARD"));
+    }
+
+    #[test]
+    fn newly_started_droid_can_answer_first_hello_after_half_a_second() {
+        struct StartingDroid { response: std::io::Cursor<Vec<u8>>, starting: bool, writes: usize }
+        impl std::io::Read for StartingDroid {
+            fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+                if self.starting {
+                    self.starting = false;
+                    std::thread::sleep(Duration::from_millis(600));
+                    return Err(std::io::ErrorKind::TimedOut.into());
+                }
+                std::io::Read::read(&mut self.response, buffer)
+            }
+        }
+        impl std::io::Write for StartingDroid {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> { self.writes += 1; Ok(bytes.len()) }
+            fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+        }
+        let hello = Packet::new(protocol::HELLO, 101, 1, vec![]);
+        let ack = Packet::new(protocol::HELLO_ACK, 101, 1, b"{}".to_vec());
+        let mut droid = StartingDroid {response: std::io::Cursor::new(ack.encode().unwrap()), starting: true, writes: 0};
+        assert_eq!(exchange(&mut droid, &mut Decoder::new(), &hello, protocol::HELLO_ACK).unwrap(), ack);
+        assert_eq!(droid.writes, 1, "startup should not cause a second HELLO or a serial reopen");
+    }
+
     #[test]
     fn every_factory_identity_and_legacy_handshake_is_readable() {
         for model in crate::onboarding::FACTORY_MODELS {

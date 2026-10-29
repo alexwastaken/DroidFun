@@ -1,0 +1,58 @@
+{
+  "sourceVersion": "0.10.1",
+  "scope": "Local browser fixtures; native USB acceptance recorded separately",
+  "passed": 10,
+  "failed": 0,
+  "scenarios": [
+    {
+      "name": "four-droid-arrows-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "four-droid-keyboard-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "same-model-same-name-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "fifth-droid-waits-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "unplugged-current-select-another-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "all-unplugged-preserve-selection-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "four-new-droids-welcome-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "long-name-dark-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "switch-failure-keeps-current-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "diagnostics-locks-switching-360",
+      "width": 360,
+      "passed": true
+    }
+  ]
+}

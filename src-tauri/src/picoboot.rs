@@ -151,18 +151,27 @@ mod native {
         Ok(Output { status, bytes })
     }
 
-    fn usable_helper(path: &Path) -> bool {
+    fn usable_helper_with_library(path: &Path, library: &Path) -> bool {
         fs::symlink_metadata(path).is_ok_and(|m| {
             m.is_file() && !m.file_type().is_symlink() && m.permissions().mode() & 0o111 != 0
-        }) && path.parent().is_some_and(|p| {
-            fs::symlink_metadata(p.join("libusb-1.0.0.dylib"))
-                .is_ok_and(|m| m.is_file() && !m.file_type().is_symlink())
+        }) && fs::symlink_metadata(library)
+            .is_ok_and(|m| m.is_file() && !m.file_type().is_symlink())
+    }
+
+    fn usable_helper(path: &Path) -> bool {
+        path.parent().is_some_and(|p| {
+            usable_helper_with_library(path, &p.join("libusb-1.0.0.dylib"))
         })
     }
 
     fn helper() -> Result<PathBuf, String> {
         if let Ok(exe) = std::env::current_exe() {
             if let Some(contents) = exe.parent().and_then(Path::parent) {
+                let signed_path = contents.join("MacOS/picotool");
+                let signed_library = contents.join("Frameworks/libusb-1.0.0.dylib");
+                if usable_helper_with_library(&signed_path, &signed_library) {
+                    return Ok(signed_path);
+                }
                 let path = contents.join("Resources/picotool-macos-universal/picotool");
                 if usable_helper(&path) {
                     return Ok(path);
@@ -463,6 +472,28 @@ mod native {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        #[test]
+        fn bundled_helper_requires_a_real_executable_and_real_library() {
+            use std::os::unix::fs::symlink;
+            let root = std::env::temp_dir().join(format!("droidfun-helper-layout-{}", std::process::id()));
+            fs::create_dir_all(root.join("MacOS")).unwrap();
+            fs::create_dir_all(root.join("Frameworks")).unwrap();
+            let helper = root.join("MacOS/picotool");
+            let library = root.join("Frameworks/libusb-1.0.0.dylib");
+            fs::write(&helper, b"test executable").unwrap();
+            fs::set_permissions(&helper, fs::Permissions::from_mode(0o755)).unwrap();
+            assert!(!usable_helper_with_library(&helper, &library));
+            fs::write(&library, b"test library").unwrap();
+            assert!(usable_helper_with_library(&helper, &library));
+            fs::set_permissions(&helper, fs::Permissions::from_mode(0o644)).unwrap();
+            assert!(!usable_helper_with_library(&helper, &library));
+            fs::set_permissions(&helper, fs::Permissions::from_mode(0o755)).unwrap();
+            fs::remove_file(&library).unwrap();
+            symlink(&helper, &library).unwrap();
+            assert!(!usable_helper_with_library(&helper, &library));
+            fs::remove_dir_all(root).unwrap();
+        }
 
         fn fixture(devices: &[(u64, u64, &str)]) -> Vec<u8> {
             let children = devices
