@@ -1,3 +1,15 @@
+#[cfg(feature = "workshop")]
+mod workshop_connection;
+#[cfg(feature = "workshop")]
+mod workshop_protocol;
+#[cfg(feature = "workshop")]
+mod workshop;
+#[cfg(feature = "workshop")]
+mod workshop_firmware;
+#[cfg(feature = "workshop")]
+mod workshop_registry;
+#[cfg(feature = "workshop")]
+mod workshop_flash;
 #[cfg(feature = "showcase")]
 pub mod showcase;
 mod app_update;

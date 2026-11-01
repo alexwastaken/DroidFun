@@ -1,1 +1,32 @@
-{"permission":[{"identifier":"studio-controls","description":"Local studio controls only","commands":{"allow":["showcase_state","showcase_action"]}}]}
+{
+  "permission": [
+    {
+      "identifier": "studio-controls",
+      "description": "Local studio controls only",
+      "commands": {
+        "allow": [
+          "showcase_state",
+          "showcase_action",
+          "showcase_mode",
+          "workshop_close_consumer",
+          "workshop_status",
+          "workshop_scan",
+          "workshop_inspect",
+          "workshop_record_existing",
+          "workshop_program",
+          "workshop_wipe_reinstall",
+          "workshop_verify_installed",
+          "workshop_confirm_unplugged",
+          "workshop_verify_reconnect",
+          "workshop_confirm_screen",
+          "workshop_next",
+          "workshop_registry_state",
+          "workshop_registry_open_dashboard",
+          "workshop_registry_connect",
+          "workshop_registry_sync",
+          "workshop_registry_disconnect"
+        ]
+      }
+    }
+  ]
+}

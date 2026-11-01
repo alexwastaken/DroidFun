@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use std::{sync::Mutex, time::{Duration, Instant}};
 use tauri::{Emitter, Manager, State};
 
-struct Studio { engine: Engine, ports: Vec<RobotPort>, target: Option<String>, connection: String, moving: bool, started: Instant, codex: f64, claude: f64, path: std::path::PathBuf }
+struct Studio { active: bool, released: bool, engine: Engine, ports: Vec<RobotPort>, target: Option<String>, connection: String, moving: bool, started: Instant, codex: f64, claude: f64, path: std::path::PathBuf }
 struct StudioState(Mutex<Studio>);
 #[derive(Clone, Serialize)]
 #[serde(rename_all="camelCase")]
@@ -59,7 +59,7 @@ impl Studio {
 fn showcase_state(state: State<StudioState>) -> View { state.0.lock().unwrap().view() }
 #[tauri::command]
 fn showcase_action(action:String,id:Option<String>,value:Option<Value>,state:State<StudioState>) -> Result<View,String> {
-    let mut s=state.0.lock().unwrap();let v=value.unwrap_or(Value::Null);let mut save=false;
+    let mut s=state.0.lock().unwrap();if !s.active{return Err("Open Screens before using its controls.".into());}let v=value.unwrap_or(Value::Null);let mut save=false;
     match action.as_str() {
         "select"=>{s.engine.pin(id.as_deref().ok_or("Choose a screen")?)?;save=true;},
         "cycle"=>{s.engine.toggle_pause();},
@@ -75,29 +75,88 @@ fn showcase_action(action:String,id:Option<String>,value:Option<Value>,state:Sta
     }
     s.refresh();if save {crate::persistence::save(&s.path,&s.engine.settings)?;}Ok(s.view())
 }
+pub(crate) fn require_board_mode(app: &tauri::AppHandle) -> Result<(), String> {
+    let state=app.state::<StudioState>();
+    let s=state.0.lock().map_err(|_|"Screen controls are unavailable")?;
+    if s.active || !s.released { return Err("Open Prepare a droid and wait for the screen connection to close.".into()); }
+    Ok(())
+}
+#[tauri::command]
+async fn showcase_mode(screens: bool, app: tauri::AppHandle) -> Result<(),String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if screens {
+            let _usb=crate::UsbOperationGuard::acquire()?;
+            if !crate::workshop::can_show_screens(&app) { return Err("Finish this board’s checks or choose Prepare another board before opening Screens.".into()); }
+            let state=app.state::<StudioState>();let mut s=state.0.lock().map_err(|_|"Screen controls are unavailable")?;
+            s.active=true;s.released=false;
+        } else {
+            app.state::<StudioState>().0.lock().map_err(|_|"Screen controls are unavailable")?.active=false;
+            let until=Instant::now()+Duration::from_secs(12);
+            loop {
+                if app.state::<StudioState>().0.lock().map_err(|_|"Screen controls are unavailable")?.released {break;}
+                if Instant::now()>=until {return Err("USB is still closing. Keep the app open and try Prepare a droid again.".into());}
+                std::thread::sleep(Duration::from_millis(50));
+            }
+        }
+        Ok(())
+    }).await.map_err(|_|"Could not switch tools".to_string())?
+}
 #[cfg(not(test))]
 pub fn run() {
     tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app,_,_|{if let Some(w)=app.get_webview_window("main"){let _=w.show();let _=w.set_focus();}}))
-    .invoke_handler(tauri::generate_handler![showcase_state,showcase_action])
+    .invoke_handler(tauri::generate_handler![showcase_state,showcase_action,showcase_mode,
+        crate::workshop::workshop_status,crate::workshop::workshop_close_consumer,
+        crate::workshop::workshop_scan,crate::workshop::workshop_inspect,
+        crate::workshop::workshop_program,crate::workshop::workshop_wipe_reinstall,
+        crate::workshop::workshop_verify_installed,crate::workshop::workshop_confirm_unplugged,
+        crate::workshop::workshop_verify_reconnect,crate::workshop::workshop_confirm_screen,
+        crate::workshop::workshop_next,crate::workshop::workshop_record_existing,
+        crate::workshop_registry::workshop_registry_state,crate::workshop_registry::workshop_registry_open_dashboard,
+        crate::workshop_registry::workshop_registry_connect,crate::workshop_registry::workshop_registry_sync,
+        crate::workshop_registry::workshop_registry_disconnect])
+    .on_window_event(|window,event|{
+        if let tauri::WindowEvent::CloseRequested{api,..}=event {
+            if crate::workshop::busy(window.app_handle()){api.prevent_close();}
+        }
+    })
     .setup(|app|{
+        crate::workshop::initialize(app)?;
         let path=app.path().app_config_dir()?.join("studio-settings.json");
-        let settings=std::fs::read(&path).ok().and_then(|b|serde_json::from_slice::<Settings>(&b).ok()).filter(|s|s.validate().is_ok()&&s.preferences.bot_model.is_empty()).unwrap_or_else(defaults);
-        let mut studio=Studio{engine:Engine::new(settings,Instant::now()),ports:Vec::new(),target:None,connection:"Not connected".into(),moving:true,started:Instant::now(),codex:78.0,claude:64.0,path};studio.refresh();let _=studio.engine.pin("codex");app.manage(StudioState(Mutex::new(studio)));
-        tauri::WebviewWindowBuilder::new(app,"main",tauri::WebviewUrl::App("index.html".into())).title("DroidFun").inner_size(980.0,780.0).min_inner_size(680.0,520.0).on_navigation(|url|crate::web_security::local_navigation(url,false)).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build()?;
+        // Import only local screen preferences from the previous photo app.
+        // Workshop's existing identifier preserves its registry and pairing.
+        let previous=app.path().app_config_dir()?.parent().map(|p|p.join("com.droidfun.studio/studio-settings.json"));
+        let saved=std::fs::read(&path).ok().or_else(||previous.and_then(|p|std::fs::read(p).ok()));
+        let settings=saved.and_then(|b|serde_json::from_slice::<Settings>(&b).ok()).filter(|s|s.validate().is_ok()&&s.preferences.bot_model.is_empty()).unwrap_or_else(defaults);
+        let mut studio=Studio{active:true,released:false,engine:Engine::new(settings,Instant::now()),ports:Vec::new(),target:None,connection:"Preview only".into(),moving:true,started:Instant::now(),codex:78.0,claude:64.0,path};studio.refresh();let _=studio.engine.pin("codex");app.manage(StudioState(Mutex::new(studio)));
+        tauri::WebviewWindowBuilder::new(app,"main",tauri::WebviewUrl::App("index.html".into())).title("DroidFun Workshop").inner_size(1040.0,820.0).min_inner_size(720.0,580.0).on_navigation(|url|crate::web_security::local_navigation(url,false)).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build()?;
         let app=app.handle().clone();std::thread::spawn(move||{
-            let mut link:Option<(String,Link)>=None;let mut scan=Instant::now()-Duration::from_secs(3);let mut retry=Instant::now()-Duration::from_secs(3);
+            let mut link:Option<(String,Link,std::sync::Arc<crate::UsbOperationGuard>)>=None;let mut scan=Instant::now()-Duration::from_secs(3);let mut retry=Instant::now()-Duration::from_secs(3);
             loop {
                 std::thread::sleep(Duration::from_millis(150));
+                let active=app.state::<StudioState>().0.lock().unwrap().active;
+                if !active {
+                    // Drop the real serial handle before acknowledging the handoff.
+                    link=None;
+                    let state=app.state::<StudioState>();let mut s=state.0.lock().unwrap();s.target=None;s.connection="Preview only".into();s.released=true;
+                    continue;
+                }
                 if scan.elapsed()>Duration::from_secs(2) {let ports=connection::robot_ports().unwrap_or_default();app.state::<StudioState>().0.lock().unwrap().ports=ports;scan=Instant::now();}
-                let (target,port,frame,brightness,orientation,view)={let state=app.state::<StudioState>();let mut s=state.0.lock().unwrap();s.refresh();let view=s.view();(s.target.clone(),s.ports.iter().find(|p|Some(&p.serial)==s.target.as_ref()).cloned(),view.frame.clone(),view.brightness,view.orientation,view)};
-                if link.as_ref().map(|(id,_)|Some(id)!=target.as_ref()).unwrap_or(false)||port.is_none(){link=None;}
-                if link.is_none()&&port.is_some()&&retry.elapsed()>Duration::from_secs(3){retry=Instant::now();let p=port.as_ref().unwrap();match Link::connect(p){Ok(l)=>{link=Some((p.serial.clone(),l));app.state::<StudioState>().0.lock().unwrap().connection="Connected".into();},Err(e)=>app.state::<StudioState>().0.lock().unwrap().connection=e}}
-                if let Some((_,l))=&mut link {if let Err(e)=l.update(&frame,true,brightness,orientation){app.state::<StudioState>().0.lock().unwrap().connection=e;link=None;}}
+                let (target,port,frame,brightness,orientation)={let state=app.state::<StudioState>();let mut s=state.0.lock().unwrap();s.refresh();let view=s.view();(s.target.clone(),s.ports.iter().find(|p|Some(&p.serial)==s.target.as_ref()).cloned(),view.frame,view.brightness,view.orientation)};
+                if link.as_ref().map(|(id,_,_)|Some(id)!=target.as_ref()).unwrap_or(false)||port.is_none(){link=None;}
+                if link.is_none()&&port.is_some()&&retry.elapsed()>Duration::from_secs(3){
+                    retry=Instant::now();let p=port.as_ref().unwrap();
+                    if let Ok(usb)=crate::UsbOperationGuard::acquire(){
+                        match Link::connect(p){Ok(l)=>{link=Some((p.serial.clone(),l,usb));app.state::<StudioState>().0.lock().unwrap().connection="Connected".into();},Err(e)=>app.state::<StudioState>().0.lock().unwrap().connection=e}
+                    }
+                }
+                if let Some((_,l,_))=&mut link {if let Err(e)=l.update(&frame,true,brightness,orientation){app.state::<StudioState>().0.lock().unwrap().connection=e;link=None;}}
                 if target.is_some()&&port.is_none(){app.state::<StudioState>().0.lock().unwrap().connection="Droid unplugged — reconnect USB".into();}
+                let view=app.state::<StudioState>().0.lock().unwrap().view();
                 let _=app.emit("studio-state",view);
             }
         });Ok(())
-    }).run(tauri::generate_context!()).expect("DroidFun Studio could not start");
+    }).build(tauri::generate_context!()).expect("DroidFun Workshop could not start")
+    .run(|app,event|{if let tauri::RunEvent::ExitRequested{api,..}=event {if crate::workshop::busy(app){api.prevent_exit();}}});
 }
 
 #[cfg(test)]

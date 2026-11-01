@@ -91,7 +91,7 @@ test('platform packaging configs do not override the reviewed customer security 
   for (const filename of fs.readdirSync(tauri).filter(name => /^tauri\..+\.conf\.json$/.test(name))) {
     const config = json(`src-tauri/${filename}`);
     if (filename === 'tauri.showcase.conf.json') {
-      assert.equal(config.identifier, 'com.droidfun.studio');
+      assert.equal(config.identifier, 'com.droidfun.workshop.private');
       assert.deepEqual(config.app.security.capabilities, ['studio']);
       continue;
     }
