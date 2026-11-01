@@ -1,8 +1,5 @@
 name: Build private DroidFun Studio
 on:
-  push:
-    branches: [codex/private-studio-app]
-    paths: ["src/Studio.tsx", "src/studio.css", "src-tauri/src/showcase.rs", "src-tauri/tauri.showcase.conf.json", ".github/workflows/build-studio.yml"]
   workflow_dispatch:
     inputs:
       source_ref:
@@ -82,4 +79,4 @@ jobs:
         with:
           name: DroidFun-Studio-${{ matrix.platform }}
           path: packages/
-          retention-days: 14
+          retention-days: 1

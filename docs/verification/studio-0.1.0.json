@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-31",
+  "checkedAt": "2026-11-01T02:37:09.280Z",
+  "deployedVersion": "5b15fb32-db17-4321-9374-34955ca96c3b",
+  "ownerDownloadAccessChecks": [
+    {
+      "path": "/api/admin/studio-downloads",
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "path": "/api/admin/studio-downloads/mac",
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "path": "/download-assets/DroidFun-Studio-0.1.0-macOS-00dbf9f92575.zip",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "path": "/%64ownload-assets/DroidFun-Studio-0.1.0-macOS-00dbf9f92575.zip",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "path": "/api/admin/studio-downloads/windows",
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "path": "/download-assets/DroidFun-Studio-0.1.0-Windows-37d6f1a835be.exe",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "path": "/%64ownload-assets/DroidFun-Studio-0.1.0-Windows-37d6f1a835be.exe",
+      "status": 404,
+      "expected": 404
+    }
+  ],
+  "publicDownloadsUnchanged": true,
+  "packages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.1.0",
+      "filename": "DroidFun-Studio-0.1.0-macOS.zip",
+      "key": "DroidFun-Studio-0.1.0-macOS-00dbf9f92575.zip",
+      "size": 10734646,
+      "sha256": "00dbf9f92575b0486d39ef6fbd593b1b899d679e58e3d8537c639f726df365fa"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.1.0",
+      "filename": "DroidFun-Studio-0.1.0-Windows.exe",
+      "key": "DroidFun-Studio-0.1.0-Windows-37d6f1a835be.exe",
+      "size": 2586827,
+      "sha256": "37d6f1a835bec93ae2002e71fdda67ef516c2627097c059a839ffeef5945c658"
+    }
+  ],
+  "buildRun": "https://github.com/alexwastaken/DroidFun/actions/runs/41265175621",
+  "applicationCommit": "44e7c548975688652077d4d0cb14834237c64a78",
+  "macArchitectures": [
+    "arm64",
+    "x86_64"
+  ],
+  "checks": {
+    "macInstalledAndScreenSelection": true,
+    "macCleanView": true,
+    "macTextSettingsSave": true,
+    "windowsNativeLaunch": true,
+    "savedDefaultsRegression": true,
+    "ownerDownloadBoundary": true,
+    "physicalUsb": "not tested"
+  }
+}
