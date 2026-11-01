@@ -257,7 +257,7 @@ pub(crate) async fn workshop_live_action(
             stop(&app).await?;
         }
         "numbers" => return backend(&app, Some("numbers"), Some(&value)).await,
-        "connect" | "session" | "pause" | "skip" => {
+        "connect" | "disconnect" | "session" | "pause" | "skip" => {
             let response = backend(&app, Some(&action), Some(&value)).await?;
             remember(&app, response);
         }
