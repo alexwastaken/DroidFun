@@ -1,0 +1,85 @@
+name: Build private DroidFun Studio
+on:
+  push:
+    branches: [codex/private-studio-app]
+    paths: ["src/Studio.tsx", "src/studio.css", "src-tauri/src/showcase.rs", "src-tauri/tauri.showcase.conf.json", ".github/workflows/build-studio.yml"]
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Source commit
+        required: true
+        default: codex/private-studio-app
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: universal-apple-darwin
+            bundles: app
+            platform: macOS
+          - os: windows-2025
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+            platform: Windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Rust
+        shell: bash
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          rustup default 1.99.0
+          if [[ "$RUNNER_OS" == macOS ]]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        if: runner.os == 'Windows'
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: studio-Windows-${{ github.run_id }}
+          restore-keys: deskbot-Windows-x64-rust1.99-
+      - run: npm ci
+      - name: Build private app
+        shell: bash
+        run: node node_modules/@tauri-apps/cli/tauri.js build --features showcase --config src-tauri/tauri.showcase.conf.json --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+      - name: Package Mac
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p packages
+          app="target/universal-apple-darwin/release/bundle/macos/DroidFun Studio.app"
+          codesign --verify --deep --strict "$app"
+          lipo -archs "$app/Contents/MacOS/deskbot"
+          ditto -c -k --sequesterRsrc --keepParent "$app" packages/DroidFun-Studio-0.1.0-macOS.zip
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force packages | Out-Null
+          Copy-Item target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe packages/DroidFun-Studio-0.1.0-Windows.exe
+          $app = Start-Process target/x86_64-pc-windows-msvc/release/deskbot.exe -PassThru
+          Start-Sleep -Seconds 12
+          $app.Refresh()
+          if ($app.HasExited) { throw 'App exited during launch check' }
+          if (!$app.MainWindowHandle) { throw 'App did not create a window' }
+          Stop-Process -Id $app.Id
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: DroidFun-Studio-${{ matrix.platform }}
+          path: packages/
+          retention-days: 14

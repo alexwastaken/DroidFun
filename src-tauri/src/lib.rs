@@ -1,3 +1,5 @@
+#[cfg(feature = "showcase")]
+pub mod showcase;
 mod app_update;
 pub mod claude_account;
 pub mod claude_bridge;

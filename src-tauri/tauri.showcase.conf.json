@@ -1,0 +1,8 @@
+{
+  "productName":"DroidFun Studio",
+  "version":"0.1.0",
+  "identifier":"com.droidfun.studio",
+  "build":{"beforeBuildCommand":"npm run build:studio"},
+  "app":{"windows":[],"security":{"capabilities":["studio"]}},
+  "bundle":{"createUpdaterArtifacts":false,"shortDescription":"DroidFun private photography controls","macOS":{"signingIdentity":"-"}}
+}

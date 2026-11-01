@@ -8,6 +8,7 @@ default-run = "deskbot"
 
 [features]
 device-smoke = []
+showcase = []
 
 [[bin]]
 name = "device_smoke"

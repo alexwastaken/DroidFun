@@ -7,5 +7,8 @@ fn main() {
         }
         return;
     }
+    #[cfg(feature = "showcase")]
+    deskbot_lib::showcase::run();
+    #[cfg(not(feature = "showcase"))]
     deskbot_lib::run();
 }
