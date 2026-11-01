@@ -1506,7 +1506,7 @@ fn render_image(config: &SourceConfig) -> Vec<u8> {
     invert_frame(bytes.chunks_exact(2).map(|pair| (nibble(pair[0]) << 4) | nibble(pair[1])).collect(), config.display_invert)
 }
 
-fn render_marquee(config: &SourceConfig, phase_ms: u64, reduced: bool) -> Result<Vec<u8>, String> {
+pub(crate) fn render_marquee(config: &SourceConfig, phase_ms: u64, reduced: bool) -> Result<Vec<u8>, String> {
     validate_marquee(config)?;
     let mut f = Frame::new();
     let scale = config.text_size as i32;

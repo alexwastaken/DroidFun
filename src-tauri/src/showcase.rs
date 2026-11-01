@@ -113,7 +113,8 @@ pub fn run() {
         crate::workshop::workshop_next,crate::workshop::workshop_record_existing,
         crate::workshop_registry::workshop_registry_state,crate::workshop_registry::workshop_registry_open_dashboard,
         crate::workshop_registry::workshop_registry_connect,crate::workshop_registry::workshop_registry_sync,
-        crate::workshop_registry::workshop_registry_disconnect])
+        crate::workshop_registry::workshop_registry_disconnect,
+        crate::workshop_live::workshop_live_state,crate::workshop_live::workshop_live_action])
     .on_window_event(|window,event|{
         if let tauri::WindowEvent::CloseRequested{api,..}=event {
             if crate::workshop::busy(window.app_handle()){api.prevent_close();}
@@ -121,6 +122,7 @@ pub fn run() {
     })
     .setup(|app|{
         crate::workshop::initialize(app)?;
+        crate::workshop_live::initialize(app);
         let path=app.path().app_config_dir()?.join("studio-settings.json");
         // Import only local screen preferences from the previous photo app.
         // Workshop's existing identifier preserves its registry and pairing.

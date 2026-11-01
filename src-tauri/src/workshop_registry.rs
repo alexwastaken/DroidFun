@@ -113,7 +113,7 @@ impl Store {
         }
         atomic_private(&self.root.join("droids.json"), &bytes)
     }
-    fn token(&self) -> Option<String> {
+    pub(crate) fn token(&self) -> Option<String> {
         let bytes = fs::read(self.root.join("session.json")).ok()?;
         if bytes.len() > 2048 {
             return None;

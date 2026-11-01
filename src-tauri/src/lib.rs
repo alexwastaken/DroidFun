@@ -1,3 +1,5 @@
+#[cfg(feature = "showcase")]
+mod workshop_live;
 #[cfg(feature = "workshop")]
 mod workshop_connection;
 #[cfg(feature = "workshop")]

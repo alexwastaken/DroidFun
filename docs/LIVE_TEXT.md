@@ -1,0 +1,28 @@
+# Workshop Live text
+
+Workshop 0.4.1 adds a separate Live text dashboard. A viewer texts the chosen public Blooio number; the backend verifies the webhook, validates a short sentence, appends it to FIFO and replies with the current number of people ahead. No per-message approval is required. Workshop monitors the backend and bridges one selected USB droid to the OLED. This does not use TikTok's API or read TikTok comments; show the physical droid and the chosen number on camera yourself.
+
+Connect Workshop to the owner dashboard through Droid list. In Live text → Connection and limits, enter a Blooio API key, choose an active number belonging to that key and confirm it is intended for public viewer texts. The backend creates a dedicated, signed webhook scoped to that key and channel. It does not purchase lines, reassign lines, replace other integrations or disable Blooio limits. Check that the chosen plan supports the desired inbound traffic; the observed existing line is Shared. An Inbound/Dedicated line may be needed if Blooio does not deliver new unsolicited contacts to a shared allocation.
+
+Open intake to accept texts; Connect display to send them to the OLED. Workshop can connect the USB bridge before opening intake. Backend intake and the USB bridge are independent: closing intake allows the existing queue to drain, pausing holds playback, and leaving the Live text tab disconnects its USB bridge. Keep Workshop running and the droid attached for physical display. With Workshop closed, the backend still collects texts up to the configured session reply/queue limits. New session resets counters only after the old queue is empty.
+
+A short sentence is up to 120 printable ASCII characters. Smart quotes/dashes and whitespace are normalized. Email addresses, recognizable links, phone-like digit runs, groups, attachments and non-text payloads are not displayed. This is automatic text playback, not semantic moderation; the owner should monitor and pause/skip unwanted content. STOP withdraws that sender's waiting/playing text and stops application replies; START opts back in. Provider-level opt-outs continue to apply.
+
+## Data boundary
+
+- Blooio remains the messaging provider. It retains its own message/conversation history under the account's settings.
+- The DroidFun backend stores only display text, FIFO state, timestamps and keyed hashes for deduplication/rate limits. It never stores raw sender numbers, provider contact names, chat IDs, full webhook bodies or attachments. A recipient number exists transiently in memory to send the one confirmation reply.
+- Provider key and webhook signing secret are AES-GCM encrypted using a key derived from the Worker's existing SESSION_SECRET. They never appear in Workshop status responses, local saved settings, public catalogs, source or installer files. A key is passed once from the private setup form to the authenticated backend over TLS.
+- Queue text and event deduplication hashes expire after 24 hours; cleanup occurs on monitor requests and hourly via a Worker cron. Pseudonymous STOP suppression is retained for 30 days. No phone-number list or export endpoint exists.
+- Workshop uses its existing revocable 30-day pairing. A downloaded binary grants no access. The public customer app has no Live text commands/capability. Owner/Workshop routes require their respective credentials; the public webhook requires a valid signature before trusting any payload.
+- A signed event must match the selected exact channel and recipient. Historical events predating the live session, outbound callbacks and group/media messages cannot enter the queue. Event ID deduplication and Blooio's Idempotency-Key prevent duplicate queue entries/replies on webhook retries. Replies are limited to one per sender/minute and a configurable session total (default 200). Provider failures are visible in the monitor and are not blindly retried.
+
+## USB and backend leases
+
+Opening Live text releases the normal Screens connection first. Starting its bridge acquires the same native USB operation guard as board preparation. Returning to other tools waits for the bridge to disconnect. Display claims are selected atomically by the backend; only one bridge can own a queue at a time. Heartbeats renew ownership. A claim expires after 50 seconds and can be retried after a crash. Completion is reported only after the requested display duration and an acknowledged idle frame. Delivery is at-least-once across crashes/network loss, so an interrupted text can appear again. A USB/backend error tries to replace the current text with the idle face, stops the bridge and leaves the queue recoverable.
+
+## Backend source and deployment
+
+The existing repository-based Cloudflare Worker is in the workspace `site/`. This feature adds `site/src/live-text.js`, migration `0013_live_text.sql`, a purpose-bounded call from `droid-registry.js`, authenticated owner routes, and an hourly cleanup trigger. It uses existing D1 and existing SESSION_SECRET; no new provider account or infrastructure is provisioned. The monitor lives in Workshop; no public live-message feed or new web dashboard is created.
+
+Primary provider references: https://docs.blooio.com/webhooks, https://docs.blooio.com/webhook-signatures, https://docs.blooio.com/reference/v4/messages/sendMessage, https://docs.blooio.com/reference/v4/channels/listChannels, https://docs.blooio.com/reference/v4/account/listNumbers.

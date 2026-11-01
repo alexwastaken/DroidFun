@@ -63,13 +63,13 @@ jobs:
           codesign --verify --deep --strict "$app"
           lipo -archs "$app/Contents/MacOS/droidfun-workshop"
           "$app/Contents/MacOS/picotool" version
-          ditto -c -k --sequesterRsrc --keepParent "$app" packages/DroidFun-Workshop-0.4.0-macOS.zip
+          ditto -c -k --sequesterRsrc --keepParent "$app" packages/DroidFun-Workshop-0.4.1-macOS.zip
       - name: Package Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force packages | Out-Null
-          Copy-Item target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe packages/DroidFun-Workshop-0.4.0-Windows.exe
+          Copy-Item target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe packages/DroidFun-Workshop-0.4.1-Windows.exe
           $app = Start-Process target/x86_64-pc-windows-msvc/release/droidfun-workshop.exe -PassThru
           Start-Sleep -Seconds 12
           $app.Refresh()

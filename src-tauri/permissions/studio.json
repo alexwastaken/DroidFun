@@ -24,7 +24,9 @@
           "workshop_registry_open_dashboard",
           "workshop_registry_connect",
           "workshop_registry_sync",
-          "workshop_registry_disconnect"
+          "workshop_registry_disconnect",
+          "workshop_live_state",
+          "workshop_live_action"
         ]
       }
     }
