@@ -18,6 +18,8 @@ fn defaults() -> Settings {
     for kind in ["text","image","clock","pomodoro","meeting","cpu","memory"] { engine.add_widget(kind).expect("known screen"); }
     for w in &mut engine.settings.widgets {
         w.id = w.kind.clone(); w.enabled = true; w.duration_sec = 8; w.config.mode = "live".into();
+        if w.kind == "weather" { w.config.location = Some(core::Location { name:"San Diego".into(),latitude:32.72,longitude:-117.16,country:"US".into(),region:"CA".into() }); }
+        w.footer.clear();
         w.config.symbol = "AAPL".into(); w.config.custom_text = "Hello, human!".into();
         w.config.timer_running = true; w.config.timer_started_at = core::unix_now();
         w.config.meeting_starts_at = core::unix_now() + 900;
@@ -95,4 +97,19 @@ pub fn run() {
             }
         });Ok(())
     }).run(tauri::generate_context!()).expect("DroidFun Studio could not start");
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn all_photo_screens_can_save_and_reload_without_accounts() {
+        let settings=super::defaults();
+        settings.validate().unwrap();
+        assert_eq!(settings.widgets.len(),12);
+        let bytes=serde_json::to_vec(&settings).unwrap();
+        let restored:crate::core::Settings=serde_json::from_slice(&bytes).unwrap();
+        restored.validate().unwrap();
+        assert!(restored.preferences.bot_model.is_empty());
+        assert!(restored.widgets.iter().all(|w|w.config.mode=="live"&&w.config.cli_path.is_empty()));
+    }
 }
