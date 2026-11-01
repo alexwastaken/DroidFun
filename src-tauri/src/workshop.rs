@@ -364,8 +364,8 @@ impl Drop for Operation {
 }
 
 fn operation(app: &AppHandle) -> Result<Operation, String> {
-    crate::showcase::require_board_mode(app)?;
     let usb = UsbOperationGuard::acquire()?;
+    crate::showcase::require_board_mode(app)?;
     change(app, |s| s.busy = true);
     Ok(Operation {
         app: app.clone(),
@@ -416,6 +416,7 @@ pub(crate) async fn workshop_inspect(target: String, app: AppHandle) -> Result<I
     }
     // Hold the USB lock until the worker really exits, even if its caller times out.
     let guard = UsbOperationGuard::acquire()?;
+    crate::showcase::require_board_mode(&app)?;
     let result=tokio::time::timeout(Duration::from_secs(8), tauri::async_runtime::spawn_blocking(move || -> Result<Inspection,String> {
         let _guard = guard;
         require_consumer_closed()?;
