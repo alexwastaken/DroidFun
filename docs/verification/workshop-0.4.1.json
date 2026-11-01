@@ -1,0 +1,147 @@
+{
+  "date": "2026-11-01",
+  "version": "0.4.1",
+  "sourceCommit": "639cca843ae023210c4e6971925f7122bf98001a",
+  "workflowRun": "https://github.com/alexwastaken/DroidFun/actions/runs/41294037957",
+  "checks": {
+    "frontendProductionBuild": "passed",
+    "liveNativeTests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "backendTests": {
+      "passed": 72,
+      "failed": 0
+    },
+    "publicCustomerBoundaryGuards": {
+      "passed": 5,
+      "failed": 0
+    },
+    "ownerDownloadAuthorizationTest": "passed"
+  },
+  "localMac": {
+    "version": "0.4.1",
+    "architecture": "arm64",
+    "source": "same sourceCommit as CI packages",
+    "codeSignatureVerified": true,
+    "interactiveCombinedUi": "Screens and Live text tabs opened; pairing retained; connected line, closed intake, Shared line warning and Change Blooio line control verified",
+    "physicalUsb": "not tested; no droid attached"
+  },
+  "provider": {
+    "existingLineConnected": true,
+    "signedWebhookCreated": true,
+    "credentialsStorage": "AES-GCM encrypted on backend only",
+    "intake": "closed",
+    "linePlan": "shared",
+    "firstTimeInboundText": "not tested",
+    "confirmationSmsDelivery": "not tested",
+    "publicLivestreamReadiness": "Shared lines may not route inbound-first messages; verify from new sender or use Inbound/Dedicated"
+  },
+  "distribution": "Owner dashboard only; no public catalog or updater changes.",
+  "limits": [
+    "Physical OLED playback and real inbound text have not been tested.",
+    "Shared/trial line routing and provider limits apply.",
+    "Packages remain unsigned/ad-hoc.",
+    "Delivery is at-least-once after interrupted USB/backend leases."
+  ],
+  "packages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.1",
+      "filename": "DroidFun-Workshop-0.4.1-macOS.zip",
+      "key": "DroidFun-Workshop-0.4.1-macOS-5726576676ac.zip",
+      "size": 15714564,
+      "sha256": "5726576676ac544b4d557f0a9c3964716540deb18e8ea0dfc20c90ff0e013f88"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.1",
+      "filename": "DroidFun-Workshop-0.4.1-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.1-Windows-1ad398c909c6.exe",
+      "size": 3623718,
+      "sha256": "1ad398c909c6d350fb64ee4b381c236234c5e120baadc4a824dd797357efc669"
+    }
+  ],
+  "ci": {
+    "result": "success",
+    "macUniversalPackageSignatureAndHelper": "passed",
+    "windowsNativeWindowLaunch": "passed",
+    "temporaryArtifactsRemaining": 0
+  },
+  "deployment": {
+    "checkedAt": "2026-11-01T09:51:38.683Z",
+    "deployedVersion": "643d0e59-ee33-41e2-ae84-2dead0745b04",
+    "ownerDownloadAccessChecks": [
+      {
+        "path": "/api/admin/live-text",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/live-text",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.1-macOS-5726576676ac.zip",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.1-macOS-5726576676ac.zip",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.1-macOS-5726576676ac.zip",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/api/admin/studio-downloads/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.1-Windows-1ad398c909c6.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.1-Windows-1ad398c909c6.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.1-Windows-1ad398c909c6.exe",
+        "expected": 404,
+        "status": 404
+      }
+    ],
+    "publicCatalogFilesUnchanged": true,
+    "authenticatedProductionDownload": "Not checked: owner browser is signed out. Authenticated handler covered by owner-cookie integration test."
+  },
+  "macArchitectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "backendSourceHashes": {
+    "site/src/live-text.js": "d3ce5892250ee687a17c1f0521da0ddf6a4d706d51d84c8d1ac034484c558b36",
+    "site/src/worker.js": "5c7ba50efae6e6673e2caffef49125ffa36aad082e4c976311396c379d544a4c",
+    "site/src/droid-registry.js": "622ab5e6825a0864859901c7f098a4f9c59f5e2e04d0f4a3e1f566d3be319b0c",
+    "site/migrations/0013_live_text.sql": "6df51770c3e4087c05d10d74a82f9e6df42bf8bb936bde0fab7f25ad4d7e677a",
+    "site/test/live-text.test.js": "cb918a82a3953811d1f70fe0d28a3319b262b56ad99d54ff3dd4a12120d61e63"
+  }
+}
