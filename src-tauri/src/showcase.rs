@@ -75,6 +75,7 @@ fn showcase_action(action:String,id:Option<String>,value:Option<Value>,state:Sta
     }
     s.refresh();if save {crate::persistence::save(&s.path,&s.engine.settings)?;}Ok(s.view())
 }
+#[cfg(not(test))]
 pub fn run() {
     tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app,_,_|{if let Some(w)=app.get_webview_window("main"){let _=w.show();let _=w.set_focus();}}))
     .invoke_handler(tauri::generate_handler![showcase_state,showcase_action])
