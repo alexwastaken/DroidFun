@@ -1,0 +1,1 @@
+{"identifier":"studio","description":"Private local photography controls","local":true,"windows":["main"],"permissions":["core:event:allow-listen","core:event:allow-unlisten","studio-controls"]}

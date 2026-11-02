@@ -33,6 +33,14 @@ pub fn install(
     }
 }
 
+#[cfg(feature = "workshop")]
+pub fn install_fresh(path: &str, expected: Option<&str>, firmware: &[u8], cancel: &AtomicBool, report: impl Fn(&str)) -> Result<Option<String>, String> {
+    #[cfg(target_os = "macos")]
+    return native::install_inner(path, expected, firmware, cancel, report, true);
+    #[cfg(not(target_os = "macos"))]
+    { let _ = (path, expected, firmware, cancel, report); Err("Wipe and reinstall requires direct USB on a supported Mac.".into()) }
+}
+
 #[cfg(target_os = "macos")]
 mod native {
     use super::*;
@@ -426,6 +434,13 @@ mod native {
         cancel: &AtomicBool,
         report: impl Fn(&str),
     ) -> Result<Option<String>, String> {
+        install_inner(path, expected_board_id, firmware, cancel, report, false)
+    }
+
+    pub(super) fn install_inner(
+        path: &str, expected_board_id: Option<&str>, firmware: &[u8],
+        cancel: &AtomicBool, report: impl Fn(&str), fresh: bool,
+    ) -> Result<Option<String>, String> {
         let serial = target(path)?;
         let helper = helper()?;
         if !os_supported() {
@@ -446,9 +461,17 @@ mod native {
             return Err(helper_error(&identity.bytes));
         }
         let id = parse_identity(&String::from_utf8_lossy(&identity.bytes), expected_board_id)?;
+        #[cfg(feature = "workshop")]
+        let fresh_image = if fresh {
+            crate::workshop_flash::require_flash_size(&String::from_utf8_lossy(&identity.bytes))?;
+            Some(crate::workshop_flash::image(firmware)?)
+        } else { None };
+        #[cfg(not(feature = "workshop"))]
+        let fresh_image: Option<Vec<u8>> = None;
+        let (filename, bytes) = fresh_image.as_ref().map_or(("firmware.uf2", firmware), |image| ("fresh.bin", image.as_slice()));
         let temp = TempArea::new()?;
-        let mut file = temp.file("firmware.uf2")?;
-        file.write_all(firmware)
+        let mut file = temp.file(filename)?;
+        file.write_all(bytes)
             .and_then(|_| file.sync_all())
             .map_err(|_| "Could not prepare the bundled robot software.")?;
         drop(file);
@@ -460,8 +483,12 @@ mod native {
         report(
             "Installing and verifying your bot’s software through direct USB… Keep USB connected.",
         );
-        let load = load_command(&helper, id.as_deref(), &temp.0.join("firmware.uf2"));
-        let out = run(load, Duration::from_secs(25), cancel)?;
+        let mut load = load_command(&helper, id.as_deref(), &temp.0.join(filename));
+        if fresh {
+            report("Wiping all 2 MiB of flash and installing fresh firmware… Keep USB connected.");
+            load.args(["-t", "bin", "-o", "0x10000000"]);
+        }
+        let out = run(load, Duration::from_secs(if fresh { 60 } else { 25 }), cancel)?;
         if !verified(&out) {
             return Err(helper_error(&out.bytes));
         }

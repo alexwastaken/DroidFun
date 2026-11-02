@@ -1,0 +1,28 @@
+{
+  "workshopVersion": "0.4.5",
+  "companionVersion": "0.10.7",
+  "model": "meep",
+  "wiring": "standard-gp4-gp5",
+  "previousFirmware": "1.3.2",
+  "installedFirmware": "1.3.3",
+  "firmwareAndBoardIdPassed": true,
+  "identitySavedPassed": true,
+  "screenCommunicationPassed": true,
+  "powerCycleConfirmed": true,
+  "physicalBlinkConfirmed": true,
+  "status": "complete",
+  "physicalBlinkEvidence": "User reported: Reconnected\u2014the face blinks",
+  "usbReconnectAndSavedFacePassed": true,
+  "workshopChecksComplete": true,
+  "privateInventoryShowsFirmware": "1.3.3",
+  "companionConnectedAfterHandoff": true,
+  "companionFirmwareReported": "1.3.3",
+  "diagnosticCodes": [
+    "DF-USB-00",
+    "DF-LINK-00",
+    "DF-SCREEN-00"
+  ],
+  "diagnosticSummary": "USB found, fresh droid replies, screen controller ready",
+  "companionLeftPlaying": true,
+  "scope": "One physical Meep with standard GP4/GP5 wiring. Blink visually confirmed by user after full power removal. Other models, Mistake wiring and fresh customer OS installs are not covered."
+}

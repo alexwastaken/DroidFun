@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-11-02T23:57:59.219Z",
+  "version": "0.10.8",
+  "targets": [
+    "windows-x86_64",
+    "windows-aarch64"
+  ],
+  "legacyFeedUnchanged": true,
+  "otherCatalogFilesUnchanged": true,
+  "storeAndProductsUnchanged": true,
+  "migrationInstructionsLive": true,
+  "anonymousPrivateEndpoints": [
+    {
+      "path": "/api/workshop/updates/manifest.json",
+      "status": 401
+    },
+    {
+      "path": "/api/workshop/updates/mac",
+      "status": 401
+    },
+    {
+      "path": "/api/workshop/updates/windows",
+      "status": 401
+    },
+    {
+      "path": "/api/admin/studio-downloads",
+      "status": 401
+    },
+    {
+      "path": "/api/admin/studio-downloads/mac",
+      "status": 401
+    },
+    {
+      "path": "/api/admin/studio-downloads/windows",
+      "status": 401
+    }
+  ],
+  "publicAppJsSha256": "8c39f0d896827d9b13c9276526c99b0f4e6119135908968bbec0754b74193988"
+}

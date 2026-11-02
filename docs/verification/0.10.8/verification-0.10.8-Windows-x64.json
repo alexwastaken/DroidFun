@@ -1,0 +1,58 @@
+{
+  "version": "0.10.8",
+  "platform": "Windows-x64",
+  "target": "x86_64-pc-windows-msvc",
+  "applicationCommit": "5029841a33555f754d17810b2ead09056c50e304",
+  "pipelineCommit": "5029841a33555f754d17810b2ead09056c50e304",
+  "runUrl": "https://github.com/alexwastaken/DroidFun/actions/runs/41548544707",
+  "runner": {
+    "os": "Windows",
+    "architecture": "X64",
+    "image": "20261030.294.1"
+  },
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "node": "v24.22.2",
+  "tests": {
+    "passed": 174,
+    "failed": 0
+  },
+  "architecture": "x64",
+  "smoke": {
+    "aliveSeconds": 15,
+    "installedBinaryMatchesPackage": true,
+    "nativeWindowCreated": true,
+    "environment": "Fresh GitHub Windows runner; no robot or account credentials",
+    "installedBinaryArchitecture": "x64",
+    "result": "passed",
+    "installerExitCode": 0
+  },
+  "signed": false,
+  "updater": {
+    "assetName": "DroidFun-App-0.10.8-Windows-x64-setup.exe",
+    "signatureName": "DroidFun-App-0.10.8-Windows-x64-setup.exe.sig",
+    "signatureVerified": true,
+    "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK012SXByUnEzdzZEUjdSZXdlbVNma3BISVBBa0pwR0FTNHZYSVhhY1pnQWRCU2pwU0ZWZWVEQzBrdjB4OUUwTVBlVDZ6WnJmWVBRMWJEeTNDK2pUVGcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYzNzQzCWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC44CllBVTZlVk5SMEs2eStpaHlSQ2t2RHdoVTB3MDM5U1dMN0xadCtFcVNreStiNCthWXJ6a2tTNlYvTEkxRzJINzMzYlRvUDBLdVZQVllYOUhyWFFFREFBPT0K",
+    "keyId": "0d742970b9e840f8",
+    "signedVersion": "0.10.8",
+    "signedFileName": "DroidFun App_0.10.8_x64-setup.exe"
+  },
+  "assets": [
+    {
+      "name": "DroidFun-App-0.10.8-Windows-x64-setup.exe",
+      "bytes": 6745955,
+      "sha256": "1c2999557ac6ab1990dd9bed8a8bd83733ea437629dcb758f4407eb98e6bcdbf"
+    },
+    {
+      "name": "DroidFun-App-0.10.8-Windows-x64-setup.exe.sig",
+      "bytes": 444,
+      "sha256": "a417adc95dee6cdad26d7fb5733b5a0a6295cb2d18de19865c988bee759f141d"
+    }
+  ],
+  "remaining": [
+    "Physical robot USB behavior",
+    "Live account sign-in and usage on this OS",
+    "Human tray and window interaction",
+    "Installation/upgrade/uninstall acceptance beyond recorded checks",
+    "Code signing"
+  ]
+}

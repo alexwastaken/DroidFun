@@ -787,15 +787,17 @@ dependencies = [
 
 [[package]]
 name = "deskbot"
-version = "0.10.6"
+version = "0.10.8"
 dependencies = [
  "chrono",
  "chrono-tz",
  "font8x8",
  "glib",
  "libc",
+ "objc2-app-kit",
  "plist",
  "reqwest 0.12.28",
+ "reqwest 0.13.5",
  "serde",
  "serde_json",
  "serialport",
@@ -2420,6 +2422,7 @@ checksum = "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c"
 dependencies = [
  "bitflags 2.13.2",
  "block2",
+ "libc",
  "objc2",
  "objc2-core-foundation",
  "objc2-foundation",

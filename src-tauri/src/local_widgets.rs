@@ -11,7 +11,8 @@ pub fn local(kind: &str) -> bool {
 }
 
 pub fn validate(c: &SourceConfig) -> Result<(), String> {
-    if (c.clock_zone != "local" && c.clock_zone.parse::<chrono_tz::Tz>().is_err())
+    if !["time", "calendar"].contains(&c.clock_display.as_str())
+        || (c.clock_zone != "local" && c.clock_zone.parse::<chrono_tz::Tz>().is_err())
         || !["12", "24"].contains(&c.clock_format.as_str())
         || !["weekday", "date", "none"].contains(&c.clock_date.as_str())
         || !(1..=120).contains(&c.focus_minutes)
@@ -102,56 +103,13 @@ fn card(
 
 pub fn dynamic_card(w: &Widget, wall: u64) -> DataCard {
     let c = &w.config;
-    let utc = DateTime::<Utc>::from_timestamp(wall as i64, 0).unwrap_or_default();
     match w.kind.as_str() {
         "clock" => {
-            let pattern = if c.clock_format == "12" {
-                "%-I:%M"
-            } else {
-                "%H:%M"
-            };
-            let footer_pattern = match c.clock_date.as_str() {
-                "none" => "",
-                "date" => "%Y-%m-%d",
-                _ => "%a %b %d",
-            };
-            let (value, zone, suffix, footer, second) = if c.clock_zone == "local" {
-                let d = utc.with_timezone(&Local);
-                (
-                    d.format(pattern).to_string(),
-                    d.format("%Z").to_string(),
-                    d.format("%p").to_string(),
-                    d.format(footer_pattern).to_string(),
-                    d.format("%S").to_string(),
-                )
-            } else {
-                let tz: chrono_tz::Tz = c.clock_zone.parse().unwrap_or(chrono_tz::UTC);
-                let d = utc.with_timezone(&tz);
-                (
-                    d.format(pattern).to_string(),
-                    d.format("%Z").to_string(),
-                    d.format("%p").to_string(),
-                    d.format(footer_pattern).to_string(),
-                    d.format("%S").to_string(),
-                )
-            };
-            let context = if c.clock_format == "12" {
-                format!("{zone} {suffix}")
-            } else {
-                zone
-            };
-            let status = if c.clock_seconds {
-                format!("{second} SECONDS")
-            } else {
-                String::new()
-            };
+            let (value, footer, context) = crate::clock_screen::reading(w, wall);
             card(
-                "clock",
-                wall,
-                value,
-                footer,
-                format!("{} time · {}-hour clock", c.clock_zone, c.clock_format),
-                json!({"context":context,"status":status}),
+                "clock", wall, value, footer,
+                format!("{} · {}", c.clock_zone, if crate::clock_screen::is_calendar(w) { "Calendar" } else { "Clock" }),
+                json!({"context":context,"status":""}),
             )
         }
         "pomodoro" => {

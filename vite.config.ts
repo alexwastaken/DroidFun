@@ -1,8 +1,9 @@
 import { defineConfig } from "vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  publicDir: mode === "studio" ? false : "public",
   clearScreen: false,
   server: { port: 1420, strictPort: true, host: "127.0.0.1" },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
   build: { target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13" },
-});
+}));

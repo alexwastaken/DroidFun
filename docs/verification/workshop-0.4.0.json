@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-31",
+  "version": "0.4.0",
+  "sourceCommit": "3b532c4103bb5fff205fc52629fd8c55a7b9d72b",
+  "workflowRun": "https://github.com/alexwastaken/DroidFun/actions/runs/41269271455",
+  "localMac": {
+    "version": "0.4.0",
+    "runningAfter12Seconds": true,
+    "helperVersion": "picotool v2.0.0 (Darwin, AppleClang-17.0.0.17000013, Release)",
+    "physicalUsb": "not tested",
+    "codeSignatureVerified": true
+  },
+  "checks": {
+    "frontendProductionBuild": "passed",
+    "workshopNativeTests": {
+      "passed": 41,
+      "failed": 0
+    },
+    "screenDefaultsPersistenceTest": "passed",
+    "publicCustomerBoundaryGuards": {
+      "passed": 5,
+      "failed": 0
+    },
+    "ownerDownloadAuthorizationTest": "passed",
+    "physicalUsb": "not tested",
+    "interactiveCombinedUi": "not confirmed"
+  },
+  "limits": [
+    "Full flash erase is supported on Mac; Windows can reinstall firmware.",
+    "Private packages are unsigned/ad-hoc."
+  ],
+  "distribution": "Owner dashboard only; no public catalog or updater changes.",
+  "packages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.0",
+      "filename": "DroidFun-Workshop-0.4.0-macOS.zip",
+      "key": "DroidFun-Workshop-0.4.0-macOS-b8c80896bbea.zip",
+      "size": 15588479,
+      "sha256": "b8c80896bbeadbf3b79d19bff6030aac8ebbbdd3309ced0402cd9a610600fae3"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.0",
+      "filename": "DroidFun-Workshop-0.4.0-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.0-Windows-b40608ca524b.exe",
+      "size": 3580976,
+      "sha256": "b40608ca524b27c6dd844147c039c4ed2d1666ed1371722d9bf5770eb137fcd0"
+    }
+  ],
+  "ci": {
+    "result": "success",
+    "macUniversalPackageSignatureAndHelper": "passed",
+    "windowsNativeWindowLaunch": "passed",
+    "temporaryArtifactsRemaining": 0
+  },
+  "deployment": {
+    "date": "2026-10-31",
+    "checkedAt": "2026-11-01T03:38:44.595Z",
+    "deployedVersion": "9ac92059-0737-4ad1-bf19-df0e3b0786ca",
+    "ownerDownloadAccessChecks": [
+      {
+        "path": "/api/admin/studio-downloads",
+        "status": 401,
+        "expected": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/mac",
+        "status": 401,
+        "expected": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.0-macOS-b8c80896bbea.zip",
+        "status": 404,
+        "expected": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.0-macOS-b8c80896bbea.zip",
+        "status": 404,
+        "expected": 404
+      },
+      {
+        "path": "/api/admin/studio-downloads/windows",
+        "status": 401,
+        "expected": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.0-Windows-b40608ca524b.exe",
+        "status": 404,
+        "expected": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.0-Windows-b40608ca524b.exe",
+        "status": 404,
+        "expected": 404
+      }
+    ],
+    "publicCatalogFilesUnchanged": true,
+    "dashboardPanel": "Workshop",
+    "authenticatedProductionDownload": "not checked; authenticated handler covered by local owner-cookie test"
+  },
+  "macArchitectures": [
+    "x86_64",
+    "arm64"
+  ]
+}

@@ -1,19 +1,19 @@
 {
   "repository": "alexwastaken/DroidFun",
-  "source_snapshot": "1722ba3b56ab5a25225d86969fa234f661070c46",
+  "source_snapshot": "5029841a33555f754d17810b2ead09056c50e304",
   "source_commits": {
     "macOS": "1722ba3b56ab5a25225d86969fa234f661070c46",
-    "Windows-x64": "1722ba3b56ab5a25225d86969fa234f661070c46",
-    "Windows-ARM64": "1722ba3b56ab5a25225d86969fa234f661070c46",
+    "Windows-x64": "5029841a33555f754d17810b2ead09056c50e304",
+    "Windows-ARM64": "5029841a33555f754d17810b2ead09056c50e304",
     "Linux-x86_64": "1722ba3b56ab5a25225d86969fa234f661070c46"
   },
-  "release": "v0.10.0",
+  "release": "v0.10.8-windows",
   "platform_versions": {
     "macOS": "0.10.0",
-    "Windows": "0.10.0",
+    "Windows": "0.10.8",
     "Linux": "0.10.0"
   },
-  "distribution": "Public GitHub prerelease; signed in-app updates on Mac and Windows. Website publication remains manual. See acceptance evidence for limits.",
+  "distribution": "Windows 0.10.8 public prerelease with independent signed updater feed. Mac and Linux remain 0.10.0. Windows 0.10.0–0.10.7 requires one manual installer upgrade.",
   "files": [
     {
       "id": "droidfun-controller-guide",
@@ -49,39 +49,39 @@
     },
     {
       "id": "deskbot-020-windows-x64",
-      "title": "DroidFun App for Windows \u00b7 x64",
+      "title": "DroidFun App for Windows · x64",
       "description": "Installer for most Windows computers.",
-      "version": "0.10.0",
-      "filename": "DroidFun-App-0.10.0-Windows-x64-setup.exe",
-      "size": 6741353,
+      "version": "0.10.8",
+      "filename": "DroidFun-App-0.10.8-Windows-x64-setup.exe",
+      "size": 6745955,
       "content_type": "application/octet-stream",
-      "object_key": "asset:/download-assets/DroidFun-App-0.10.0-Windows-x64-setup.exe",
+      "object_key": "asset:/download-assets/DroidFun-App-0.10.8-Windows-x64-setup.exe",
       "access": "free",
       "published": 1,
       "product_id": null,
-      "sha256": "9810e18503ad346d772a7bf09cbc377d40c2d2cabcbf8c34b0883cfddb1b9fca",
-      "source_commit": "1722ba3b56ab5a25225d86969fa234f661070c46",
-      "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.0"
+      "sha256": "1c2999557ac6ab1990dd9bed8a8bd83733ea437629dcb758f4407eb98e6bcdbf",
+      "source_commit": "5029841a33555f754d17810b2ead09056c50e304",
+      "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.8"
     },
     {
       "id": "deskbot-020-windows-arm64",
-      "title": "DroidFun App for Windows \u00b7 ARM64",
+      "title": "DroidFun App for Windows · ARM64",
       "description": "Installer for Windows on ARM computers.",
-      "version": "0.10.0",
-      "filename": "DroidFun-App-0.10.0-Windows-ARM64-setup.exe",
-      "size": 6253513,
+      "version": "0.10.8",
+      "filename": "DroidFun-App-0.10.8-Windows-ARM64-setup.exe",
+      "size": 6269335,
       "content_type": "application/octet-stream",
-      "object_key": "asset:/download-assets/DroidFun-App-0.10.0-Windows-ARM64-setup.exe",
+      "object_key": "asset:/download-assets/DroidFun-App-0.10.8-Windows-ARM64-setup.exe",
       "access": "free",
       "published": 1,
       "product_id": null,
-      "sha256": "172d8fe7b821b243eef46562b421473b77aa2c491c880783648057fd5f39d119",
-      "source_commit": "1722ba3b56ab5a25225d86969fa234f661070c46",
-      "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.0"
+      "sha256": "0f2b08826932e0763862cec85a22e39bab0f04171e1eedfbaca5769780ff3154",
+      "source_commit": "5029841a33555f754d17810b2ead09056c50e304",
+      "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.8"
     },
     {
       "id": "deskbot-020-linux-deb",
-      "title": "DroidFun App for Linux \u00b7 DEB",
+      "title": "DroidFun App for Linux · DEB",
       "description": "Package for Debian and Ubuntu on x86_64.",
       "version": "0.10.0",
       "filename": "DroidFun-App-0.10.0-Linux-x86_64.deb",
@@ -97,7 +97,7 @@
     },
     {
       "id": "deskbot-020-linux-rpm",
-      "title": "DroidFun App for Linux \u00b7 RPM",
+      "title": "DroidFun App for Linux · RPM",
       "description": "Package for RPM-based Linux on x86_64.",
       "version": "0.10.0",
       "filename": "DroidFun-App-0.10.0-Linux-x86_64.rpm",

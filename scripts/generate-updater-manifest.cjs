@@ -11,12 +11,14 @@ const PLATFORMS = {
   'Windows-x64': ['windows-x86_64'],
   'Windows-ARM64': ['windows-aarch64'],
 };
-function generate({version, source, release, evidence, directory, publicKey, notes = ''}) {
+function generate({version, source, release, evidence, directory, publicKey, notes = '', channel = 'all'}) {
   if (!SEMVER.test(version) || !/^[0-9a-f]{40}$/.test(source)) throw new Error('Exact release version and source commit required');
   if (release.draft !== false || release.tag_name !== `v${version}` || release.target_commitish !== source || !release.published_at || !Number.isFinite(Date.parse(release.published_at)) || release.html_url !== `https://github.com/${REPO}/releases/tag/v${version}`) throw new Error('Release must already be published for the exact source/version');
   if (!Array.isArray(release.assets) || !Array.isArray(evidence)) throw new Error('Release asset evidence is missing');
+  if (!['all', 'windows'].includes(channel)) throw new Error('Choose all or windows release channel');
   const platforms = {};
   for (const [platform, targets] of Object.entries(PLATFORMS)) {
+    if (channel === 'windows' && !platform.startsWith('Windows-')) continue;
     const records = evidence.filter(e => e.platform === platform);
     if (records.length !== 1) throw new Error(`Expected one ${platform} evidence record`);
     const item = records[0];
@@ -40,8 +42,8 @@ function generate({version, source, release, evidence, directory, publicKey, not
 }
 if (require.main === module) {
   const args = process.argv.slice(2);
-  const allowed = ['--version', '--source', '--packages', '--output', '--notes'];
-  if (args.length % 2 || args.some((v,i) => i % 2 === 0 && !allowed.includes(v))) throw new Error('Use --version VERSION --source COMMIT --packages DIRECTORY --output FILE [--notes FILE]');
+  const allowed = ['--version', '--source', '--packages', '--output', '--notes', '--channel'];
+  if (args.length % 2 || args.some((v,i) => i % 2 === 0 && !allowed.includes(v))) throw new Error('Use --version VERSION --source COMMIT --packages DIRECTORY --output FILE [--notes FILE] [--channel all|windows]');
   const options = {};
   for (let i=0;i<args.length;i+=2) { if (options[args[i]]) throw new Error('Duplicate argument'); options[args[i]] = args[i+1]; }
   for (const name of allowed.slice(0,4)) if (!options[name]) throw new Error(`Missing ${name}`);
@@ -51,7 +53,7 @@ if (require.main === module) {
   const evidence = fs.readdirSync(directory).filter(n => n.startsWith(`verification-${version}-`) && n.endsWith('.json')).map(n => JSON.parse(fs.readFileSync(path.join(directory,n),'utf8')));
   const release = JSON.parse(execFileSync('gh',['api',`repos/${REPO}/releases/tags/v${version}`],{encoding:'utf8',maxBuffer:8*1024*1024}));
   const config = JSON.parse(fs.readFileSync(path.join(__dirname,'../src-tauri/tauri.conf.json'),'utf8'));
-  const manifest = generate({version,source:options['--source'],release,evidence,directory,publicKey:config.plugins?.updater?.pubkey,notes:options['--notes']?fs.readFileSync(options['--notes'],'utf8'):''});
+  const manifest = generate({version,source:options['--source'],release,evidence,directory,publicKey:config.plugins?.updater?.pubkey,channel:options['--channel']||'all',notes:options['--notes']?fs.readFileSync(options['--notes'],'utf8'):''});
   const output = path.resolve(options['--output']);
   fs.mkdirSync(path.dirname(output),{recursive:true});
   const temp = `${output}.${process.pid}.tmp`;

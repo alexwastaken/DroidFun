@@ -1,0 +1,43 @@
+{
+  "firmware": "1.3.2-mistake",
+  "artifact": "droidfun-rp2040-zero-sda5-scl4-v1.3.2-mistake.uf2",
+  "sha256": "3928a3a58041db9e469c1f4f7e15654ef82b6a6dba914051c614d8947742cff6",
+  "bytes": 219648,
+  "wiring": {
+    "sda": 5,
+    "scl": 4,
+    "transport": "PIO open-drain I2C, 400kHz with 100kHz fallback"
+  },
+  "standardFirmwareUnchanged": true,
+  "customerAppChangesRequired": false,
+  "usbProtocol": 1,
+  "factoryIdentityProfile": "rp2040-zero-gp4-gp5-ssd1306",
+  "runtimePinProfile": "GP5-SDA-GP4-SCL",
+  "toolchain": {
+    "arduinoCli": "1.5.1",
+    "arduinoPico": "6.3.0",
+    "fqbn": "rp2040:rp2040:waveshare_rp2040_zero:flash=2097152_262144",
+    "cppExtraFlags": "-DDROIDFUN_MISTAKE_WIRING"
+  },
+  "programBytes": 92820,
+  "dynamicMemoryBytes": 76600,
+  "uf2AddressStart": "0x10000000",
+  "uf2AddressEndExclusive": "0x1001ad00",
+  "filesystemStart": "0x101c0000",
+  "filesystemPreservedByImage": true,
+  "physicalProgrammingVerified": true,
+  "physicalPowerCycleVerified": false,
+  "sources": {
+    "firmware/deskbot_firmware/mistake_i2c.pio.h": "3da459bd02af34864d1b5654d0bab7e68f6130bf7f9100b033bbba3b32d0dbbc",
+    "firmware/deskbot_firmware/mistake_i2c.h": "875ae7b06905d5d4609f58cfcf64c5467677ccee0fdf6e8df01ea046099ca2f1",
+    "firmware/deskbot_firmware/fallback_face.h": "2c1fa3fb7b765f5739f4935a66e0d889f1a7d7484c5728e7308015cf446d13bb",
+    "firmware/deskbot_firmware/standalone_storage.h": "e3ea8ebfd8a6705503e5e2e6aaa8e4376658553128a6e7699e18c413e2021f00",
+    "firmware/deskbot_firmware/deskbot_firmware.ino": "f129650800c4de3cb552d03eab63bd9975064af47ca0dc5e26a7ef338bed3b62",
+    "firmware/deskbot_firmware/mistake_i2c.pio": "03b3f01e2b3180ff96501ee9250f83f9214c8f6a5154b4e279f83243a55094fa",
+    "firmware/deskbot_firmware/standalone_playlist.h": "c2f175fd7fa2f7e42ce37f160a5b2f5bb65a3f36676c57e352170e1f18c09411",
+    "firmware/deskbot_firmware/device_identity.h": "bbfc09639dd21e8335b97e8fbbf68173d51c1232a4ad6617bff13358ac680410"
+  },
+  "programmedBoardId": "5303284730BF701C",
+  "physicalModel": "boo",
+  "screenCommunicationVerified": true
+}

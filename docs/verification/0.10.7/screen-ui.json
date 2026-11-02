@@ -1,0 +1,27 @@
+{
+  "scope": "Production React UI; simulated native/USB calls. Actual clock frames verified separately by native renderer tests.",
+  "results": [
+    {
+      "model": "meep",
+      "clockAndCalendarEditors": true,
+      "independentSettings": true,
+      "noErrorsOrOverflow": true
+    },
+    {
+      "model": "nimbus",
+      "clockAndCalendarEditors": true,
+      "independentSettings": true,
+      "noErrorsOrOverflow": true
+    },
+    {
+      "model": "boo",
+      "clockAndCalendarEditors": true,
+      "independentSettings": true,
+      "noErrorsOrOverflow": true
+    },
+    {
+      "model": "claw",
+      "calendarExcluded": true
+    }
+  ]
+}

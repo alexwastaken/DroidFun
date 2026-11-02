@@ -90,6 +90,11 @@ test('platform packaging configs do not override the reviewed customer security 
   const tauri = path.join(root, 'src-tauri');
   for (const filename of fs.readdirSync(tauri).filter(name => /^tauri\..+\.conf\.json$/.test(name))) {
     const config = json(`src-tauri/${filename}`);
+    if (filename === 'tauri.showcase.conf.json') {
+      assert.equal(config.identifier, 'com.droidfun.workshop.private');
+      assert.deepEqual(config.app.security.capabilities, ['studio']);
+      continue;
+    }
     assert.ok(!config.app?.security, `${filename} needs an explicit security review`);
   }
 });
@@ -105,4 +110,14 @@ test('customer model lookup stays a bounded public hint with no owner or Worksho
   assert.match(source, /\.redirect\(reqwest::redirect::Policy::none\(\)\)/);
   assert.match(source, /#\[serde\(deny_unknown_fields\)\]/);
   assert.match(source, /bytes\.len\(\)\s*\+\s*chunk\.len\(\)\s*>\s*256/);
+});
+
+test('Windows uses a separate HTTPS release feed while Workshop keeps its authenticated feed', () => {
+  const base=json('src-tauri/tauri.conf.json');
+  const windows=json('src-tauri/tauri.windows.conf.json');
+  assert.deepEqual(windows.plugins.updater, {endpoints:['https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/windows-updater.json']});
+  assert.equal(base.plugins.updater.requireSignedVersion,true);
+  assert.deepEqual(base.plugins.updater.endpoints,['https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/updater.json']);
+  const workshop=json('src-tauri/tauri.showcase.conf.json');
+  assert.ok(workshop.plugins.updater.endpoints.every(url=>url.startsWith('https://droidfun.io/api/workshop/updates')));
 });

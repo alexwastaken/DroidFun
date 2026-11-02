@@ -1,0 +1,23 @@
+{
+  "source": "5029841a33555f754d17810b2ead09056c50e304",
+  "checkedAt": "2026-11-02T23:57:39.676Z",
+  "url": "https://droidfun.io/downloads",
+  "results": [
+    {
+      "id": "deskbot-020-windows-x64",
+      "filename": "DroidFun-App-0.10.8-Windows-x64-setup.exe",
+      "status": 200,
+      "bytes": 6745955,
+      "sha256": "1c2999557ac6ab1990dd9bed8a8bd83733ea437629dcb758f4407eb98e6bcdbf",
+      "verified": true
+    },
+    {
+      "id": "deskbot-020-windows-arm64",
+      "filename": "DroidFun-App-0.10.8-Windows-ARM64-setup.exe",
+      "status": 200,
+      "bytes": 6269335,
+      "sha256": "0f2b08826932e0763862cec85a22e39bab0f04171e1eedfbaca5769780ff3154",
+      "verified": true
+    }
+  ]
+}

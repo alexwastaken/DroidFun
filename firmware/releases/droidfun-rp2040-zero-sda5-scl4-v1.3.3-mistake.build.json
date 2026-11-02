@@ -1,0 +1,35 @@
+{
+  "firmware": "1.3.3-mistake",
+  "artifact": "droidfun-rp2040-zero-sda5-scl4-v1.3.3-mistake.uf2",
+  "sha256": "bf16e20d6f35813760e3e6d5bc213baf74c5c8996d45925914ee60cb76895870",
+  "bytes": 220672,
+  "toolchain": {
+    "arduinoCli": "1.5.1",
+    "arduinoPico": "6.3.0",
+    "fqbn": "rp2040:rp2040:waveshare_rp2040_zero:flash=2097152_262144",
+    "cppExtraFlags": "-DDROIDFUN_MISTAKE_WIRING"
+  },
+  "programBytes": 93228,
+  "dynamicMemoryBytes": 76608,
+  "uf2AddressStart": "0x10000000",
+  "uf2AddressEndExclusive": "0x1001af00",
+  "filesystemStart": "0x101c0000",
+  "filesystemPreservedByImage": true,
+  "physicalProgrammingVerified": false,
+  "physicalPowerCycleVerified": false,
+  "sources": {
+    "firmware/factory/deskbot_firmware/deskbot_firmware.ino": "305e0abfd608d93c603db5959013367ac75b0ec7b9cb1f3b1f100720abb1c161",
+    "firmware/factory/deskbot_firmware/device_identity.h": "bbfc09639dd21e8335b97e8fbbf68173d51c1232a4ad6617bff13358ac680410",
+    "firmware/factory/deskbot_firmware/fallback_face.h": "2c1fa3fb7b765f5739f4935a66e0d889f1a7d7484c5728e7308015cf446d13bb",
+    "firmware/factory/deskbot_firmware/mistake_i2c.h": "875ae7b06905d5d4609f58cfcf64c5467677ccee0fdf6e8df01ea046099ca2f1",
+    "firmware/factory/deskbot_firmware/mistake_i2c.pio": "03b3f01e2b3180ff96501ee9250f83f9214c8f6a5154b4e279f83243a55094fa",
+    "firmware/factory/deskbot_firmware/mistake_i2c.pio.h": "3da459bd02af34864d1b5654d0bab7e68f6130bf7f9100b033bbba3b32d0dbbc",
+    "firmware/factory/deskbot_firmware/standalone_playlist.h": "c2f175fd7fa2f7e42ce37f160a5b2f5bb65a3f36676c57e352170e1f18c09411",
+    "firmware/factory/deskbot_firmware/standalone_storage.h": "e3ea8ebfd8a6705503e5e2e6aaa8e4376658553128a6e7699e18c413e2021f00",
+    "firmware/factory/deskbot_firmware/standby_face.h": "def0ba8c4773abdc3c958c2baee3b0c0212c40e933b36015917900cd23540329"
+  },
+  "behavior": "200 ms eye blink every 4.2 seconds in factory-smile standby; no flash writes per blink; custom saved images remain unchanged; desktop and explicit screen-off take priority.",
+  "runtimePinProfile": "GP5-SDA-GP4-SCL",
+  "factoryIdentityProfile": "rp2040-zero-gp4-gp5-ssd1306",
+  "usbProtocol": 1
+}

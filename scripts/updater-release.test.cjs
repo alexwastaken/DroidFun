@@ -93,3 +93,16 @@ test('evidence rejects modified local bytes, signatures and stale metadata',t=>{
   assert.throws(()=>assetNames('0.4.2/evil','Windows-x64'),/version/);
   assert.throws(()=>assetNames('0.4.2','Linux-x86_64'),/Unsupported/);
 });
+
+test('Windows channel releases independently and still requires both verified architectures',t=>{
+  const input=fixture(t);
+  input.evidence=input.evidence.filter(e=>e.platform.startsWith('Windows-'));
+  const manifest=generate({...input,channel:'windows'});
+  assert.deepEqual(Object.keys(manifest.platforms),['windows-x86_64','windows-aarch64']);
+  assert.equal(manifest.version,input.version);
+  assert.throws(()=>generate({...input,channel:'windows',evidence:input.evidence.slice(1)}),/Expected one Windows-x64/);
+  const changed=structuredClone(input.release);changed.assets.find(a=>a.name.endsWith('Windows-x64-setup.exe')).digest='sha256:'+'0'.repeat(64);
+  assert.throws(()=>generate({...input,channel:'windows',release:changed}),/Published asset/);
+  assert.throws(()=>generate({...input,channel:'all'}),/Expected one macOS-universal/);
+  assert.throws(()=>generate({...input,channel:'anything'}),/release channel/);
+});
