@@ -325,6 +325,61 @@ fn live_frame(text: &str, phase: u64) -> Result<Vec<u8>, String> {
     };
     core::render_marquee(&config, phase, false)
 }
+// A heartbeat must not stall USB animation. Keep at most one request in flight
+// and collect its result without waiting. Drain it before releasing the bridge.
+#[derive(Default)]
+struct Heartbeat {
+    task: Option<tauri::async_runtime::JoinHandle<()>>,
+    response: Option<tokio::sync::oneshot::Receiver<Result<Value, String>>>,
+}
+impl Heartbeat {
+    fn pending(&self) -> bool {
+        self.response.is_some()
+    }
+    fn start(
+        &mut self,
+        request: impl std::future::Future<Output = Result<Value, String>> + Send + 'static,
+    ) {
+        debug_assert!(!self.pending());
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        self.response = Some(receiver);
+        self.task = Some(tauri::async_runtime::spawn(async move {
+            let _ = sender.send(request.await);
+        }));
+    }
+    fn ready(&mut self) -> Result<Option<Value>, String> {
+        let Some(response) = &mut self.response else {
+            return Ok(None);
+        };
+        match response.try_recv() {
+            Ok(value) => {
+                self.response = None;
+                self.task.take();
+                value.map(Some)
+            }
+            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => Ok(None),
+            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {
+                Err("Could not finish the live heartbeat".into())
+            }
+        }
+    }
+    fn finish(&mut self) {
+        // The HTTP timeout bounds this wait. A late heartbeat must finish before
+        // release, otherwise it could reacquire the just-released backend bridge.
+        if let Some(task) = self.task.take() {
+            let _ = tauri::async_runtime::block_on(task);
+        }
+        self.response = None;
+    }
+}
+impl Drop for Heartbeat {
+    fn drop(&mut self) {
+        if let Some(task) = &self.task {
+            task.abort();
+        }
+    }
+}
+
 fn run_display(
     app: AppHandle,
     port: RobotPort,
@@ -333,6 +388,7 @@ fn run_display(
     guard: Arc<UsbOperationGuard>,
 ) {
     let mut link = None;
+    let mut heartbeat = Heartbeat::default();
     let result: Result<(), String> = (|| {
         let connected = Link::connect(&port)?;
         link = Some(connected);
@@ -343,12 +399,15 @@ fn run_display(
         let mut poll = Instant::now() - Duration::from_secs(5);
         let mut emitted = Instant::now();
         while !cancel.load(Ordering::SeqCst) {
-            if poll.elapsed() >= Duration::from_secs(2) {
-                let status = tauri::async_runtime::block_on(backend(
-                    &app,
-                    Some("heartbeat"),
-                    Some(&json!({"bridge":bridge})),
-                ))?;
+            if poll.elapsed() >= Duration::from_secs(2) && !heartbeat.pending() {
+                let handle = app.clone();
+                let bridge = bridge.clone();
+                heartbeat.start(async move {
+                    backend(&handle, Some("heartbeat"), Some(&json!({"bridge":bridge}))).await
+                });
+                poll = Instant::now();
+            }
+            if let Some(status) = heartbeat.ready()? {
                 let paused = status["paused"].as_bool().unwrap_or(true);
                 if item.as_ref().is_some_and(|i| {
                     paused || status["playing"]["ticket"].as_u64() != Some(i.ticket)
@@ -390,7 +449,7 @@ fn run_display(
                 None => core::render(None, true),
             };
             link.as_mut().unwrap().update(&frame, true, 80, 0)?;
-            if emitted.elapsed() > Duration::from_millis(200) {
+            if emitted.elapsed() >= Duration::from_micros(33_334) {
                 let current = item.as_ref().map(|i| Current {
                     ticket: i.ticket,
                     text: i.text.clone(),
@@ -407,7 +466,7 @@ fn run_display(
                 });
                 emitted = Instant::now();
             }
-            std::thread::sleep(Duration::from_millis(50));
+            std::thread::sleep(link.as_ref().unwrap().next_poll_delay());
         }
         Ok(())
     })();
@@ -417,6 +476,7 @@ fn run_display(
     }
     drop(link);
     drop(guard);
+    heartbeat.finish();
     let _ = tauri::async_runtime::block_on(backend(
         &app,
         Some("release"),
@@ -444,6 +504,56 @@ mod tests {
         assert_ne!(a, b);
         assert!(a.iter().any(|b| *b != 0));
     }
+    #[tokio::test]
+    async fn slow_heartbeat_keeps_frames_moving_and_stopping_cancels_it() {
+        let gate = Arc::new(tokio::sync::Notify::new());
+        let waiting = gate.clone();
+        let mut heartbeat = Heartbeat::default();
+        heartbeat.start(async move {
+            waiting.notified().await;
+            Ok(json!({"paused":false}))
+        });
+        let mut previous = live_frame("Smooth live text", 1000).unwrap();
+        for phase in (1025..=1300).step_by(25) {
+            assert!(heartbeat.ready().unwrap().is_none());
+            let frame = live_frame("Smooth live text", phase).unwrap();
+            assert_ne!(frame, previous);
+            previous = frame;
+        }
+        gate.notify_one();
+        let completed = tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                if let Some(value) = heartbeat.ready().unwrap() {
+                    break value;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(completed["paused"], false);
+        let dropped = Arc::new(AtomicBool::new(false));
+        struct Dropped(Arc<AtomicBool>);
+        impl Drop for Dropped {
+            fn drop(&mut self) {
+                self.0.store(true, Ordering::SeqCst);
+            }
+        }
+        let guard = Dropped(dropped.clone());
+        heartbeat.start(async move {
+            let _guard = guard;
+            std::future::pending::<Result<Value, String>>().await
+        });
+        drop(heartbeat);
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while !dropped.load(Ordering::SeqCst) {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+    }
+
     #[test]
     fn remote_claims_are_bounded_and_never_accept_invalid_text_or_durations() {
         let valid = json!({"ticket":1,"text":"One sentence.","lease":"01234567-89ab-cdef-0123-456789abcdef","duration":8});

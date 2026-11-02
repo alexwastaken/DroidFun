@@ -1,4 +1,4 @@
-# Workshop 0.4.3
+# Workshop 0.4.4
 
 Workshop 0.4.1 and earlier cannot update themselves. Download the Mac or Windows Workshop package once from https://droidfun.io/admin#downloads, then replace the previous app/run the installer. Keep the same app identity; pairing, inventory and screen settings are retained.
 
@@ -13,6 +13,14 @@ On Screens, turn individual cards on/off, set 3–120 seconds and use ↑/↓ to
 Workshop 0.4.3 uses a time-only Clock with 12-hour AM/PM or 24-hour display. Calendar is a separate screen showing the full month and day, with a weekday, year or empty bottom line. Both use the computer’s real time (or the existing configured time zone); they do not use simulated data. The public companion renderer is unchanged.
 
 Calendar is added next to Clock and starts off, preserving the existing enabled playlist. Turn it on in Screens and set its duration/order like any other screen. Existing saved contents, timing and screen order are retained; migration is idempotent. Calendar uses a second clock widget internally so earlier Workshop versions can still read saved settings.
+
+## Smooth scrolling
+
+Workshop 0.4.4 removes the 150 ms Screens loop delay and uses the existing USB link’s negotiated frame pacing (up to 30 FPS). OLED transfer/ACK time is included in the budget. Legacy or fallback displays that advertise 5 FPS retain their safe limit. Screen previews refresh at up to 30 FPS; USB polling no longer renders every playlist thumbnail on every pass.
+
+Text motion uses elapsed milliseconds to advance individual pixels, rather than 50 ms buckets. The configured slow/normal/fast rates remain 24/40/72 pixels per second; borders, case, pause, reduced motion, and wraparound are preserved. The shared renderer includes this correction, but this release publishes only the private Workshop packages.
+
+Live text uses the same adaptive USB pacing. Its heartbeat runs asynchronously while text moves, with at most one request in flight. Stop drops the USB link and drains a pending heartbeat before releasing the backend bridge, preventing a late heartbeat from reacquiring a released bridge. Claim/complete transitions remain ordered and backend-authorized. No intake or SMS settings are changed by this update.
 
 ## Publishing a later private release
 

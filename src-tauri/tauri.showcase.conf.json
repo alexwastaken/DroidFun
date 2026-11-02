@@ -1,6 +1,6 @@
 {
   "productName": "DroidFun Workshop",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "identifier": "com.droidfun.workshop.private",
   "build": {
     "beforeBuildCommand": "npm run build:studio"

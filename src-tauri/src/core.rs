@@ -1013,7 +1013,7 @@ impl Engine {
                 .unwrap_or(12000);
         }
         let prior_animation = self.current_animation_state();
-        let prior_scroll = self.phase_ms / 50;
+        let prior_scroll = self.phase_ms.wrapping_sub(self.scroll_epoch_ms);
         let elapsed = now.saturating_duration_since(self.last_tick).as_millis() as u64;
         // Keep fractional milliseconds so frequent render ticks do not slow timers.
         self.last_tick += std::time::Duration::from_millis(elapsed);
@@ -1027,7 +1027,7 @@ impl Engine {
         {
             self.phase_ms = self.phase_ms.wrapping_add(elapsed);
         }
-        let animation_changed = prior_animation != self.current_animation_state() || (!self.reduced_motion && prior_scroll != self.phase_ms / 50 && self.current_widget().is_some_and(|w| w.kind == "text" && w.config.text_motion == "scroll"));
+        let animation_changed = prior_animation != self.current_animation_state() || (!self.reduced_motion && self.current_widget().is_some_and(|w| w.kind == "text" && w.config.text_motion == "scroll" && marquee_offset(&w.config, prior_scroll) != marquee_offset(&w.config, self.phase_ms.wrapping_sub(self.scroll_epoch_ms))));
         if self.quiet_active || self.host_display_asleep {
             return policy_changed || local_changed;
         }
@@ -1508,16 +1508,23 @@ fn render_image(config: &SourceConfig) -> Vec<u8> {
     invert_frame(bytes.chunks_exact(2).map(|pair| (nibble(pair[0]) << 4) | nibble(pair[1])).collect(), config.display_invert)
 }
 
+// Derive each pixel from elapsed time rather than rounding to 50 ms steps.
+// Widen before multiplication so even a long-running app wraps cleanly.
+fn marquee_offset(config: &SourceConfig, phase_ms: u64) -> i32 {
+    let speed: u128 = match config.scroll_speed.as_str() { "slow" => 24, "fast" => 72, _ => 40 };
+    let margin = if config.text_border { 4 } else { 0 };
+    let period = WIDTH + config.custom_text.len() * 8 * config.text_size as usize + 24 - margin * 2;
+    ((u128::from(phase_ms) * speed / 1000) % period as u128) as i32
+}
+
 pub(crate) fn render_marquee(config: &SourceConfig, phase_ms: u64, reduced: bool) -> Result<Vec<u8>, String> {
     validate_marquee(config)?;
     let mut f = Frame::new();
     let scale = config.text_size as i32;
     let margin = if config.text_border { 4 } else { 0 };
     let text = config.custom_text.replace('\n', " ");
-    let text_width = text.len() as i32 * 8 * scale;
     let span = WIDTH as i32 - margin * 2;
-    let speed = match config.scroll_speed.as_str() { "slow" => 24, "fast" => 72, _ => 40 };
-    let offset = if reduced { span } else { ((phase_ms / 50 * speed / 20) % (span + text_width + 24) as u64) as i32 };
+    let offset = if reduced { span } else { marquee_offset(config, phase_ms) };
     let x = WIDTH as i32 - margin - offset;
     let y = match config.text_valign.as_str() { "top" => margin, "bottom" => HEIGHT as i32 - margin - 8 * scale, _ => (HEIGHT as i32 - 8 * scale) / 2 };
     for (column, ch) in text.chars().enumerate() {
@@ -1936,6 +1943,24 @@ mod tests {
         c.display_invert=true;assert_eq!(render_marquee(&c,1000,false).unwrap(),bordered.iter().map(|b|!*b).collect::<Vec<_>>());
         c.custom_text="X".repeat(256);assert!(c.validate("text").is_ok());c.custom_text.push('X');assert!(c.validate("text").is_err());
     }
+    #[test]
+    fn marquee_uses_each_pixel_without_fifty_millisecond_jumps() {
+        let mut c = SourceConfig { custom_text: "Smooth scrolling".into(), text_motion: "scroll".into(), ..Default::default() };
+        for (speed, pixels) in [("slow", 24u64), ("normal", 40), ("fast", 72)] {
+            c.scroll_speed = speed.into();
+            for ms in 0..1000 { assert_eq!(marquee_offset(&c, ms), (ms * pixels / 1000) as i32); }
+            assert_eq!(marquee_offset(&c, 1000), pixels as i32);
+            assert!(marquee_offset(&c, u64::MAX) >= 0);
+        }
+        c.scroll_speed = "normal".into();
+        assert_eq!((marquee_offset(&c, 25), marquee_offset(&c, 75)), (1, 3));
+        assert_ne!(render_marquee(&c, 1000, false).unwrap(), render_marquee(&c, 1025, false).unwrap());
+        let now = Instant::now(); let mut settings = Settings::default(); settings.preferences.bot_model = "nimbus".into();
+        let mut e = Engine::new(settings, now); e.add_widget("text").unwrap(); let id = e.settings.widgets.last().unwrap().id.clone();
+        e.configure_source(&id, "Text".into(), c).unwrap(); e.pin(&id).unwrap();
+        assert!(e.tick_at(now + Duration::from_millis(25), 1000, 600), "publish a one-pixel step before 50 ms");
+    }
+
     #[test]
     fn marquee_starts_on_selection_pauses_and_honors_reduced_motion() {
         let now=Instant::now();let mut settings=Settings::default();settings.preferences.bot_model="nimbus".into();let mut e=Engine::new(settings,now);e.add_widget("text").unwrap();

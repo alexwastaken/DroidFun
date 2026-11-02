@@ -149,18 +149,18 @@ pub fn run() {
         let mut studio=Studio{active:true,released:false,engine:Engine::new(settings,Instant::now()),ports:Vec::new(),target:None,connection:"Preview only".into(),moving:true,started:Instant::now(),codex:78.0,claude:64.0,path};studio.refresh();app.manage(StudioState(Mutex::new(studio)));
         tauri::WebviewWindowBuilder::new(app,"main",tauri::WebviewUrl::App("index.html".into())).title("DroidFun Workshop").inner_size(1040.0,820.0).min_inner_size(720.0,580.0).on_navigation(|url|crate::web_security::local_navigation(url,false)).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build()?;
         let app=app.handle().clone();std::thread::spawn(move||{
-            let mut link:Option<(String,Link,std::sync::Arc<crate::UsbOperationGuard>)>=None;let mut scan=Instant::now()-Duration::from_secs(3);let mut retry=Instant::now()-Duration::from_secs(3);
+            let mut link:Option<(String,Link,std::sync::Arc<crate::UsbOperationGuard>)>=None;let mut scan=Instant::now()-Duration::from_secs(3);let mut retry=Instant::now()-Duration::from_secs(3);let mut emitted=Instant::now()-Duration::from_secs(1);
             loop {
-                std::thread::sleep(Duration::from_millis(150));
                 let active=app.state::<StudioState>().0.lock().unwrap().active;
                 if !active {
                     // Drop the real serial handle before acknowledging the handoff.
                     link=None;
                     let state=app.state::<StudioState>();let mut s=state.0.lock().unwrap();s.target=None;s.connection="Preview only".into();s.released=true;
+                    drop(s);std::thread::sleep(Duration::from_millis(50));
                     continue;
                 }
                 if scan.elapsed()>Duration::from_secs(2) {let ports=connection::robot_ports().unwrap_or_default();app.state::<StudioState>().0.lock().unwrap().ports=ports;scan=Instant::now();}
-                let (target,port,frame,brightness,orientation)={let state=app.state::<StudioState>();let mut s=state.0.lock().unwrap();s.refresh();let view=s.view();(s.target.clone(),s.ports.iter().find(|p|Some(&p.serial)==s.target.as_ref()).cloned(),view.frame,view.brightness,view.orientation)};
+                let (target,port,frame,brightness,orientation)={let state=app.state::<StudioState>();let mut s=state.0.lock().unwrap();s.refresh();let snapshot=s.engine.snapshot();(s.target.clone(),s.ports.iter().find(|p|Some(&p.serial)==s.target.as_ref()).cloned(),snapshot.frame,s.engine.settings.brightness,s.engine.settings.preferences.orientation)};
                 if link.as_ref().map(|(id,_,_)|Some(id)!=target.as_ref()).unwrap_or(false)||port.is_none(){link=None;}
                 if link.is_none()&&port.is_some()&&retry.elapsed()>Duration::from_secs(3){
                     retry=Instant::now();let p=port.as_ref().unwrap();
@@ -170,8 +170,13 @@ pub fn run() {
                 }
                 if let Some((_,l,_))=&mut link {if let Err(e)=l.update(&frame,true,brightness,orientation){app.state::<StudioState>().0.lock().unwrap().connection=e;link=None;}}
                 if target.is_some()&&port.is_none(){app.state::<StudioState>().0.lock().unwrap().connection="Droid unplugged — reconnect USB".into();}
-                let view=app.state::<StudioState>().0.lock().unwrap().view();
-                let _=app.emit("studio-state",view);
+                // Keep UI previews smooth without serializing every card at each USB poll.
+                if emitted.elapsed()>=Duration::from_micros(33_334) {
+                    let view=app.state::<StudioState>().0.lock().unwrap().view();
+                    let _=app.emit("studio-state",view);emitted=Instant::now();
+                }
+                // Link counts OLED/ACK transfer time inside the negotiated frame budget.
+                std::thread::sleep(link.as_ref().map(|(_,l,_)|l.next_poll_delay()).unwrap_or(Duration::from_micros(16_667)));
             }
         });Ok(())
     }).build(tauri::generate_context!()).expect("DroidFun Workshop could not start")
@@ -214,4 +219,3 @@ mod playlist_tests {
         assert!(reopened.settings.widgets.iter().any(|w|w.id=="clock"&&w.enabled&&w.duration_sec==11));
     }
 }
-
