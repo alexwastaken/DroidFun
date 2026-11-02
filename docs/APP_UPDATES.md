@@ -1,6 +1,6 @@
 # Desktop app update releases
 
-The desktop updater reads `https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/updater.json`. The feed uses explicit versioned GitHub release URLs and supports published prereleases. It never resolves GitHub's `latest` endpoint.
+Windows 0.10.8 and later read `https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/windows-updater.json`. Mac and older Windows builds retain `https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/updater.json`. The feed uses explicit versioned GitHub release URLs and supports published prereleases. It never resolves GitHub's `latest` endpoint.
 
 Supported automatic update packages:
 
@@ -22,7 +22,27 @@ Tauri CLI 2.12.2 signs the app version in the signature's authenticated trusted 
 
 `node --test scripts/updater-release.test.cjs` exercises signature and metadata tampering, mismatched source/asset hashes, draft rejection, platform completeness, prerelease support, and local builds without credentials. Tests use public RFC/upstream cryptographic test vectors; they do not generate or read a production key.
 
-## Publishing a feed
+## Publishing Windows independently
+
+Windows 0.10.0–0.10.7 needs one manual install of 0.10.8 or later from the website to switch feeds. Run the installer over the existing installation; do not uninstall or delete settings. A new feed cannot change the endpoint compiled into an old app.
+
+Build both Windows architectures from the exact same full source SHA with `build-desktop.yml`. Publish their verified EXE, signature and evidence files under `vVERSION`, with the release targeting that SHA. Then generate:
+
+```sh
+node scripts/generate-updater-manifest.cjs \
+  --channel windows \
+  --version VERSION \
+  --source FULL_APPLICATION_COMMIT_SHA \
+  --packages /absolute/path/to/verified-packages \
+  --output distribution/windows-updater.json \
+  --notes /absolute/path/to/update-notes.txt
+```
+
+Publish the generated Windows feed on `main` after the exact referenced GitHub assets are live. Update the website's two Windows download rows and `distribution/current.json` to the same verified assets. Verify the publicly downloaded bytes and feed after publication. Building installers alone does not update customer downloads.
+
+This channel requires both Windows architectures, passing native install/launch evidence, and the same version-bound signatures as a full release. Do not alter the shared legacy feed for a Windows-only release: its single global version applies to Mac as well. Do not put old Mac bytes under a new version or relax Developer ID/notarization checks. Workshop's authenticated update feed and separate signing key remain independent.
+
+## Publishing the shared Mac/legacy feed
 
 1. Build the exact application commit on Mac, Windows x64, Windows ARM64, and Linux using the manual workflows. Existing draft-upload mode may collect the installers, updater packages, signatures, and verification records on the matching draft release.
 2. Complete platform checks and publish that exact release with its final assets. Keep `target_commitish` set to the full application commit SHA.

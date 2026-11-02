@@ -1,0 +1,15 @@
+{
+  "version": "0.10.8",
+  "notes": "Windows release: DroidFun App 0.10.8\n\nAdds the simpler clock, a separate calendar screen, smoother scrolling, and an independent Windows update channel.\n\nIf you have Windows 0.10.0–0.10.7, download the matching installer and install over your existing app once. Keep your saved screens and settings; no uninstall is needed. Future versions can be checked in Settings → App → App updates.\n\nIntel / AMD PCs: Windows-x64. Snapdragon / ARM PCs: Windows-ARM64. Check Windows Settings → System → About → System type if unsure.\n\nBoth installers are verified with version-bound updater signatures. Windows Authenticode signing is not configured, so Windows may show an installation warning. This release contains Windows packages only. Mac and Linux downloads are unchanged.\n",
+  "pub_date": "2026-11-02T23:57:24Z",
+  "platforms": {
+    "windows-x86_64": {
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.8/DroidFun-App-0.10.8-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK012SXByUnEzdzZEUjdSZXdlbVNma3BISVBBa0pwR0FTNHZYSVhhY1pnQWRCU2pwU0ZWZWVEQzBrdjB4OUUwTVBlVDZ6WnJmWVBRMWJEeTNDK2pUVGcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYzNzQzCWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC44CllBVTZlVk5SMEs2eStpaHlSQ2t2RHdoVTB3MDM5U1dMN0xadCtFcVNreStiNCthWXJ6a2tTNlYvTEkxRzJINzMzYlRvUDBLdVZQVllYOUhyWFFFREFBPT0K"
+    },
+    "windows-aarch64": {
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.8/DroidFun-App-0.10.8-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0QxUGdqeXllNldLanpyTlQvcTBnWndRaUMzZDl2VmNOYTdOUk8vbDg5VWRySDNDL0pQMlB0VjB5SWZSa2tsUk9wQkhNZjFka2ovZ1cvQmIrdXE0Q1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYzNzc0CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOF9hcm02NC1zZXR1cC5leGUJdmVyc2lvbjowLjEwLjgKaGUwSjAzNjNwTDhtK1YySHZKUTY3K2E5QmZaRVhwL2lJZGo1Z2Y0OGN4SE44ekwwOXUzWkErUGd5L2taK2c2eDBoRjBPQUZydENpWkRUcngzWUhRQkE9PQo="
+    }
+  }
+}

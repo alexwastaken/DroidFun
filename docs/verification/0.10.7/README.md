@@ -15,3 +15,7 @@ Public publication is not complete: the website and automatic updater remain on 
 ## Physical Meep acceptance — November 2, 2026
 
 In a subsequent owner-authorized installation, Workshop was updated from 0.4.1 to 0.4.5 without replacing its settings or pairing credentials. Workshop identified one standard-wired Meep on 1.3.2 and installed 1.3.3 through Reprogram. Firmware, board identity and screen communication passed. The user removed all power, reconnected the board and confirmed the face blinked; Workshop verified retained identity and startup face. The private inventory shows 1.3.3. DroidFun App 0.10.7 then recognized Meep automatically, reported 1.3.3, and passed USB, fresh-reply and screen-controller diagnostics. The app was left playing the existing playlist. See [acceptance record](meep-install.json); physical IDs and credentials are excluded.
+
+## Subsequent Windows publication
+
+The screen changes were released publicly for Windows in [0.10.8](../0.10.8/README.md), using an independent signed Windows feed. Mac and Linux remain on public 0.10.0. Older Windows installations require one manual installer upgrade.

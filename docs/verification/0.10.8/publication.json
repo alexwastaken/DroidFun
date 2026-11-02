@@ -1,0 +1,13 @@
+{
+  "source": "5029841a33555f754d17810b2ead09056c50e304",
+  "release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.8",
+  "website": "https://droidfun.io/downloads",
+  "cloudflareVersion": "e350eda9-f548-4c35-a114-02276f568f82",
+  "feedPublicationCommit": "66b6382ff48cf716754b65058faa2d8a9d5db659",
+  "catalogPublicationCommit": "2616a9ef5757eeee4f85457bb605b6ee3efb7984",
+  "siteSourceSha256": {
+    "src/worker.js": "5c7ba50efae6e6673e2caffef49125ffa36aad082e4c976311396c379d544a4c",
+    "public/app.js": "8c39f0d896827d9b13c9276526c99b0f4e6119135908968bbec0754b74193988",
+    "public/index.html": "fc63a6a6e9f52f08fff58a21e944ab9fac11d84fae7d6c3f89f4e81da7514fdc"
+  }
+}
