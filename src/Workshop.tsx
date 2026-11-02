@@ -168,7 +168,7 @@ export default function Workshop({section="prepare"}:{section?:string}) {
     { label: "Screen communication", passed: status?.displayReady },
     { label: "Power unplugged · confirmed by you", passed: status?.powerOffConfirmed },
     { label: "USB reconnect and saved face", passed: status?.reconnectVerified },
-    { label: "Readable face · confirmed by you", passed: status?.screenConfirmed },
+    { label: "Blinking face · confirmed by you", passed: status?.screenConfirmed },
   ];
   const wipeReady = Boolean(wipeReview && wipeReview.target === target && wipeReview.model === model && wipeReview.wiring === wiring && blocker === null);
   const reviewReset = () => { setWipeReview({target,model,wiring}); setWipeConfirmed(false); };
@@ -178,7 +178,7 @@ export default function Workshop({section="prepare"}:{section?:string}) {
     <button type="button" className="workshop-secondary" disabled={blocker !== null || !scan.wipeSupported} onClick={reviewReset}>Wipe and reinstall…</button>
   </details>;
   const programAction = <>
-    <p>Install firmware {wiring === "mistake" ? "1.3.2-mistake" : "1.3.2"}, save the {modelName(model)} identity and add a startup face. Everything is included. This replaces the board’s firmware, identity and saved screens.</p>
+    <p>Install firmware {wiring === "mistake" ? "1.3.3-mistake" : "1.3.3"}, save the {modelName(model)} identity and add a blinking startup face. Everything is included. This replaces the board’s firmware, identity and saved screens.</p>
     {inspection?.state === "newer" && <p className="workshop-warning">This will install an older firmware version. Use a newer Workshop if you want to keep this board’s current version.</p>}
     <button type="button" className="workshop-primary" disabled={blocker !== null} aria-describedby="program-readiness" onClick={() => void run("workshop_program", { target, model, wiring })}>{busy ? "Working…" : `${inspection?.firmware ? "Reprogram" : "Install firmware for"} ${modelName(model)}${wiring === "mistake" ? " · Mistake wiring" : ""}`}</button>
   </>;
@@ -189,7 +189,7 @@ export default function Workshop({section="prepare"}:{section?:string}) {
     <div hidden={view!=="prepare"}>
     {wipeReview && <section className="workshop-card workshop-wipe-review" role="dialog" aria-modal="false" aria-labelledby="wipe-title">
       <h2 id="wipe-title" ref={wipeTitle} tabIndex={-1}>Wipe this board and reinstall?</h2>
-      <p>This permanently erases the board’s current firmware, identity and saved screens. Workshop then installs firmware {wipeReview.wiring === "mistake" ? "1.3.2-mistake" : "1.3.2"}, saves the {modelName(wipeReview.model)} identity and adds a fresh startup face.</p>
+      <p>This permanently erases the board’s current firmware, identity and saved screens. Workshop then installs firmware {wipeReview.wiring === "mistake" ? "1.3.3-mistake" : "1.3.3"}, saves the {modelName(wipeReview.model)} identity and adds a fresh blinking startup face.</p>
       <p>Board <code>{scan.boards.find(b => b.id === wipeReview.target)?.serial ?? wipeReview.target}</code><br/>{wiringLabel(wipeReview.wiring)}</p>
       <p>Your private inventory record and notes are kept. Preparation checks must be completed again.</p>
       <label className="workshop-confirm-wiring"><input type="checkbox" checked={wipeConfirmed} disabled={!wipeReady || busy} onChange={e => setWipeConfirmed(e.target.checked)}/>I checked this board and want to erase its stored contents.</label>
@@ -242,11 +242,11 @@ export default function Workshop({section="prepare"}:{section?:string}) {
       {phase !== "idle" && <ul className="workshop-checks" aria-label="Board checks">{checks.map(check => <li key={check.label} className={check.passed ? "passed" : ""}><span aria-hidden="true">{check.passed ? "✓" : "○"}</span>{check.label}<span className="workshop-sr-only">: {check.passed ? "passed" : "not confirmed"}</span></li>)}</ul>}
       {phase === "awaiting_unplug_confirmation" && <button type="button" className="workshop-primary" disabled={busy || scanning || scan.boards.length !== 0} onClick={() => void run("workshop_confirm_unplugged")}>All power is unplugged</button>}
       {(phase === "awaiting_reconnect" || phase === "error" && status?.powerOffConfirmed) && <button type="button" className="workshop-primary" disabled={!canVerify} onClick={() => void run("workshop_verify_reconnect")}>Verify reconnected board</button>}
-      {phase === "awaiting_screen" && <><p>Look at the actual screen. Confirm only when you can see a clear, readable face on this board.</p><button type="button" className="workshop-primary" disabled={busy || scanning || !knownBoardPresent} onClick={() => void run("workshop_confirm_screen")}>I can see a readable face</button></>}
+      {phase === "awaiting_screen" && <><p>Look at the actual screen for at least five seconds. The smile should briefly blink. Confirm only when the face is readable and you have seen it blink.</p><button type="button" className="workshop-primary" disabled={busy || scanning || !knownBoardPresent} onClick={() => void run("workshop_confirm_screen")}>I can see the face blink</button></>}
       {phase === "complete" && <><p className="workshop-handoff">The owner’s next steps: plug in their bot, download DroidFun App from droidfun.io, and open it. The saved identity tells the app which bot they have. Workshop stays with you.</p><button type="button" className="workshop-primary" disabled={busy} onClick={() => void prepareAnother()}>Prepare another board</button></>}
       {error && error !== status?.message && <p className="workshop-warning" role="alert">{error}</p>}
       {(activeJob || phase === "error") && !busy && <details className="workshop-reinstall"><summary>Start with a different board</summary><p>This board’s unfinished power and screen checks still need to be completed before shipping.</p><button type="button" className="workshop-secondary" onClick={() => void prepareAnother()}>Start a new job</button></details>}
     </section>
-    </div><footer>Workshop 0.3.2 · Includes firmware 1.3.2 + Mistake<br/>RP2040-Zero · SSD1306 · Works offline</footer>
+    </div><footer>Workshop 0.4.5 · Includes firmware 1.3.3 + Mistake<br/>RP2040-Zero · SSD1306 · Works offline</footer>
   </main>;
 }

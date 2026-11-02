@@ -1,4 +1,4 @@
-# Workshop 0.4.4
+# Workshop 0.4.5
 
 Workshop 0.4.1 and earlier cannot update themselves. Download the Mac or Windows Workshop package once from https://droidfun.io/admin#downloads, then replace the previous app/run the installer. Keep the same app identity; pairing, inventory and screen settings are retained.
 
@@ -21,6 +21,14 @@ Workshop 0.4.4 removes the 150 ms Screens loop delay and uses the existing USB l
 Text motion uses elapsed milliseconds to advance individual pixels, rather than 50 ms buckets. The configured slow/normal/fast rates remain 24/40/72 pixels per second; borders, case, pause, reduced motion, and wraparound are preserved. The shared renderer includes this correction, but this release publishes only the private Workshop packages.
 
 Live text uses the same adaptive USB pacing. Its heartbeat runs asynchronously while text moves, with at most one request in flight. Stop drops the USB link and drains a pending heartbeat before releasing the backend bridge, preventing a late heartbeat from reacquiring a released bridge. Claim/complete transitions remain ordered and backend-authorized. No intake or SMS settings are changed by this update.
+
+## Wall-power blinking and reprogramming
+
+Workshop 0.4.5 includes factory firmware 1.3.3 and 1.3.3-mistake. With no desktop controlling it, the factory smile closes its eyes for 200 ms every 4.2 seconds. Both a fresh fallback face and the saved factory face blink. Custom saved images retain their pixels. Firmware tests cover wall boot, repeated cycles, timer wrap, USB suspension/handoff, manual screen-off and unchanged flash contents. No physical-board acceptance is claimed by this release.
+
+To install: update Workshop, open Prepare a droid, connect one board normally with a USB data cable and quit the customer DroidFun App. Keep the detected model and wiring (Mistake only for the known swapped-wire board). Choose Reprogram; it installs the matching firmware and replaces saved board screens with the startup smile. Follow unplug/reconnect verification, watch for at least five seconds and confirm the blink. Then move the USB cable to a wall adapter. Updating Workshop alone does not update a connected droid. A full wipe is not required for this change.
+
+The firmware image preserves the filesystem partition, while the explicit Workshop reprogram action replaces its saved identity/startup playlist as described in the UI. Source is in firmware/factory; build metadata records the source hashes, flash ranges and standard/Mistake artifacts.
 
 ## Publishing a later private release
 

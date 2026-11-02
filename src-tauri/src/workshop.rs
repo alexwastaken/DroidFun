@@ -13,7 +13,7 @@ use std::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 
-const FIRMWARE_VERSION: &str = "1.3.2";
+const FIRMWARE_VERSION: &str = "1.3.3";
 const PROFILE: &str = "rp2040-zero-gp4-gp5-ssd1306";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
@@ -35,7 +35,7 @@ impl Wiring {
     fn firmware_version(self) -> &'static str {
         match self {
             Self::Standard => FIRMWARE_VERSION,
-            Self::Mistake => "1.3.2-mistake",
+            Self::Mistake => "1.3.3-mistake",
         }
     }
     fn pin_profile(self) -> &'static str {
@@ -982,7 +982,7 @@ pub(crate) async fn workshop_verify_reconnect(app: AppHandle) -> Result<Status, 
         change(&worker_app, |s| {
             s.reconnect_verified = true;
             s.phase = "awaiting_screen".into();
-            s.message = "Identity and startup face are retained. Look at the physical screen and confirm that the face is readable.".into();
+            s.message = "Identity and startup face are retained. Watch the physical screen for at least five seconds and confirm that the readable smile blinks.".into();
         });
         Ok(())
     });
@@ -1007,7 +1007,7 @@ pub(crate) async fn workshop_confirm_screen(app: AppHandle) -> Result<Status, St
         change(&worker_app, |s| {
             s.screen_confirmed = true;
             s.phase = "complete".into();
-            s.message = "Programming and reconnect checks passed. You confirmed a readable face on this board.".into();
+            s.message = "Programming and reconnect checks passed. You confirmed a readable, blinking face on this board.".into();
         });
         Ok::<_, String>(())
     });
@@ -1117,17 +1117,17 @@ mod tests {
             installed_inspection("x", &installed("1.10.0", Some("GP4-GP5"))).state,
             "newer"
         );
-        for version in ["", "custom", "1.3.2-beta", "1.3.2.0"] {
+        for version in ["", "custom", "1.3.3-beta", "1.3.3.0"] {
             assert_eq!(
                 installed_inspection("x", &installed(version, Some("GP4-GP5"))).state,
                 "unknown"
             );
         }
         assert_eq!(
-            installed_inspection("x", &installed("1.3.2", Some("GP5-SDA-GP4-SCL"))).state,
+            installed_inspection("x", &installed("1.3.3", Some("GP5-SDA-GP4-SCL"))).state,
             "unknown"
         );
-        let missing = installed_inspection("x", &installed("1.3.2-mistake", None));
+        let missing = installed_inspection("x", &installed("1.3.3-mistake", None));
         assert_eq!(missing.state, "unknown");
         assert_eq!(missing.wiring, None);
         assert!(!missing.ready_to_verify);
@@ -1274,6 +1274,17 @@ mod tests {
             assert!(check_identity(Some(&actual), &expected).is_err());
         }
     }
+    #[test]
+    fn factory_blink_recognizes_the_exact_workshop_startup_face() {
+        let header = include_str!("../../firmware/factory/deskbot_firmware/fallback_face.h");
+        let pixels: Vec<u8> = header.split('{').nth(1).unwrap().split('}').next().unwrap()
+            .split(',').filter_map(|s| { let s=s.trim(); if s.is_empty(){None}else{Some(s.parse().unwrap())} }).collect();
+        assert_eq!(pixels, crate::core::render(None, true));
+        for (version, pins) in [("1.3.2", "GP4-GP5"), ("1.3.2-mistake", "GP5-SDA-GP4-SCL")] {
+            assert_eq!(super::installed_inspection("board", &installed(version, Some(pins))).state, "update_available");
+        }
+    }
+
     #[test]
     fn old_one_screen_playlist_cannot_pass_startup_face_readback() {
         let mut status = connection::ConnectionSnapshot {

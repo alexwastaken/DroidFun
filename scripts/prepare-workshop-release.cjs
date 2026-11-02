@@ -50,7 +50,7 @@ const updaterPackages=[{...updaterMac,targets:['darwin-aarch64','darwin-x86_64']
 const downloads=path.join(site,'src/studio-downloads.js');const source=fs.readFileSync(downloads,'utf8');
 fs.writeFileSync(downloads,'// Packages are private Worker assets, never catalog entries or public links.\nexport const studioPackages = '+JSON.stringify(packages,null,2)+';\n'+source.slice(source.indexOf('export async function studioDownloads')));
 const updates=path.join(site,'src/workshop-updates.js');let feed=fs.readFileSync(updates,'utf8');
-const release={version,pub_date:new Date().toISOString(),notes:'Smoother scrolling text and screen previews, with refresh timing matched to your droid. Live text keeps scrolling while backend status is checked.'};
+const release={version,pub_date:new Date().toISOString(),notes:'Includes firmware 1.3.3: the factory smile blinks on wall power without an app. Reprogram your droid in Prepare a droid to install it; Standard and Mistake wiring are supported.'};
 feed=feed.replace(/export const workshopUpdateRelease=[\s\S]*?;\n/,'export const workshopUpdateRelease='+JSON.stringify(release)+';\n').replace(/export const workshopUpdatePackages=[\s\S]*?;\n/,'export const workshopUpdatePackages='+JSON.stringify(updaterPackages,null,2)+';\n');
 fs.writeFileSync(updates,feed);
 const evidence={version,packages,updaterPackages,signatures:verification,macArchitectures:architectures};
