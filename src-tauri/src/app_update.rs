@@ -1,6 +1,8 @@
 //! Manual, signed application updates. The checked release and verified package
 //! stay in Rust; the webview cannot supply a URL, signature, version, or path.
-use crate::{AppState, UsbOperationGuard};
+#[cfg(not(feature = "showcase"))]
+use crate::AppState;
+use crate::UsbOperationGuard;
 use serde::Serialize;
 use std::{
     sync::Mutex,
@@ -199,6 +201,26 @@ fn secure_url(value: &str) -> bool {
     })
 }
 
+fn allowed_package_url(value: &str) -> bool {
+    if !secure_url(value) {
+        return false;
+    }
+    #[cfg(feature = "showcase")]
+    {
+        return reqwest::Url::parse(value).is_ok_and(|u| {
+            u.host_str() == Some("droidfun.io")
+                && u.port_or_known_default() == Some(443)
+                && u.query().is_none()
+                && u.fragment().is_none()
+                && ["/api/workshop/updates/mac", "/api/workshop/updates/windows"]
+                    .contains(&u.path())
+        });
+    }
+    #[cfg(not(feature = "showcase"))]
+    {
+        true
+    }
+}
 pub(crate) fn initialize(app: &AppHandle) {
     let configured = configured(app.config().plugins.0.get("updater"));
     // Registering an incomplete plugin can fail app startup. Until a public key
@@ -216,15 +238,26 @@ pub(crate) fn initialize(app: &AppHandle) {
 }
 
 fn online(app: &AppHandle) -> Result<(), String> {
-    let state = app.state::<AppState>();
-    let engine = state
-        .engine
-        .lock()
-        .map_err(|_| "App settings are busy. Try again.".to_string())?;
-    if engine.settings.preferences.offline_mode {
-        Err(OFFLINE.into())
-    } else {
-        Ok(())
+    #[cfg(feature = "showcase")]
+    {
+        return app
+            .state::<crate::workshop_registry::Store>()
+            .token()
+            .map(|_| ())
+            .ok_or("Connect Workshop in Droid list to check and download private updates.".into());
+    }
+    #[cfg(not(feature = "showcase"))]
+    {
+        let state = app.state::<AppState>();
+        let engine = state
+            .engine
+            .lock()
+            .map_err(|_| "App settings are busy. Try again.".to_string())?;
+        if engine.settings.preferences.offline_mode {
+            Err(OFFLINE.into())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -325,15 +358,37 @@ pub(crate) async fn check_app_update(app: AppHandle) -> Result<AppUpdateStatus, 
         session.begin_check()?;
     }
     emit(&app);
-    let updater = app
+    let builder = app
         .updater_builder()
         .timeout(CHECK_TIMEOUT)
         .version_comparator(|current, release| release.version > current)
         .configure_client(|client| {
-            client
+            let client = client
                 .https_only(true)
-                .connect_timeout(Duration::from_secs(10))
-        })
+                .connect_timeout(Duration::from_secs(10));
+            #[cfg(feature = "showcase")]
+            {
+                return client.redirect(updater_http::redirect::Policy::none());
+            }
+            #[cfg(not(feature = "showcase"))]
+            {
+                client
+            }
+        });
+    #[cfg(feature = "showcase")]
+    let builder = {
+        let token = app
+            .state::<crate::workshop_registry::Store>()
+            .token()
+            .ok_or("Connect Workshop in Droid list first.")?;
+        let mut auth = updater_http::header::HeaderValue::from_str(&format!("Bearer {token}"))
+            .map_err(|_| failed(&app, "Workshop authentication is unavailable.".into()))?;
+        auth.set_sensitive(true);
+        builder
+            .header("Authorization", auth)
+            .map_err(|_| failed(&app, "Workshop authentication is unavailable.".into()))?
+    };
+    let updater = builder
         .build()
         .map_err(|e| failed(&app, updater_error(&e, false)))?;
     let response = while_online(
@@ -345,7 +400,8 @@ pub(crate) async fn check_app_update(app: AppHandle) -> Result<AppUpdateStatus, 
     .await
     .map_err(|message| failed(&app, message))?;
     if let Some(update) = &response {
-        if !secure_url(update.download_url.as_str()) || update.signature.trim().is_empty() {
+        if !allowed_package_url(update.download_url.as_str()) || update.signature.trim().is_empty()
+        {
             return Err(failed(&app, "The update service did not provide a secure, signed package. Nothing was installed.".into()));
         }
     }
@@ -382,6 +438,10 @@ pub(crate) async fn check_app_update(app: AppHandle) -> Result<AppUpdateStatus, 
 #[tauri::command]
 pub(crate) async fn install_app_update(app: AppHandle) -> Result<AppUpdateStatus, String> {
     online(&app)?;
+    #[cfg(feature = "showcase")]
+    if !crate::workshop::can_show_screens(&app) {
+        return Err("Finish this board’s checks before updating Workshop.".into());
+    }
     let _operation = UsbOperationGuard::acquire()?;
     let update = {
         let state = app.state::<AppUpdates>();
@@ -446,6 +506,10 @@ pub(crate) async fn install_app_update(app: AppHandle) -> Result<AppUpdateStatus
 
 #[tauri::command]
 pub(crate) async fn restart_app_after_update(app: AppHandle) -> Result<(), String> {
+    #[cfg(feature = "showcase")]
+    if !crate::workshop::can_show_screens(&app) {
+        return Err("Finish this board’s checks before updating Workshop.".into());
+    }
     let operation = UsbOperationGuard::acquire()?;
     let (update, bytes) = {
         let state = app.state::<AppUpdates>();
@@ -662,5 +726,29 @@ mod tests {
             Err("Timeout".into())
         );
         assert!(dropped.load(Ordering::SeqCst));
+    }
+}
+
+#[cfg(all(test, feature = "showcase"))]
+mod workshop_update_boundary {
+    #[test]
+    fn private_packages_cannot_forward_owner_session_to_other_origins_or_routes() {
+        assert!(super::allowed_package_url(
+            "https://droidfun.io/api/workshop/updates/mac"
+        ));
+        assert!(super::allowed_package_url(
+            "https://droidfun.io/api/workshop/updates/windows"
+        ));
+        for url in [
+            "http://droidfun.io/api/workshop/updates/mac",
+            "https://evil.example/api/workshop/updates/mac",
+            "https://droidfun.io/api/admin/droids",
+            "https://user@droidfun.io/api/workshop/updates/mac",
+            "https://droidfun.io/api/workshop/updates/mac?token=x",
+            "https://droidfun.io/api/workshop/updates/mac#x",
+            "https://droidfun.io:444/api/workshop/updates/mac",
+        ] {
+            assert!(!super::allowed_package_url(url), "{url}");
+        }
     }
 }

@@ -63,6 +63,7 @@ fn showcase_action(action:String,id:Option<String>,value:Option<Value>,state:Sta
     match action.as_str() {
         "select"=>{s.engine.pin(id.as_deref().ok_or("Choose a screen")?)?;save=true;},
         "cycle"=>{s.engine.toggle_pause();},
+        "enabled"|"duration"|"move"=>{playlist_action(&mut s.engine,&action,id.as_deref().ok_or("Choose a screen")?,&v)?;save=true;},
         "values"=>{s.moving=!s.moving;},
         "connect"=>{let serial=id.ok_or("Choose a USB droid")?;if !s.ports.iter().any(|p|p.serial==serial){return Err("That droid is no longer plugged in".into());}s.target=Some(serial);},
         "disconnect"=>{s.target=None;s.connection="Not connected".into();},
@@ -74,6 +75,18 @@ fn showcase_action(action:String,id:Option<String>,value:Option<Value>,state:Sta
         _=>return Err("Unknown control".into()),
     }
     s.refresh();if save {crate::persistence::save(&s.path,&s.engine.settings)?;}Ok(s.view())
+}
+fn playlist_action(engine: &mut Engine, action: &str, id: &str, value: &Value) -> Result<(),String> {
+    match action {
+        "enabled" => {
+            let enabled=value.as_bool().ok_or("Choose on or off")?;
+            if !enabled && engine.settings.widgets.iter().filter(|w|w.enabled).count()==1 && engine.settings.widgets.iter().any(|w|w.id==id&&w.enabled) {return Err("Keep at least one screen on in the playlist.".into());}
+            engine.set_enabled(id,enabled)
+        },
+        "duration" => engine.set_duration(id,value.as_u64().filter(|n|(3..=120).contains(n)).ok_or("Choose 3 to 120 seconds")? as u16),
+        "move" => engine.move_widget(id,value.as_i64().filter(|n|[-1,1].contains(n)).ok_or("Choose up or down")? as i8),
+        _ => Err("Unknown playlist control".into()),
+    }
 }
 pub(crate) fn require_board_mode(app: &tauri::AppHandle) -> Result<(), String> {
     let state=app.state::<StudioState>();
@@ -114,22 +127,25 @@ pub fn run() {
         crate::workshop_registry::workshop_registry_state,crate::workshop_registry::workshop_registry_open_dashboard,
         crate::workshop_registry::workshop_registry_connect,crate::workshop_registry::workshop_registry_sync,
         crate::workshop_registry::workshop_registry_disconnect,
-        crate::workshop_live::workshop_live_state,crate::workshop_live::workshop_live_action])
+        crate::workshop_live::workshop_live_state,crate::workshop_live::workshop_live_action,
+        crate::app_update::get_app_update_status,crate::app_update::check_app_update,
+        crate::app_update::install_app_update,crate::app_update::restart_app_after_update])
     .on_window_event(|window,event|{
         if let tauri::WindowEvent::CloseRequested{api,..}=event {
-            if crate::workshop::busy(window.app_handle()){api.prevent_close();}
+            if crate::workshop::busy(window.app_handle())||crate::app_update::installing(window.app_handle()){api.prevent_close();}
         }
     })
     .setup(|app|{
         crate::workshop::initialize(app)?;
         crate::workshop_live::initialize(app);
+        crate::app_update::initialize(app.handle());
         let path=app.path().app_config_dir()?.join("studio-settings.json");
         // Import only local screen preferences from the previous photo app.
         // Workshop's existing identifier preserves its registry and pairing.
         let previous=app.path().app_config_dir()?.parent().map(|p|p.join("com.droidfun.studio/studio-settings.json"));
         let saved=std::fs::read(&path).ok().or_else(||previous.and_then(|p|std::fs::read(p).ok()));
         let settings=saved.and_then(|b|serde_json::from_slice::<Settings>(&b).ok()).filter(|s|s.validate().is_ok()&&s.preferences.bot_model.is_empty()).unwrap_or_else(defaults);
-        let mut studio=Studio{active:true,released:false,engine:Engine::new(settings,Instant::now()),ports:Vec::new(),target:None,connection:"Preview only".into(),moving:true,started:Instant::now(),codex:78.0,claude:64.0,path};studio.refresh();let _=studio.engine.pin("codex");app.manage(StudioState(Mutex::new(studio)));
+        let mut studio=Studio{active:true,released:false,engine:Engine::new(settings,Instant::now()),ports:Vec::new(),target:None,connection:"Preview only".into(),moving:true,started:Instant::now(),codex:78.0,claude:64.0,path};studio.refresh();app.manage(StudioState(Mutex::new(studio)));
         tauri::WebviewWindowBuilder::new(app,"main",tauri::WebviewUrl::App("index.html".into())).title("DroidFun Workshop").inner_size(1040.0,820.0).min_inner_size(720.0,580.0).on_navigation(|url|crate::web_security::local_navigation(url,false)).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build()?;
         let app=app.handle().clone();std::thread::spawn(move||{
             let mut link:Option<(String,Link,std::sync::Arc<crate::UsbOperationGuard>)>=None;let mut scan=Instant::now()-Duration::from_secs(3);let mut retry=Instant::now()-Duration::from_secs(3);
@@ -158,7 +174,7 @@ pub fn run() {
             }
         });Ok(())
     }).build(tauri::generate_context!()).expect("DroidFun Workshop could not start")
-    .run(|app,event|{if let tauri::RunEvent::ExitRequested{api,..}=event {if crate::workshop::busy(app){api.prevent_exit();}}});
+    .run(|app,event|{if let tauri::RunEvent::ExitRequested{code,api,..}=event {if crate::workshop::busy(app)||(crate::app_update::installing(app)&&code!=Some(tauri::RESTART_EXIT_CODE)){api.prevent_exit();}}});
 }
 
 #[cfg(test)]
@@ -173,5 +189,27 @@ mod tests {
         restored.validate().unwrap();
         assert!(restored.preferences.bot_model.is_empty());
         assert!(restored.widgets.iter().all(|w|w.config.mode=="live"&&w.config.cli_path.is_empty()));
+    }
+}
+
+#[cfg(test)]
+mod playlist_tests {
+    use super::*;
+    #[test]
+    fn saved_playlist_controls_order_enabled_screens_and_each_duration() {
+        let now=Instant::now();let mut e=Engine::new(defaults(),now);
+        for w in e.settings.widgets.clone() {if !["clock","text"].contains(&w.id.as_str()) {playlist_action(&mut e,"enabled",&w.id,&json!(false)).unwrap();}}
+        playlist_action(&mut e,"duration","clock",&json!(11)).unwrap();
+        playlist_action(&mut e,"duration","text",&json!(3)).unwrap();
+        while e.settings.widgets.iter().position(|w|w.id=="clock").unwrap()>e.settings.widgets.iter().position(|w|w.id=="text").unwrap() {playlist_action(&mut e,"move","clock",&json!(-1)).unwrap();}
+        let saved=serde_json::to_vec(&e.settings).unwrap();let settings:Settings=serde_json::from_slice(&saved).unwrap();settings.validate().unwrap();
+        let mut reopened=Engine::new(settings,now);assert_eq!(reopened.snapshot().current_id,"clock");
+        reopened.tick(now+Duration::from_secs(10));assert_eq!(reopened.snapshot().current_id,"clock");
+        reopened.tick(now+Duration::from_secs(11));assert_eq!(reopened.snapshot().current_id,"text");
+        reopened.tick(now+Duration::from_secs(14));assert_eq!(reopened.snapshot().current_id,"clock");
+        assert!(playlist_action(&mut reopened,"duration","clock",&json!(121)).is_err());
+        playlist_action(&mut reopened,"enabled","text",&json!(false)).unwrap();
+        assert!(playlist_action(&mut reopened,"enabled","clock",&json!(false)).is_err());
+        assert!(reopened.settings.widgets.iter().any(|w|w.id=="clock"&&w.enabled&&w.duration_sec==11));
     }
 }

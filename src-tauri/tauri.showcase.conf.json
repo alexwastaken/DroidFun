@@ -1,6 +1,6 @@
 {
   "productName": "DroidFun Workshop",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "identifier": "com.droidfun.workshop.private",
   "build": {
     "beforeBuildCommand": "npm run build:studio"
@@ -23,6 +23,16 @@
   },
   "mainBinaryName": "droidfun-workshop",
   "plugins": {
-    "updater": null
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENGQUUxNjc5QzczMzg3QTIKUldTaWh6UEhlUmF1enliQnhrbGE1WHZBck1QazNybUdrd1FpaG5yYzUyVGxHNEkzZTRGU1ROTkcK",
+      "endpoints": [
+        "https://droidfun.io/api/workshop/updates/manifest.json"
+      ],
+      "requireSignedVersion": true,
+      "allowDowngrades": false,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

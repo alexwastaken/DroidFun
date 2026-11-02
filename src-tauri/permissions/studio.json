@@ -26,7 +26,11 @@
           "workshop_registry_sync",
           "workshop_registry_disconnect",
           "workshop_live_state",
-          "workshop_live_action"
+          "workshop_live_action",
+          "get_app_update_status",
+          "check_app_update",
+          "install_app_update",
+          "restart_app_after_update"
         ]
       }
     }
