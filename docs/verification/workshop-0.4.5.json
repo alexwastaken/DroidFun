@@ -1,0 +1,283 @@
+{
+  "date": "2026-11-02",
+  "version": "0.4.5",
+  "sourceCommit": "d12d53ba2e7c100371f742091887278880f1bed4",
+  "workflowRun": "https://github.com/alexwastaken/DroidFun/actions/runs/41542391771",
+  "checks": {
+    "frontendStudioProductionBuild": "passed",
+    "nativeWorkshopSuite": {
+      "passed": 228,
+      "failed": 0,
+      "ignored": 1
+    },
+    "firmwareHostTestsWithAddressAndUndefinedBehaviorSanitizers": 9,
+    "publicCustomerBoundaryGuards": 5,
+    "factoryBitmapMatchesWorkshopStartupFace": true,
+    "blinkPreview": "Inspected actual firmware-generated open/closed pixel frames",
+    "backendTests": 73
+  },
+  "firmware": [
+    "1.3.3",
+    "1.3.3-mistake"
+  ],
+  "wallPower": "The factory smile blinks for 200 ms every 4.2 seconds on fallback and saved-face playback. Mouth remains unchanged. No repeated flash writes; custom saved images, desktop ownership and manual screen-off are respected.",
+  "reprogramming": "Updating Workshop does not flash a droid. User selects Prepare a droid / Reprogram with the detected model and wiring. Reprogram replaces saved board screens with the factory face and requires power/reconnect/visual blink confirmation.",
+  "distribution": "Owner dashboard initial downloads and authenticated signed in-app updates; public customer catalog/feed unchanged.",
+  "limits": [
+    "No physical board was flashed, erased or visually tested in this session.",
+    "Interactive app replacement was not exercised.",
+    "The 1.3.3 image preserves the filesystem partition; the explicit Workshop Reprogram action intentionally rewrites identity and startup playlist."
+  ],
+  "packages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.5",
+      "filename": "DroidFun-Workshop-0.4.5-macOS.zip",
+      "key": "DroidFun-Workshop-0.4.5-macOS-54be9a69f79e.zip",
+      "size": 17265418,
+      "sha256": "54be9a69f79e744e855a4a38b8f644733d9f38f2812d98010db592164fa488b2"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.5",
+      "filename": "DroidFun-Workshop-0.4.5-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.5-Windows-153b928945ff.exe",
+      "size": 3948213,
+      "sha256": "153b928945ff994322edc649b5dcad169746ba97e586edc183b338fad2463776"
+    }
+  ],
+  "updaterPackages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.5",
+      "filename": "DroidFun-Workshop-0.4.5-macOS.app.tar.gz",
+      "key": "DroidFun-Workshop-0.4.5-macOS.app.tar-c1376156ebfb.gz",
+      "size": 17252729,
+      "sha256": "c1376156ebfbbe7e898375bca6193df21b71d85ab2741845993a50558176f26b",
+      "targets": [
+        "darwin-aarch64",
+        "darwin-x86_64"
+      ],
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1eitvcmhxNHNnQ2lwS1FEM3Z1NEFNb2NhL2lPeitBaUlJQnkvNDdpcmlTN3pONkhJK2xVeWU4MzdHYU1LbmJ6cjFINFBQNXFFWk1rTE1OQXYwNG93aEE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYxMjAyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjUtbWFjT1MuYXBwLnRhci5negl2ZXJzaW9uOjAuNC41CkhPRytVREpiWk93T3pHcTVIWkFHd3R6TlJnRTZnMm5ld3Bzd3VPUWlrWFRDSHlBeEc0VW9SeExnY1JKRE9PZ2trZmU2S3BqaEltUkRUMXBUTHFjekJnPT0K"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.5",
+      "filename": "DroidFun-Workshop-0.4.5-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.5-Windows-153b928945ff.exe",
+      "size": 3948213,
+      "sha256": "153b928945ff994322edc649b5dcad169746ba97e586edc183b338fad2463776",
+      "targets": [
+        "windows-x86_64"
+      ],
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ejU3aU1nYzkrQURIK0htTmtkNExlQTZsQkhKc0kzQWxtNHFlRGgwTWZSZTUrcHV1ZXFpem5wTStVWlNHMnZVMnkySHpkd2VCdkNlSGpmVXpLaXVnZHcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYxMjAyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjUtV2luZG93cy5leGUJdmVyc2lvbjowLjQuNQpZYVlaVWtsRC9Bbm9UMndTYU05ait5bmQzdWVyaGU1c0g5UXM0U1VJOE8wK1ZVRk81UWdRd1FPZllMY3dKT0dZOGI2WnVXUzVOam9xeW1ZZkZ3MnpEdz09Cg=="
+    }
+  ],
+  "signatures": [
+    {
+      "file": "DroidFun-Workshop-0.4.5-macOS.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1eitvcmhxNHNnQ2lwS1FEM3Z1NEFNb2NhL2lPeitBaUlJQnkvNDdpcmlTN3pONkhJK2xVeWU4MzdHYU1LbmJ6cjFINFBQNXFFWk1rTE1OQXYwNG93aEE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYxMjAyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjUtbWFjT1MuYXBwLnRhci5negl2ZXJzaW9uOjAuNC41CkhPRytVREpiWk93T3pHcTVIWkFHd3R6TlJnRTZnMm5ld3Bzd3VPUWlrWFRDSHlBeEc0VW9SeExnY1JKRE9PZ2trZmU2S3BqaEltUkRUMXBUTHFjekJnPT0K",
+      "keyId": "a28733c77916aecf",
+      "signedVersion": "0.4.5",
+      "signedFileName": "DroidFun-Workshop-0.4.5-macOS.app.tar.gz"
+    },
+    {
+      "file": "DroidFun-Workshop-0.4.5-Windows.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ejU3aU1nYzkrQURIK0htTmtkNExlQTZsQkhKc0kzQWxtNHFlRGgwTWZSZTUrcHV1ZXFpem5wTStVWlNHMnZVMnkySHpkd2VCdkNlSGpmVXpLaXVnZHcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYxMjAyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjUtV2luZG93cy5leGUJdmVyc2lvbjowLjQuNQpZYVlaVWtsRC9Bbm9UMndTYU05ait5bmQzdWVyaGU1c0g5UXM0U1VJOE8wK1ZVRk81UWdRd1FPZllMY3dKT0dZOGI2WnVXUzVOam9xeW1ZZkZ3MnpEdz09Cg==",
+      "keyId": "a28733c77916aecf",
+      "signedVersion": "0.4.5",
+      "signedFileName": "DroidFun-Workshop-0.4.5-Windows.exe"
+    }
+  ],
+  "macArchitectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "firmwareBuilds": [
+    {
+      "firmware": "1.3.3",
+      "artifact": "droidfun-rp2040-zero-gp4-gp5-v1.3.3.uf2",
+      "sha256": "39791fcd20ecbcdd03b12d05e75b36d76bbaf114ed7ce5f19620e01edad27170",
+      "bytes": 217600,
+      "toolchain": {
+        "arduinoCli": "1.5.1",
+        "arduinoPico": "6.3.0",
+        "fqbn": "rp2040:rp2040:waveshare_rp2040_zero:flash=2097152_262144",
+        "cppExtraFlags": ""
+      },
+      "programBytes": 91756,
+      "dynamicMemoryBytes": 76612,
+      "uf2AddressStart": "0x10000000",
+      "uf2AddressEndExclusive": "0x1001a900",
+      "filesystemStart": "0x101c0000",
+      "filesystemPreservedByImage": true,
+      "physicalProgrammingVerified": false,
+      "physicalPowerCycleVerified": false,
+      "sources": {
+        "firmware/factory/deskbot_firmware/deskbot_firmware.ino": "305e0abfd608d93c603db5959013367ac75b0ec7b9cb1f3b1f100720abb1c161",
+        "firmware/factory/deskbot_firmware/device_identity.h": "bbfc09639dd21e8335b97e8fbbf68173d51c1232a4ad6617bff13358ac680410",
+        "firmware/factory/deskbot_firmware/fallback_face.h": "2c1fa3fb7b765f5739f4935a66e0d889f1a7d7484c5728e7308015cf446d13bb",
+        "firmware/factory/deskbot_firmware/mistake_i2c.h": "875ae7b06905d5d4609f58cfcf64c5467677ccee0fdf6e8df01ea046099ca2f1",
+        "firmware/factory/deskbot_firmware/mistake_i2c.pio": "03b3f01e2b3180ff96501ee9250f83f9214c8f6a5154b4e279f83243a55094fa",
+        "firmware/factory/deskbot_firmware/mistake_i2c.pio.h": "3da459bd02af34864d1b5654d0bab7e68f6130bf7f9100b033bbba3b32d0dbbc",
+        "firmware/factory/deskbot_firmware/standalone_playlist.h": "c2f175fd7fa2f7e42ce37f160a5b2f5bb65a3f36676c57e352170e1f18c09411",
+        "firmware/factory/deskbot_firmware/standalone_storage.h": "e3ea8ebfd8a6705503e5e2e6aaa8e4376658553128a6e7699e18c413e2021f00",
+        "firmware/factory/deskbot_firmware/standby_face.h": "def0ba8c4773abdc3c958c2baee3b0c0212c40e933b36015917900cd23540329"
+      },
+      "behavior": "200 ms eye blink every 4.2 seconds in factory-smile standby; no flash writes per blink; custom saved images remain unchanged; desktop and explicit screen-off take priority.",
+      "runtimePinProfile": "GP4-GP5",
+      "factoryIdentityProfile": "rp2040-zero-gp4-gp5-ssd1306",
+      "usbProtocol": 1
+    },
+    {
+      "firmware": "1.3.3-mistake",
+      "artifact": "droidfun-rp2040-zero-sda5-scl4-v1.3.3-mistake.uf2",
+      "sha256": "bf16e20d6f35813760e3e6d5bc213baf74c5c8996d45925914ee60cb76895870",
+      "bytes": 220672,
+      "toolchain": {
+        "arduinoCli": "1.5.1",
+        "arduinoPico": "6.3.0",
+        "fqbn": "rp2040:rp2040:waveshare_rp2040_zero:flash=2097152_262144",
+        "cppExtraFlags": "-DDROIDFUN_MISTAKE_WIRING"
+      },
+      "programBytes": 93228,
+      "dynamicMemoryBytes": 76608,
+      "uf2AddressStart": "0x10000000",
+      "uf2AddressEndExclusive": "0x1001af00",
+      "filesystemStart": "0x101c0000",
+      "filesystemPreservedByImage": true,
+      "physicalProgrammingVerified": false,
+      "physicalPowerCycleVerified": false,
+      "sources": {
+        "firmware/factory/deskbot_firmware/deskbot_firmware.ino": "305e0abfd608d93c603db5959013367ac75b0ec7b9cb1f3b1f100720abb1c161",
+        "firmware/factory/deskbot_firmware/device_identity.h": "bbfc09639dd21e8335b97e8fbbf68173d51c1232a4ad6617bff13358ac680410",
+        "firmware/factory/deskbot_firmware/fallback_face.h": "2c1fa3fb7b765f5739f4935a66e0d889f1a7d7484c5728e7308015cf446d13bb",
+        "firmware/factory/deskbot_firmware/mistake_i2c.h": "875ae7b06905d5d4609f58cfcf64c5467677ccee0fdf6e8df01ea046099ca2f1",
+        "firmware/factory/deskbot_firmware/mistake_i2c.pio": "03b3f01e2b3180ff96501ee9250f83f9214c8f6a5154b4e279f83243a55094fa",
+        "firmware/factory/deskbot_firmware/mistake_i2c.pio.h": "3da459bd02af34864d1b5654d0bab7e68f6130bf7f9100b033bbba3b32d0dbbc",
+        "firmware/factory/deskbot_firmware/standalone_playlist.h": "c2f175fd7fa2f7e42ce37f160a5b2f5bb65a3f36676c57e352170e1f18c09411",
+        "firmware/factory/deskbot_firmware/standalone_storage.h": "e3ea8ebfd8a6705503e5e2e6aaa8e4376658553128a6e7699e18c413e2021f00",
+        "firmware/factory/deskbot_firmware/standby_face.h": "def0ba8c4773abdc3c958c2baee3b0c0212c40e933b36015917900cd23540329"
+      },
+      "behavior": "200 ms eye blink every 4.2 seconds in factory-smile standby; no flash writes per blink; custom saved images remain unchanged; desktop and explicit screen-off take priority.",
+      "runtimePinProfile": "GP5-SDA-GP4-SCL",
+      "factoryIdentityProfile": "rp2040-zero-gp4-gp5-ssd1306",
+      "usbProtocol": 1
+    }
+  ],
+  "ci": {
+    "result": "success",
+    "windowsNativeWindowLaunch": "passed",
+    "macBundleSignatureIdentityVersionAndHelper": "passed",
+    "temporaryActionsArtifactsRemaining": 0
+  },
+  "production": {
+    "checkedAt": "2026-11-02T23:14:12.609Z",
+    "version": "0.4.5",
+    "anonymousAccessChecks": [
+      {
+        "path": "/api/workshop/updates/manifest.json",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/updates/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/updates/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.5-macOS.app.tar-c1376156ebfb.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.5-macOS.app.tar-c1376156ebfb.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.5-macOS.app.tar-c1376156ebfb.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.5-Windows-153b928945ff.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.5-Windows-153b928945ff.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.5-Windows-153b928945ff.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.5-macOS-54be9a69f79e.zip",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.5-Windows-153b928945ff.exe",
+        "expected": 404,
+        "status": 404
+      }
+    ],
+    "authenticatedPrivateUpdates": [
+      {
+        "id": "mac",
+        "status": 200,
+        "size": 17252729,
+        "sha256": "c1376156ebfbbe7e898375bca6193df21b71d85ab2741845993a50558176f26b",
+        "signatureVerified": true,
+        "signedVersion": "0.4.5",
+        "cacheControl": "private, no-store"
+      },
+      {
+        "id": "windows",
+        "status": 200,
+        "size": 3948213,
+        "sha256": "153b928945ff994322edc649b5dcad169746ba97e586edc183b338fad2463776",
+        "signatureVerified": true,
+        "signedVersion": "0.4.5",
+        "cacheControl": "private, no-store"
+      }
+    ],
+    "publicCatalogFilesUnchanged": true,
+    "installedAppReplacement": "Not performed here; existing Workshop 0.4.2 can install this through Updates."
+  },
+  "deployedWorkerVersion": "539feb8f-d5d3-46e4-a7e0-30924da8229b",
+  "backendSourceHashes": {
+    "site/src/workshop-updates.js": "dbc182f425957be790965b1b9e3cf51b5bfc4837a451444bf6c7605aef2b50bd",
+    "site/src/studio-downloads.js": "15cdc6f9a56d0d39265e0b2e0299f7f8265cc5797a3a065232bdc4fa55a19daf",
+    "site/src/droid-registry.js": "a4a406246b89e18b7c50ac1cc0bf8951c700c36bf8fa9e5695e5f7fc4b11a95f",
+    "site/public/admin.js": "39842fbe328d5fb3fce3d456fac16d8eef0c88f62e26bc32aba3f2a5b09dd513"
+  }
+}
