@@ -77,6 +77,7 @@ pub struct SourceConfig {
     pub animation_speed: String,
     pub weather_layout: String,
     pub show_change: bool,
+    pub clock_display: String,
     pub clock_zone: String,
     pub clock_format: String,
     pub clock_seconds: bool,
@@ -127,6 +128,7 @@ impl Default for SourceConfig {
             animation_speed: "normal".into(),
             weather_layout: "current".into(),
             show_change: false,
+            clock_display: "time".into(),
             clock_zone: "local".into(),
             clock_format: "12".into(),
             clock_seconds: false,
@@ -731,8 +733,7 @@ impl Engine {
             return if w.config.text_motion == "scroll" { render_marquee(&w.config, if id == self.current_id { self.phase_ms.wrapping_sub(self.scroll_epoch_ms) } else { self.phase_ms }, self.reduced_motion) } else { render_text(&w.config) }.unwrap_or_else(|_| vec![0; FRAME_BYTES]);
         }
         if w.kind == "image" { return render_image(&w.config); }
-        #[cfg(feature="showcase")]
-        if w.kind=="clock" {return crate::workshop_clock::render(&w,unix_now());}
+        if w.kind == "clock" { return crate::clock_screen::render(&w, unix_now()); }
         let mut local_values = serde_json::Value::Null;
         if crate::local_widgets::dynamic(&w.kind) {
             let d = crate::local_widgets::dynamic_card(&w, unix_now());
@@ -846,6 +847,9 @@ impl Engine {
         Ok(())
     }
     pub fn add_widget(&mut self, kind: &str) -> Result<(), String> {
+        // Calendar is stored as a clock layout so older apps can still read the playlist.
+        let calendar = kind == "calendar";
+        let kind = if calendar { "clock" } else { kind };
         self.ensure_kind_allowed(kind)?;
         if ![
             "face", "text", "image", "weather", "stock", "codex", "claude", "clock", "pomodoro", "meeting",
@@ -863,7 +867,7 @@ impl Engine {
                 .unwrap_or_default()
                 .as_nanos()
         );
-        let template = Settings::default()
+        let mut template = Settings::default()
             .widgets
             .into_iter()
             .find(|w| w.kind == kind)
@@ -890,6 +894,10 @@ impl Engine {
                     ..SourceConfig::default()
                 },
             });
+        if calendar {
+            template.label = "Calendar".into();
+            template.config.clock_display = "calendar".into();
+        }
         self.settings.widgets.push(Widget {
             id,
             enabled: matches!(kind, "face" | "text") || crate::local_widgets::local(kind),

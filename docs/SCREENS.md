@@ -46,3 +46,9 @@ Software tests cover text layout and overflow, saved-settings migration, profile
 ## Settings compatibility
 
 App 0.8.0 uses settings schema 3 for custom images and text motion. Existing screens and per-droid profiles migrate with stationary text defaults. The previous schema-2 file is kept privately as `settings.before-custom-screens.json` before its first replacement. Older app versions refuse schema 3 rather than overwriting it. Images remain subject to the existing total settings-size limit; a failed save preserves the previous file.
+
+## Simple clock and calendar (0.10.7)
+
+Choose **Add a screen → Clock** for large time only, in 12-hour AM/PM or 24-hour format. Choose **Add a screen → Calendar** for the month and day with an optional weekday or year. Each screen has its own time zone, enable switch, duration and position in the playlist. Both follow the computer’s actual clock and keep working when online data is paused. They require the app running and are not saved as wall-power screens.
+
+Existing clocks keep their time zone, format and playlist settings, and now use the simpler layout. Calendar is optional; the app does not insert or enable it automatically. It is stored as a clock with a calendar layout, so older versions still read the playlist (but may display it as a clock). Text scrolling advances by elapsed pixel position instead of coarse time buckets, and the editor preview updates up to 30 times per second. USB still respects the board’s negotiated frame rate and reduced-motion settings.

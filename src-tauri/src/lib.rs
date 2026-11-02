@@ -16,6 +16,7 @@ mod workshop_registry;
 mod workshop_flash;
 #[cfg(feature = "showcase")]
 pub mod showcase;
+mod clock_screen;
 mod app_update;
 pub mod claude_account;
 pub mod claude_bridge;

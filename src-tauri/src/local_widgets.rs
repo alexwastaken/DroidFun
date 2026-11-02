@@ -11,7 +11,8 @@ pub fn local(kind: &str) -> bool {
 }
 
 pub fn validate(c: &SourceConfig) -> Result<(), String> {
-    if (c.clock_zone != "local" && c.clock_zone.parse::<chrono_tz::Tz>().is_err())
+    if !["time", "calendar"].contains(&c.clock_display.as_str())
+        || (c.clock_zone != "local" && c.clock_zone.parse::<chrono_tz::Tz>().is_err())
         || !["12", "24"].contains(&c.clock_format.as_str())
         || !["weekday", "date", "none"].contains(&c.clock_date.as_str())
         || !(1..=120).contains(&c.focus_minutes)
