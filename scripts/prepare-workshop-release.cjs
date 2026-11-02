@@ -50,7 +50,7 @@ const updaterPackages=[{...updaterMac,targets:['darwin-aarch64','darwin-x86_64']
 const downloads=path.join(site,'src/studio-downloads.js');const source=fs.readFileSync(downloads,'utf8');
 fs.writeFileSync(downloads,'// Packages are private Worker assets, never catalog entries or public links.\nexport const studioPackages = '+JSON.stringify(packages,null,2)+';\n'+source.slice(source.indexOf('export async function studioDownloads')));
 const updates=path.join(site,'src/workshop-updates.js');let feed=fs.readFileSync(updates,'utf8');
-const release={version,pub_date:new Date().toISOString(),notes:'Choose which screens play, set each screen’s duration from 3–120 seconds and move them into order. Private signed updates are now available in Workshop → Updates.'};
+const release={version,pub_date:new Date().toISOString(),notes:'A simpler time-only clock and a separate Calendar screen with the month, day and weekday. Turn Calendar on in Screens to include it in your playlist.'};
 feed=feed.replace(/export const workshopUpdateRelease=[\s\S]*?;\n/,'export const workshopUpdateRelease='+JSON.stringify(release)+';\n').replace(/export const workshopUpdatePackages=[\s\S]*?;\n/,'export const workshopUpdatePackages='+JSON.stringify(updaterPackages,null,2)+';\n');
 fs.writeFileSync(updates,feed);
 const evidence={version,packages,updaterPackages,signatures:verification,macArchitectures:architectures};

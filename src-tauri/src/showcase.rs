@@ -27,7 +27,7 @@ fn defaults() -> Settings {
         if w.kind == "image" { w.config.image_pixels = core::render(None,true).iter().map(|v|format!("{v:02x}")).collect(); }
     }
     engine.settings.preferences.setup_complete = true;
-    engine.settings
+    let mut settings=engine.settings;crate::workshop_clock::add_calendar(&mut settings);settings
 }
 fn card(kind: &str, headline: String, footer: String, values: Value) -> DataCard {
     let now = core::unix_now();
@@ -144,7 +144,8 @@ pub fn run() {
         // Workshop's existing identifier preserves its registry and pairing.
         let previous=app.path().app_config_dir()?.parent().map(|p|p.join("com.droidfun.studio/studio-settings.json"));
         let saved=std::fs::read(&path).ok().or_else(||previous.and_then(|p|std::fs::read(p).ok()));
-        let settings=saved.and_then(|b|serde_json::from_slice::<Settings>(&b).ok()).filter(|s|s.validate().is_ok()&&s.preferences.bot_model.is_empty()).unwrap_or_else(defaults);
+        let mut settings=saved.and_then(|b|serde_json::from_slice::<Settings>(&b).ok()).filter(|s|s.validate().is_ok()&&s.preferences.bot_model.is_empty()).unwrap_or_else(defaults);
+        crate::workshop_clock::add_calendar(&mut settings);
         let mut studio=Studio{active:true,released:false,engine:Engine::new(settings,Instant::now()),ports:Vec::new(),target:None,connection:"Preview only".into(),moving:true,started:Instant::now(),codex:78.0,claude:64.0,path};studio.refresh();app.manage(StudioState(Mutex::new(studio)));
         tauri::WebviewWindowBuilder::new(app,"main",tauri::WebviewUrl::App("index.html".into())).title("DroidFun Workshop").inner_size(1040.0,820.0).min_inner_size(720.0,580.0).on_navigation(|url|crate::web_security::local_navigation(url,false)).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build()?;
         let app=app.handle().clone();std::thread::spawn(move||{
@@ -183,7 +184,7 @@ mod tests {
     fn all_photo_screens_can_save_and_reload_without_accounts() {
         let settings=super::defaults();
         settings.validate().unwrap();
-        assert_eq!(settings.widgets.len(),12);
+        assert_eq!(settings.widgets.len(),13);
         let bytes=serde_json::to_vec(&settings).unwrap();
         let restored:crate::core::Settings=serde_json::from_slice(&bytes).unwrap();
         restored.validate().unwrap();
@@ -213,3 +214,4 @@ mod playlist_tests {
         assert!(reopened.settings.widgets.iter().any(|w|w.id=="clock"&&w.enabled&&w.duration_sec==11));
     }
 }
+

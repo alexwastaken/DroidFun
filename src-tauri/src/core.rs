@@ -731,6 +731,8 @@ impl Engine {
             return if w.config.text_motion == "scroll" { render_marquee(&w.config, if id == self.current_id { self.phase_ms.wrapping_sub(self.scroll_epoch_ms) } else { self.phase_ms }, self.reduced_motion) } else { render_text(&w.config) }.unwrap_or_else(|_| vec![0; FRAME_BYTES]);
         }
         if w.kind == "image" { return render_image(&w.config); }
+        #[cfg(feature="showcase")]
+        if w.kind=="clock" {return crate::workshop_clock::render(&w,unix_now());}
         let mut local_values = serde_json::Value::Null;
         if crate::local_widgets::dynamic(&w.kind) {
             let d = crate::local_widgets::dynamic_card(&w, unix_now());

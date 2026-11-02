@@ -1,12 +1,18 @@
-# Workshop 0.4.2
+# Workshop 0.4.3
 
 Workshop 0.4.1 and earlier cannot update themselves. Download the Mac or Windows Workshop package once from https://droidfun.io/admin#downloads, then replace the previous app/run the installer. Keep the same app identity; pairing, inventory and screen settings are retained.
 
-In 0.4.2, open Updates → Check for updates. If a newer release is available, choose Download update, then Install and restart. Opening Updates releases the Screens USB connection and stops a Live text bridge. Board preparation must finish before installing. Normal Quit cannot interrupt bundle replacement. An available update is never installed without the explicit restart action.
+In 0.4.2 and later, open Updates → Check for updates. If a newer release is available, choose Download update, then Install and restart. Opening Updates releases the Screens USB connection and stops a Live text bridge. Board preparation must finish before installing. Normal Quit cannot interrupt bundle replacement. An available update is never installed without the explicit restart action.
 
 Updates use the existing revocable Workshop pairing, held in native storage. Connect in Droid list first if needed. The manifest and packages are served only through authenticated `/api/workshop/updates/` routes. A separate Workshop Minisign public key is embedded in the private build; its signed version must match the manifest, downgrades are rejected, package size/time are bounded, redirects are disabled, and download URLs are restricted to the same two private DroidFun endpoints. The webview cannot supply a URL, key, version, signature or file path. Public companion configuration and its release feed are unchanged.
 
 On Screens, turn individual cards on/off, set 3–120 seconds and use ↑/↓ to change their order. Play enabled screens starts/resumes the playlist; selecting a screen holds it until playback resumes. At least one screen stays enabled. The enabled flags, durations and order are saved in the existing settings file and restored on the next launch. Disabled screens remain editable and keep their contents. Saving scrolling text can extend its time enough for one pass, matching the companion’s screen editor.
+
+## Clock and Calendar
+
+Workshop 0.4.3 uses a time-only Clock with 12-hour AM/PM or 24-hour display. Calendar is a separate screen showing the full month and day, with a weekday, year or empty bottom line. Both use the computer’s real time (or the existing configured time zone); they do not use simulated data. The public companion renderer is unchanged.
+
+Calendar is added next to Clock and starts off, preserving the existing enabled playlist. Turn it on in Screens and set its duration/order like any other screen. Existing saved contents, timing and screen order are retained; migration is idempotent. Calendar uses a second clock widget internally so earlier Workshop versions can still read saved settings.
 
 ## Publishing a later private release
 

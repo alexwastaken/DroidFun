@@ -1,4 +1,6 @@
 #[cfg(feature = "showcase")]
+mod workshop_clock;
+#[cfg(feature = "showcase")]
 mod workshop_live;
 #[cfg(feature = "workshop")]
 mod workshop_connection;

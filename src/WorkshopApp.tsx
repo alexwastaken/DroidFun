@@ -17,7 +17,7 @@ export default function WorkshopApp(){
  return()=>{disposed=true;off?.();};},[]);
  async function change(next:Section){if(next===section||changing)return;setChanging(true);setError('');try{if(section==='live')await invoke('workshop_live_action',{action:'stop',value:null});await invoke('showcase_mode',{screens:next==='screens'});setSection(next);}catch(e){setError(String(e));}finally{setChanging(false);}}
  return <div className={`workshop-app ${clean?'is-clean':''}`}>
-  {!clean&&<><header className="workshop-app-header"><div className="topline"><span className="brand-dot"/><strong>droidfun</strong><span className="workshop-app-label">Workshop</span></div><span className="workshop-version">0.4.2</span></header>
+  {!clean&&<><header className="workshop-app-header"><div className="topline"><span className="brand-dot"/><strong>droidfun</strong><span className="workshop-app-label">Workshop</span></div><span className="workshop-version">0.4.3</span></header>
   <nav className="workshop-app-nav" aria-label="App sections">{(['screens','prepare','list','live','updates'] as const).map(id=><button key={id} disabled={changing||updating||(id==='screens'&&working)} aria-pressed={id===section} onClick={()=>void change(id)}>{id==='screens'?'Screens':id==='prepare'?'Prepare a droid':id==='list'?'Droid list':id==='live'?'Live text':'Updates'}</button>)}</nav>
   {changing&&<p role="status" className="workshop-app-note">{section==='screens'?'Releasing the screen connection…':'Opening screens…'}</p>}
   {error&&<p role="alert" className="workshop-app-error">{error}</p>}
