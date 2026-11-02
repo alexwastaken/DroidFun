@@ -1,0 +1,204 @@
+{
+  "date": "2026-11-02",
+  "version": "0.4.2",
+  "sourceCommit": "e99ea3aba5c6ba6e3fb11e084acca79012fd6e1d",
+  "workflowRun": "https://github.com/alexwastaken/DroidFun/actions/runs/41516446865",
+  "checks": {
+    "frontendStudioProductionBuild": "passed",
+    "nativeWorkshopUpdaterTests": 9,
+    "nativePlaylistPersistenceAndTimingTests": 1,
+    "nativeCustomerUpdaterRegressionTests": 8,
+    "signatureReleaseTests": 7,
+    "backendTests": 73,
+    "publicCustomerBoundaryGuards": 5
+  },
+  "playlist": "On/off, 3\u2013120 seconds, earlier/later order; saved settings restore and actual engine timing verified",
+  "updates": "Revocable owner-paired feed and packages; version-bound signatures; no redirects or off-origin downloads; explicit install/restart after verification",
+  "distribution": "Owner dashboard initial download; authenticated in-app updates thereafter. No public customer feed/catalog changes.",
+  "limits": [
+    "Workshop 0.4.1 and earlier require one manual replacement download to gain the updater.",
+    "Interactive UI and actual app replacement were not exercised in this session.",
+    "No physical board was flashed or erased.",
+    "OS publisher signing/notarization remains separate from updater signature verification."
+  ],
+  "packages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.2",
+      "filename": "DroidFun-Workshop-0.4.2-macOS.zip",
+      "key": "DroidFun-Workshop-0.4.2-macOS-bc6cf7349524.zip",
+      "size": 17186400,
+      "sha256": "bc6cf7349524c09d04f03305f3a606b499f162128f62909f1e42a151782b50ec"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.2",
+      "filename": "DroidFun-Workshop-0.4.2-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.2-Windows-7db885e85ed3.exe",
+      "size": 3933928,
+      "sha256": "7db885e85ed3df201608fa00ea4938727ef2f74e210b59db01b659d6938129d7"
+    }
+  ],
+  "ci": {
+    "result": "success",
+    "windowsNativeWindowLaunch": "passed",
+    "macBundleSignatureIdentityVersionAndHelper": "passed",
+    "temporaryActionsArtifactsRemaining": 0
+  },
+  "production": {
+    "checkedAt": "2026-11-02T20:19:08.609Z",
+    "version": "0.4.2",
+    "anonymousAccessChecks": [
+      {
+        "path": "/api/workshop/updates/manifest.json",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/updates/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/updates/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.2-macOS.app.tar-2f0e886e4090.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.2-macOS.app.tar-2f0e886e4090.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.2-macOS.app.tar-2f0e886e4090.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.2-Windows-7db885e85ed3.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.2-Windows-7db885e85ed3.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.2-Windows-7db885e85ed3.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.2-macOS-bc6cf7349524.zip",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.2-Windows-7db885e85ed3.exe",
+        "expected": 404,
+        "status": 404
+      }
+    ],
+    "authenticatedPrivateUpdates": [
+      {
+        "id": "mac",
+        "status": 200,
+        "size": 17184196,
+        "sha256": "2f0e886e409086fba7edcad692a0fed02d614161c0630632880736ea49f271b2",
+        "signatureVerified": true,
+        "signedVersion": "0.4.2",
+        "cacheControl": "private, no-store"
+      },
+      {
+        "id": "windows",
+        "status": 200,
+        "size": 3933928,
+        "sha256": "7db885e85ed3df201608fa00ea4938727ef2f74e210b59db01b659d6938129d7",
+        "signatureVerified": true,
+        "signedVersion": "0.4.2",
+        "cacheControl": "private, no-store"
+      }
+    ],
+    "publicCatalogFilesUnchanged": true,
+    "installedAppReplacement": "Not performed; the existing app requires an initial manual upgrade."
+  },
+  "updaterPackages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.2",
+      "filename": "DroidFun-Workshop-0.4.2-macOS.app.tar.gz",
+      "key": "DroidFun-Workshop-0.4.2-macOS.app.tar-2f0e886e4090.gz",
+      "size": 17184196,
+      "sha256": "2f0e886e409086fba7edcad692a0fed02d614161c0630632880736ea49f271b2",
+      "targets": [
+        "darwin-aarch64",
+        "darwin-x86_64"
+      ],
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1enlLL3BOY3pnOHJENnA0aEVPNGVKMTEvbWdPWXozNlY3TWp4UzNSdEhqbUc4Wk9ISUsrU3BHL1lPVFRpK0JCbnNmekl4QUprSFc4QnFKL2VHK1lsREFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjUwNjQ1CWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjItbWFjT1MuYXBwLnRhci5negl2ZXJzaW9uOjAuNC4yCmdneWJGLzVqT0YveGo2NkVTNlpRbEhFbkg4TnJpYnZpWllGOExLclBGOEJTNlhCbHVKYnkvNTNYek1vWlBVeXpyYUdwL2xZQmdSQThlalpTREtuc0FBPT0K"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.2",
+      "filename": "DroidFun-Workshop-0.4.2-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.2-Windows-7db885e85ed3.exe",
+      "size": 3933928,
+      "sha256": "7db885e85ed3df201608fa00ea4938727ef2f74e210b59db01b659d6938129d7",
+      "targets": [
+        "windows-x86_64"
+      ],
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ejdvK0w2bFMwV1hTK3EvMVRBeXhIYVBaS0duMUZVbEk3SDY1bmxlUUNrK3dMSmFlWm1FOUx1NUFDSjZqOXd6RmlPMHdhRXdySFZvTjFmcDBDWHRZS0FNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjUwNjQ2CWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjItV2luZG93cy5leGUJdmVyc2lvbjowLjQuMgpzeGtyNW9mR0I0dDFJZGZSd3FBTmo2OFkyRTI0djM1dVd2emlRVWxXZkJjMEk2cFRGcFhHVHVBUVNrbzM1S2poa051LzZiT0JPUWlTT21wb0c5YjdEUT09Cg=="
+    }
+  ],
+  "signatures": [
+    {
+      "file": "DroidFun-Workshop-0.4.2-macOS.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1enlLL3BOY3pnOHJENnA0aEVPNGVKMTEvbWdPWXozNlY3TWp4UzNSdEhqbUc4Wk9ISUsrU3BHL1lPVFRpK0JCbnNmekl4QUprSFc4QnFKL2VHK1lsREFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjUwNjQ1CWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjItbWFjT1MuYXBwLnRhci5negl2ZXJzaW9uOjAuNC4yCmdneWJGLzVqT0YveGo2NkVTNlpRbEhFbkg4TnJpYnZpWllGOExLclBGOEJTNlhCbHVKYnkvNTNYek1vWlBVeXpyYUdwL2xZQmdSQThlalpTREtuc0FBPT0K",
+      "keyId": "a28733c77916aecf",
+      "signedVersion": "0.4.2",
+      "signedFileName": "DroidFun-Workshop-0.4.2-macOS.app.tar.gz"
+    },
+    {
+      "file": "DroidFun-Workshop-0.4.2-Windows.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ejdvK0w2bFMwV1hTK3EvMVRBeXhIYVBaS0duMUZVbEk3SDY1bmxlUUNrK3dMSmFlWm1FOUx1NUFDSjZqOXd6RmlPMHdhRXdySFZvTjFmcDBDWHRZS0FNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjUwNjQ2CWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjItV2luZG93cy5leGUJdmVyc2lvbjowLjQuMgpzeGtyNW9mR0I0dDFJZGZSd3FBTmo2OFkyRTI0djM1dVd2emlRVWxXZkJjMEk2cFRGcFhHVHVBUVNrbzM1S2poa051LzZiT0JPUWlTT21wb0c5YjdEUT09Cg==",
+      "keyId": "a28733c77916aecf",
+      "signedVersion": "0.4.2",
+      "signedFileName": "DroidFun-Workshop-0.4.2-Windows.exe"
+    }
+  ],
+  "macArchitectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "deployedWorkerVersion": "1357b920-96ee-481b-8434-146e03ed63ef",
+  "backendSourceHashes": {
+    "site/src/workshop-updates.js": "2d378a9d5259bf417cda2525c30c1380603a670da808ac6196cf50fc6b07acae",
+    "site/src/studio-downloads.js": "b190bd6fa9ae3e6f868bfca3d4eb62d5368870b36c3490e25bafcdf1bf2bea3c",
+    "site/src/droid-registry.js": "a4a406246b89e18b7c50ac1cc0bf8951c700c36bf8fa9e5695e5f7fc4b11a95f",
+    "site/public/admin.js": "39842fbe328d5fb3fce3d456fac16d8eef0c88f62e26bc32aba3f2a5b09dd513"
+  }
+}
