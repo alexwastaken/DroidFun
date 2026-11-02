@@ -1,6 +1,19 @@
 {
   "bundle": {
-    "targets": ["nsis"],
-    "windows": { "nsis": { "installMode": "currentUser" } }
+    "targets": [
+      "nsis"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/windows-updater.json"
+      ]
+    }
   }
 }

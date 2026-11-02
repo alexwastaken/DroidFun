@@ -111,3 +111,13 @@ test('customer model lookup stays a bounded public hint with no owner or Worksho
   assert.match(source, /#\[serde\(deny_unknown_fields\)\]/);
   assert.match(source, /bytes\.len\(\)\s*\+\s*chunk\.len\(\)\s*>\s*256/);
 });
+
+test('Windows uses a separate HTTPS release feed while Workshop keeps its authenticated feed', () => {
+  const base=json('src-tauri/tauri.conf.json');
+  const windows=json('src-tauri/tauri.windows.conf.json');
+  assert.deepEqual(windows.plugins.updater, {endpoints:['https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/windows-updater.json']});
+  assert.equal(base.plugins.updater.requireSignedVersion,true);
+  assert.deepEqual(base.plugins.updater.endpoints,['https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/updater.json']);
+  const workshop=json('src-tauri/tauri.showcase.conf.json');
+  assert.ok(workshop.plugins.updater.endpoints.every(url=>url.startsWith('https://droidfun.io/api/workshop/updates')));
+});
