@@ -49,6 +49,20 @@ fn parts(config: &SourceConfig, wall: u64) -> Parts {
         )
     }
 }
+/// The accessibility reading and screen pixels use the same date and time zone.
+pub(crate) fn reading(widget: &Widget, wall: u64) -> (String, String, String) {
+    let p = parts(&widget.config, wall);
+    if is_calendar(widget) {
+        let footer = match widget.config.clock_date.as_str() {
+            "none" => String::new(),
+            "date" => p.year,
+            _ => p.weekday,
+        };
+        (format!("{} {}", p.month, p.day), footer, String::new())
+    } else {
+        (p.time, String::new(), p.period)
+    }
+}
 fn centered(frame: &mut [u8], text: &str, y: usize, scale: usize) {
     let width = text.chars().count() * 8 * scale;
     let x0 = 128usize.saturating_sub(width) / 2;
@@ -171,6 +185,7 @@ mod tests {
         let p = parts(&w.config, t);
         assert_eq!(p.time, "1:05");
         assert_eq!(p.period, "PM");
+        assert_eq!(reading(&w, t), ("1:05".into(), "".into(), "PM".into()));
         let frame = render(&w, t);
         assert_eq!(frame.len(), 1024);
         assert!(frame.iter().any(|b| *b != 0));
@@ -203,6 +218,11 @@ mod tests {
             ("JANUARY", "1", "FRIDAY", "2027")
         );
         assert_ne!(render(&calendar, before), render(&calendar, after));
+        assert_eq!(reading(&calendar, after), ("JANUARY 1".into(), "FRIDAY".into(), "".into()));
+        calendar.config.clock_date = "date".into();
+        assert_eq!(reading(&calendar, after).1, "2027");
+        calendar.config.clock_date = "none".into();
+        assert_eq!(reading(&calendar, after).1, "");
         let p = parts(&calendar.config, epoch("2028-02-29T20:00:00Z"));
         assert_eq!(p.day, "29");
         assert_eq!(p.month, "FEBRUARY");
