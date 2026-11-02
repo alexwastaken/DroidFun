@@ -1,0 +1,206 @@
+{
+  "date": "2026-11-02",
+  "version": "0.4.3",
+  "sourceCommit": "3bb6104262eb9d802323e27ed132ca1a1ab5dba9",
+  "workflowRun": "https://github.com/alexwastaken/DroidFun/actions/runs/41527847677",
+  "checks": {
+    "frontendStudioProductionBuild": "passed",
+    "nativeWorkshopSuite": {
+      "passed": 225,
+      "failed": 0,
+      "ignored": 1
+    },
+    "clockCalendarTests": 3,
+    "backendTests": 73,
+    "publicCustomerBoundaryGuards": 5,
+    "actualRendererPreview": "Inspected Clock 12/24 hour and Calendar pixel frames"
+  },
+  "clock": "Time only, 12-hour AM/PM or 24-hour. Computer clock or existing IANA time zone.",
+  "calendar": "Separate month/day screen with optional weekday or year. Added off after Clock; preserves saved playlist configuration. Midnight/year rollover and leap day verified.",
+  "distribution": "Owner dashboard initial download; authenticated, signed private in-app update. Public customer catalog unchanged.",
+  "limits": [
+    "Interactive UI and actual installed-app replacement were not exercised in this session.",
+    "No physical board was flashed or erased.",
+    "Calendar starts off; enable it in Screens to include it in the playlist."
+  ],
+  "packages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.3",
+      "filename": "DroidFun-Workshop-0.4.3-macOS.zip",
+      "key": "DroidFun-Workshop-0.4.3-macOS-3fd7619f49b4.zip",
+      "size": 17208747,
+      "sha256": "3fd7619f49b451eedcf456fa51621f7a8265b6fdce9eb00a9df0336b9338f3bf"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.3",
+      "filename": "DroidFun-Workshop-0.4.3-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.3-Windows-f152dc945071.exe",
+      "size": 3935224,
+      "sha256": "f152dc945071d7fead34fd035700105a265bbdddf246a81c9e59ce5ad94d5268"
+    }
+  ],
+  "updaterPackages": [
+    {
+      "id": "mac",
+      "platform": "Mac",
+      "version": "0.4.3",
+      "filename": "DroidFun-Workshop-0.4.3-macOS.app.tar.gz",
+      "key": "DroidFun-Workshop-0.4.3-macOS.app.tar-0238a18db203.gz",
+      "size": 17206344,
+      "sha256": "0238a18db20312b720332019f542a99c405c5227ccd0994cc2071b081bb5df68",
+      "targets": [
+        "darwin-aarch64",
+        "darwin-x86_64"
+      ],
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ejduZWxXRlhEMnN2MEtQNkROQmZBS3h4MitkS3NXMUh5NHhvYlp5clRHZXJZdU5kR0tyZ0I1KzJTaXpXOHJNcC95bk5Jd1JZMVIxUXUyWGw5dWl3NXdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjU1MTkyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjMtbWFjT1MuYXBwLnRhci5negl2ZXJzaW9uOjAuNC4zCnhoRDNuVW00dlh0ZjBNYzVqSEg2dUZUcGI1cEdkOXBkZFVqNDE0VE5ZSXkzU1VxQ21hc3VDbU5UNHVUdTl6QjZycEFFb2JhOElhUy92dlhaL2pDQ0RBPT0K"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "version": "0.4.3",
+      "filename": "DroidFun-Workshop-0.4.3-Windows.exe",
+      "key": "DroidFun-Workshop-0.4.3-Windows-f152dc945071.exe",
+      "size": 3935224,
+      "sha256": "f152dc945071d7fead34fd035700105a265bbdddf246a81c9e59ce5ad94d5268",
+      "targets": [
+        "windows-x86_64"
+      ],
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ei84UlJ2M2RMWmtxZngxd1l0emlvYTF2VExXL1VEblQrcDlNZFBxTHgxRWRWUmpkK2ZSb2p3ZDdTcXdNWWdPTHRBVnovZEpXaHB4MjV5YlZCS1lmQWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjU1MTkyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjMtV2luZG93cy5leGUJdmVyc2lvbjowLjQuMwo2SmVFVkt0N2hJcG1HRktROUJxdEtlVzZzZ0FFOUZJNDdOV1VQS0dNQWNqb0JkRllPREZ1VDNla1VwQnk1UGM4WEJpd0VXYS8vNDRHTHFOMWxLaUVBdz09Cg=="
+    }
+  ],
+  "signatures": [
+    {
+      "file": "DroidFun-Workshop-0.4.3-macOS.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ejduZWxXRlhEMnN2MEtQNkROQmZBS3h4MitkS3NXMUh5NHhvYlp5clRHZXJZdU5kR0tyZ0I1KzJTaXpXOHJNcC95bk5Jd1JZMVIxUXUyWGw5dWl3NXdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjU1MTkyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjMtbWFjT1MuYXBwLnRhci5negl2ZXJzaW9uOjAuNC4zCnhoRDNuVW00dlh0ZjBNYzVqSEg2dUZUcGI1cEdkOXBkZFVqNDE0VE5ZSXkzU1VxQ21hc3VDbU5UNHVUdTl6QjZycEFFb2JhOElhUy92dlhaL2pDQ0RBPT0K",
+      "keyId": "a28733c77916aecf",
+      "signedVersion": "0.4.3",
+      "signedFileName": "DroidFun-Workshop-0.4.3-macOS.app.tar.gz"
+    },
+    {
+      "file": "DroidFun-Workshop-0.4.3-Windows.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTaWh6UEhlUmF1ei84UlJ2M2RMWmtxZngxd1l0emlvYTF2VExXL1VEblQrcDlNZFBxTHgxRWRWUmpkK2ZSb2p3ZDdTcXdNWWdPTHRBVnovZEpXaHB4MjV5YlZCS1lmQWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjU1MTkyCWZpbGU6RHJvaWRGdW4tV29ya3Nob3AtMC40LjMtV2luZG93cy5leGUJdmVyc2lvbjowLjQuMwo2SmVFVkt0N2hJcG1HRktROUJxdEtlVzZzZ0FFOUZJNDdOV1VQS0dNQWNqb0JkRllPREZ1VDNla1VwQnk1UGM4WEJpd0VXYS8vNDRHTHFOMWxLaUVBdz09Cg==",
+      "keyId": "a28733c77916aecf",
+      "signedVersion": "0.4.3",
+      "signedFileName": "DroidFun-Workshop-0.4.3-Windows.exe"
+    }
+  ],
+  "macArchitectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "ci": {
+    "result": "success",
+    "windowsNativeWindowLaunch": "passed",
+    "macBundleSignatureIdentityVersionAndHelper": "passed",
+    "temporaryActionsArtifactsRemaining": 0
+  },
+  "production": {
+    "checkedAt": "2026-11-02T21:34:38.538Z",
+    "version": "0.4.3",
+    "anonymousAccessChecks": [
+      {
+        "path": "/api/workshop/updates/manifest.json",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/updates/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/workshop/updates/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/mac",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/api/admin/studio-downloads/windows",
+        "expected": 401,
+        "status": 401
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.3-macOS.app.tar-0238a18db203.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.3-macOS.app.tar-0238a18db203.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.3-macOS.app.tar-0238a18db203.gz",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.3-Windows-f152dc945071.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/%64ownload-assets/DroidFun-Workshop-0.4.3-Windows-f152dc945071.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets%2FDroidFun-Workshop-0.4.3-Windows-f152dc945071.exe",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.3-macOS-3fd7619f49b4.zip",
+        "expected": 404,
+        "status": 404
+      },
+      {
+        "path": "/download-assets/DroidFun-Workshop-0.4.3-Windows-f152dc945071.exe",
+        "expected": 404,
+        "status": 404
+      }
+    ],
+    "authenticatedPrivateUpdates": [
+      {
+        "id": "mac",
+        "status": 200,
+        "size": 17206344,
+        "sha256": "0238a18db20312b720332019f542a99c405c5227ccd0994cc2071b081bb5df68",
+        "signatureVerified": true,
+        "signedVersion": "0.4.3",
+        "cacheControl": "private, no-store"
+      },
+      {
+        "id": "windows",
+        "status": 200,
+        "size": 3935224,
+        "sha256": "f152dc945071d7fead34fd035700105a265bbdddf246a81c9e59ce5ad94d5268",
+        "signatureVerified": true,
+        "signedVersion": "0.4.3",
+        "cacheControl": "private, no-store"
+      }
+    ],
+    "publicCatalogFilesUnchanged": true,
+    "installedAppReplacement": "Not performed here; existing Workshop 0.4.2 can install this through Updates."
+  },
+  "deployedWorkerVersion": "c5c31161-511e-4224-986d-dd1e71ab58ef",
+  "backendSourceHashes": {
+    "site/src/workshop-updates.js": "134fadb05ff1737059aa0c42024a1ea5e39f9526797e6d235d0e9b0842ef7a93",
+    "site/src/studio-downloads.js": "8cc31fe2dca90f8bab0afab26bd6f59120c347cae323fa30623659e4dbf423fd",
+    "site/src/droid-registry.js": "a4a406246b89e18b7c50ac1cc0bf8951c700c36bf8fa9e5695e5f7fc4b11a95f",
+    "site/public/admin.js": "39842fbe328d5fb3fce3d456fac16d8eef0c88f62e26bc32aba3f2a5b09dd513"
+  }
+}
