@@ -79,7 +79,15 @@ class Driver:
         self.before=self.app_pids()
         s=socket.socket();s.bind(('127.0.0.1',0));self.port=s.getsockname()[1];s.close()
         self.log=open(P(os.environ['DESKBOT_ARTIFACT_DIR'])/'linux-webdriver.txt','w')
-        self.child=subprocess.Popen(['WebKitWebDriver',f'--port={self.port}'],env={**os.environ,'TAURI_WEBVIEW_AUTOMATION':'true'},stdout=self.log,stderr=self.log)
+        # Record system-browser handoffs without starting a browser or contacting
+        # a website. This private PATH applies only to the automated app process.
+        self.browser_fixture=tempfile.TemporaryDirectory(prefix='droidfun-browser-')
+        self.browser_log=P(self.browser_fixture.name)/'calls.txt'
+        opener=P(self.browser_fixture.name)/'xdg-open'
+        opener.write_text('#!/usr/bin/python3\nimport pathlib, sys\nwith pathlib.Path('+repr(str(self.browser_log))+').open("a") as log:\n    for arg in sys.argv[1:]: log.write(arg+"\\n")\n')
+        opener.chmod(0o755)
+        environment={**os.environ,'TAURI_WEBVIEW_AUTOMATION':'true','PATH':self.browser_fixture.name+os.pathsep+os.environ.get('PATH','')}
+        self.child=subprocess.Popen(['WebKitWebDriver',f'--port={self.port}'],env=environment,stdout=self.log,stderr=self.log)
         self.session=None
         for _ in range(100):
             try:
@@ -106,6 +114,8 @@ class Driver:
     def capture(self,name):
         encoded=self.request('GET',f'/session/{self.session}/screenshot')
         (P(os.environ['DESKBOT_ARTIFACT_DIR'])/name).write_bytes(base64.b64decode(encoded))
+    def browser_calls(self):
+        return self.browser_log.read_text().splitlines() if self.browser_log.exists() else []
     def close(self):
         if self.session:
             try:self.request('DELETE',f'/session/{self.session}')
@@ -115,6 +125,84 @@ class Driver:
         for pid in self.app_pids()-self.before:
             try: os.kill(pid,signal.SIGTERM)
             except ProcessLookupError: pass
+        self.browser_fixture.cleanup()
+
+def customer_boundary(driver):
+    # Exercise the installed Tauri ACL, not a JavaScript mock. The allowed
+    # read proves IPC is functional; forbidden calls must fail at authorization
+    # rather than merely failing argument validation. No network or USB writes.
+    driver.wait('window.__TAURI_INTERNALS__')
+    driver.js('''
+      window.__droidfunBoundary = null;
+      (async () => {
+        const results = [];
+        try {
+          const state = await window.__TAURI_INTERNALS__.invoke("get_state");
+          results.push({command: "get_state", allowed: Boolean(state && state.settings)});
+        } catch (error) { results.push({command: "get_state", allowed: false, error: String(error)}); }
+        for (const [command, args] of [
+          ["plugin:event|emit", {event: "droidfun-security-fixture", payload: null}],
+          ["plugin:webview|create_webview_window", {options: {label: "security-fixture", title: "Security fixture", url: "about:blank", visible: false}}],
+          ["workshop_registry_state", {}]
+        ]) {
+          try {
+            await window.__TAURI_INTERNALS__.invoke(command, args);
+            results.push({command, allowed: true});
+          } catch (error) { results.push({command, allowed: false, error: String(error)}); }
+        }
+        window.__droidfunBoundary = results;
+      })();
+    ''')
+    driver.wait('Array.isArray(window.__droidfunBoundary) && window.__droidfunBoundary.length === 4')
+    results = driver.js('return window.__droidfunBoundary;')
+    assert results[0]['allowed'], 'Public customer commands were not reachable through real IPC'
+    for result in results[1:]:
+        assert not result['allowed'], 'Forbidden native command was allowed: '+result['command']
+        reason = result.get('error', '').lower()
+        if result['command'].startswith('plugin:'):
+            assert 'not allowed' in reason, 'Expected a real permission denial: '+str(result)
+        else:
+            assert 'not allowed' in reason or 'not found' in reason, 'Workshop command failed for the wrong reason: '+str(result)
+    return {'customerReadAllowed': True, 'eventEmitDenied': True, 'newWebviewDenied': True, 'workshopRegistryUnavailable': True}
+
+def browser_boundary(driver):
+    # Exercise native WebKit navigation and new-window callbacks, not the Rust
+    # policy helper alone. WebKit can consult navigation before new-window.
+    original_url=driver.js('return location.href;')
+    expected=[]
+    def click(url, target):
+        driver.js('const a=document.createElement("a");a.id="droidfun-security-link";a.href='+json.dumps(url)+';a.target='+json.dumps(target)+';a.rel="noreferrer";a.textContent="Open fixture help";a.style.cssText="position:fixed;top:12px;left:12px;z-index:2147483647;padding:12px;background:white;color:black";document.body.append(a);')
+        # Use an actual WebDriver click so popup handling has a user gesture.
+        element=driver.request('POST',f'/session/{driver.session}/element',{'using':'css selector','value':'#droidfun-security-link'})
+        element_id=element['element-6066-11e4-a52e-4f735466cecf']
+        driver.request('POST',f'/session/{driver.session}/element/{element_id}/click',{})
+        driver.js('document.querySelector("#droidfun-security-link")?.remove();')
+    for url, target in [
+        ('https://droidfun.io/downloads', '_blank'),
+        ('https://droidfun.io/downloads#droid-support', '_self'),
+        ('https://open-meteo.com/', '_blank'),
+    ]:
+        click(url, target)
+        expected.append(url)
+        deadline=time.monotonic()+10
+        while len(driver.browser_calls()) < len(expected) and time.monotonic() < deadline:
+            time.sleep(.1)
+        assert driver.browser_calls() == expected, 'Approved help link was lost or opened more than once: '+url
+        assert driver.js('return location.href;') == original_url, 'Public help replaced the privileged app page'
+        # Let the short recorder process exit so the app's concurrent-open
+        # guard is clear before the next deliberate user click.
+        time.sleep(.2)
+    for url in ['https://example.invalid/', 'https://droidfun.io/downloads?boardId=fixture-private', 'https://droidfun.io/admin']:
+        for target in ['_blank', '_self']:
+            click(url, target)
+    time.sleep(.5)
+    assert driver.browser_calls() == expected, 'Unapproved destination reached the system browser'
+    assert driver.js('return location.href;') == original_url, 'Unapproved destination replaced the privileged app page'
+    handles=driver.request('GET',f'/session/{driver.session}/window/handles')
+    assert len(handles) == 1, 'Link opened an embedded browser window'
+    driver.js('window.__droidfunAfterLinks=null;window.__TAURI_INTERNALS__.invoke("get_state").then(s=>{window.__droidfunAfterLinks=Boolean(s&&s.settings);}).catch(()=>{window.__droidfunAfterLinks=false;});')
+    driver.wait('window.__droidfunAfterLinks === true')
+    return {'approvedBlankAndSameWindowLinksHandedOff':True,'unapprovedLinksDenied':True,'noEmbeddedRemoteWindow':True,'customerIpcStillWorks':True}
 
 def ui():
     driver=Driver()
@@ -160,6 +248,8 @@ def ui():
         # CI, enter preview through the real Explore screens control.
         driver.wait('document.querySelector(".welcome-shell") && document.querySelector("#robot-connection")')
         assert not driver.js('return Boolean(document.querySelector(".bot-picker"))')
+        boundary_verified = customer_boundary(driver)
+        browser_verified = browser_boundary(driver)
         driver.capture('linux-welcome.png')
         choose_bot('meep', capture_chooser=True)
         # Headless CI has no active physical desktop. Explicit test-only polkit
@@ -199,7 +289,7 @@ def ui():
         choose_bot('boo')
         choose_bot('nimbus')
         choose_bot('meep')
-        print(json.dumps({'nativeButton':'passed','plugInWelcome':'passed','optionalModelChooser':'passed','botSelectionRealIpc':True,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
+        print(json.dumps({'nativeButton':'passed','plugInWelcome':'passed','optionalModelChooser':'passed','botSelectionRealIpc':True,'nativeIpcBoundary':boundary_verified,'nativeBrowserBoundary':browser_verified,'installedPackage':'/usr/bin/deskbot','installedExecutableSha256':hashlib.sha256(P('/usr/bin/deskbot').read_bytes()).hexdigest(),'realIpcPkexecAndFixedHelper':True,'missingRuleRestored':True,'alternateShellCommandDenied':True,'extraHelperArgumentsRejected':True,'deniedAuthorizationShowsError':True,'automaticBotThemes':themes_verified,'botSpecificWidgetOptions':'passed','clawIdleCaption':'passed','authorizationFixture':'temporary action+caller-specific polkit YES rule; removed before real policy denial check','humanGraphicalPasswordDialog':'not_verified','physicalRobot':'not_available'}))
     finally:
         subprocess.run(['sudo','rm','-f',str(POLICY_RULE)],check=True)
         driver.close()

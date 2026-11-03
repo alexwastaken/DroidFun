@@ -13,6 +13,7 @@ pub fn load(path: &Path) -> Result<Settings, String> {
                     return Err("These settings belong to a newer DroidFun App version. Install that version; your file has been preserved.".into());
                 }
                 if let Ok(mut settings) = serde_json::from_value::<Settings>(value) {
+                    let current_schema = settings.version == crate::core::SETTINGS_VERSION;
                     if settings.version == 1 || settings.version == 2 { settings.version = crate::core::SETTINGS_VERSION; }
                     if settings.validate().is_ok() {
                         if candidate != path && path.exists() {
@@ -25,8 +26,16 @@ pub fn load(path: &Path) -> Result<Settings, String> {
                             )
                             .map_err(|_| "Could not preserve unreadable settings")?;
                         }
-                        // Existing installations have already chosen their preview/device.
-                        settings.preferences.setup_complete = true;
+                        // Saving app preferences before the first droid arrives
+                        // is not completed setup. Keep untouched current-schema
+                        // starters fresh so Claw can enable its sample screen.
+                        // Older/customized playlists retain every enabled flag.
+                        let untouched_starter = current_schema
+                            && settings.preferences.bot_model.is_empty()
+                            && settings.selected_device_serial.is_none()
+                            && settings.droids.is_empty()
+                            && settings.widgets == Settings::default().widgets;
+                        if !untouched_starter { settings.preferences.setup_complete = true; }
                         crate::droids::remember(&mut settings)?;
                         return Ok(settings);
                     }
@@ -117,6 +126,26 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn older_or_finished_setup_keeps_existing_starter_flags_when_a_model_is_chosen() {
+        let directory = std::env::temp_dir().join(format!("droidfun-preserved-starters-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("settings.json");
+        for (version, finished) in [(1, false), (2, false), (crate::core::SETTINGS_VERSION, true)] {
+            let mut settings = Settings::default();
+            settings.version = version;
+            settings.preferences.setup_complete = finished;
+            fs::write(&path, serde_json::to_vec(&settings).unwrap()).unwrap();
+            let loaded = load(&path).unwrap();
+            assert!(loaded.preferences.setup_complete);
+            let expected = loaded.widgets.clone();
+            let mut engine = crate::core::Engine::new(loaded, std::time::Instant::now());
+            engine.set_bot_model("claw").unwrap();
+            assert_eq!(engine.settings.widgets, expected, "older/finished setup must not enable a new sample screen");
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
     #[test]
     fn schema_two_customizations_migrate_and_new_images_round_trip_with_an_original_archive() {
         let root=std::env::temp_dir().join(format!("droidfun-custom-screens-{}",std::process::id()));fs::create_dir_all(&root).unwrap();let path=root.join("settings.json");

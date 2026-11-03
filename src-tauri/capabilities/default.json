@@ -1,7 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Deskbot controls",
-  "windows": ["main"],
-  "permissions": ["core:default", "core:event:default", "core:window:default"]
+  "description": "Local customer controls: native command allowlist and read-only app events",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "customer-controls"
+  ],
+  "local": true
 }

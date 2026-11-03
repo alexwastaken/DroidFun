@@ -1,0 +1,62 @@
+[
+  {
+    "name": "macos-auto-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "macos-background-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "macos-window-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "windows-auto-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "windows-background-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "windows-window-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "linux-auto-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "linux-background-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "linux-window-existing-settings",
+    "width": 360,
+    "passed": true
+  },
+  {
+    "name": "macos-auto-change-mode-and-login",
+    "width": 500,
+    "passed": true
+  },
+  {
+    "name": "macos-background-change-mode-and-login",
+    "width": 500,
+    "passed": true
+  },
+  {
+    "name": "macos-window-change-mode-and-login",
+    "width": 500,
+    "passed": true
+  }
+]

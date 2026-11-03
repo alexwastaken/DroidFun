@@ -1,0 +1,35 @@
+{
+  "version": "0.10.3",
+  "scope": "local arm64 candidate",
+  "publicRelease": false,
+  "physicalClaw": {
+    "workshopReadOnlyIdentity": "claw",
+    "firmware": "1.3.2",
+    "appInitiallyRememberedModel": "nimbus",
+    "automaticallyCorrectedModel": "claw",
+    "connectedOverUsb": true,
+    "clawPreviewAndUsageControlsVerified": true,
+    "freshCodexUsageObserved": true,
+    "firmwareRewritten": false
+  },
+  "onlySelectedModelFieldsChanged": true,
+  "otherDroidProfilesPreserved": true,
+  "allWidgetsAndDisplayPreferencesPreserved": true,
+  "startAtLoginPreserved": true,
+  "factoryModelControlProtected": true,
+  "strictAdhocSignatureVerified": true,
+  "helperRuntimeVerified": true,
+  "dmgMatchesApp": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "executableSha256": "2148f8c262c84d23861b0239c81b3ea64e1e0eeda3857672a192f1fe17c0b6d1",
+  "tests": {
+    "nativePassed": 158,
+    "nativeIgnored": 1,
+    "uiPassed": 13
+  },
+  "limits": [
+    "Only one physical Claw was connected during this acceptance; multi-droid switching was covered with native tests and browser fixtures.",
+    "Public cross-platform packages, notarization and fresh website-download acceptance remain pending."
+  ]
+}

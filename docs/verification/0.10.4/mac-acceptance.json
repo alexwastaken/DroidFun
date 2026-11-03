@@ -1,0 +1,24 @@
+{
+  "version": "0.10.4",
+  "scope": "local arm64 candidate",
+  "publicRelease": false,
+  "installedAndLaunched": true,
+  "allSavedSettingsPreserved": true,
+  "strictAdhocSignatureVerified": true,
+  "helperRuntimeVerified": true,
+  "dmgMatchesApp": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "executableSha256": "4283378b41e3530c7c3b15b0e4775166a58b62d161a583df7c24766d609ac50b",
+  "tests": {
+    "nativePassed": 170,
+    "nativeIgnored": 1,
+    "uiPassed": 20
+  },
+  "physicalUsbTested": false,
+  "limits": [
+    "No USB droid was attached during this acceptance; the physical replacement check is pending.",
+    "Physical multi-droid switching, cable swaps and power cycles remain unverified for this candidate.",
+    "Public cross-platform packages, notarization and fresh website-download acceptance remain pending."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "version": "0.10.2",
+  "scope": "local arm64 candidate",
+  "publicRelease": false,
+  "menuBarDefault": true,
+  "menuCommandsConfirmedByUser": true,
+  "nativeModeSwitch": {
+    "menuBarExcludedFromRegularAppInventory": true,
+    "dockModeIncludedInRegularAppInventory": true,
+    "returnedToMenuBar": true
+  },
+  "controlsCloseAndReopenSameProcess": true,
+  "physicalNimbusConnectedAfterReopen": true,
+  "startAtLogin": {
+    "enabledOnLocalMac": true,
+    "registrationTargetsInstalledExecutable": true,
+    "backgroundArgument": true,
+    "runAtLoad": true,
+    "keepAlive": false,
+    "coldBackgroundProcessSmoke": true,
+    "secondBackgroundLaunchKeepsOriginalProcess": true,
+    "fullSignOutSignInTested": false
+  },
+  "settingsPreservedExceptRequestedStartupPreference": true,
+  "firmwareRewritten": false,
+  "strictAdhocSignatureVerified": true,
+  "helperRuntimeVerified": true,
+  "dmgMatchesApp": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "executableSha256": "157bed7c876c4a2d065fe87c67e1157f9fbf5f2e444fb301dbc57dda006f6f41",
+  "tests": {
+    "nativePassed": 155,
+    "nativeIgnored": 1,
+    "uiPassed": 12
+  },
+  "limits": [
+    "Menu click behavior confirmed by owner; desktop automation could not inspect status item directly.",
+    "Background process smoke is not a full sign-out/sign-in acceptance test.",
+    "No public release; signing and notarization still require owner credentials."
+  ]
+}

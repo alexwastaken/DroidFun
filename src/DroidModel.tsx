@@ -17,7 +17,7 @@ export default function DroidModel({model}: {model: string}) {
   return ()=>{active=false;controls.current?.dispose();controls.current=null;preference.removeEventListener("change",changed);};
  },[selected]);
  return <figure className="droid-model">
-  <div ref={host} className="droid-model-surface" tabIndex={ready?0:-1} role="img" aria-label={`${name} in 3D. Drag or use the arrow keys to rotate. Home faces forward.`}>
+  <div ref={host} className="droid-model-surface" tabIndex={ready?0:-1} role="img" aria-label={ready?`${name} in 3D. Drag or use the arrow keys to rotate. Home faces forward.`:`${name} droid`}>
    <img className="droid-model-poster" src={`/droids/${selected}-bot.png`} alt={`${name} droid`} aria-hidden={ready} />
   </div>
   {ready&&<button type="button" className="droid-model-motion" aria-pressed={playing} onClick={()=>{controls.current?.setMotion(!playing);setPlaying(!playing);}}>{playing?"Pause motion":"Play motion"}</button>}

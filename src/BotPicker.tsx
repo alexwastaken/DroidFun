@@ -13,12 +13,12 @@ export const botName = (model: string) => botModels.find(bot => bot.id === model
 export const widgetOptions = (model: string) => model === "claw" ? usageOptions : generalOptions;
 export const widgetAllowed = (model: string, kind: string) => widgetOptions(model).some(option => option[0] === kind);
 
-export default function BotPicker({ current, busy, error, onSelect, onCancel, footer }: { current: string; busy: boolean; error: string; onSelect: (model: string) => Promise<void>; onCancel?: () => void; footer?: ReactNode }) {
+export default function BotPicker({ current, busy, error, onSelect, onCancel, footer, selectedDroidName }: { selectedDroidName?: string; current: string; busy: boolean; error: string; onSelect: (model: string) => Promise<void>; onCancel?: () => void; footer?: ReactNode }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
   return <main className="app-shell bot-picker">
     <div className="app-brand"><img src="/brand/droid-fun-wordmark.png" alt="Droid Fun" /><span>App</span></div>
-    <div className="intro"><div className="eyebrow">CHOOSE A MODEL</div><h1 ref={title} tabIndex={-1}>Meet the droids.</h1><p>Choose a model to explore its screens. When you plug in a factory-prepared droid, we recognize it automatically.</p></div>
+    <div className="intro"><div className="eyebrow">CHOOSE A MODEL</div><h1 ref={title} tabIndex={-1}>{selectedDroidName ? "Set this droid’s model" : "Meet the droids."}</h1><p>{selectedDroidName ? `Choose the model for ${selectedDroidName}. This changes its screens in the app; its installed firmware and your other droids stay as they are.` : "Choose a model to explore its screens. When you plug in a factory-prepared droid, we recognize it automatically."}</p></div>
     <div className="bot-choices" aria-label="Choose your bot">{botModels.map(bot => <button key={bot.id} className="bot-choice" data-bot={bot.id} disabled={busy} aria-pressed={current === bot.id} onClick={() => onSelect(bot.id)}>
       <BotAvatar model={bot.id}/>
       <span className="bot-choice-copy"><strong>{bot.name}</strong><span>{bot.summary}</span><small>{bot.detail}</small></span><span aria-hidden="true">→</span>
