@@ -1,0 +1,15 @@
+{
+  "source": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
+  "packaging": "6735f72c5c154f2fb7f2d94dd0dbfe7cc4f89fb7",
+  "previousMain": "f8988163d76fac1378af7115ceda79b52f18ca24",
+  "publishedMain": "25cab84c4a0f2d077c25a858ac9a942913454fa3",
+  "files": [
+    "distribution/current.json",
+    "distribution/updater.json"
+  ],
+  "unchangedWindowsFeed": true,
+  "unchangedOtherFiles": true,
+  "verified": true,
+  "checkedAt": "2026-11-08T07:03:37.070Z",
+  "rawEndpointsVerified": true
+}

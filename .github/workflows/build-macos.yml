@@ -17,9 +17,8 @@ on:
         description: Standard Mac runner (use another image if capacity is queued)
         type: choice
         options:
-          - macos-14
           - macos-15
-        default: macos-14
+        default: macos-15
       signing_mode:
         description: Choose Apple-trusted, approved unnotarized, or private testing package
         type: choice
@@ -44,7 +43,7 @@ jobs:
   build:
     permissions:
       contents: write
-    runs-on: ${{ inputs.runner || 'macos-14' }}
+    runs-on: ${{ inputs.runner || 'macos-15' }}
     timeout-minutes: 60
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target

@@ -1,0 +1,72 @@
+{
+  "version": "0.10.9",
+  "platform": "macOS-universal",
+  "productName": "DroidFun App",
+  "identifier": "com.deskbot.companion",
+  "applicationCommit": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
+  "packagingCommit": "6735f72c5c154f2fb7f2d94dd0dbfe7cc4f89fb7",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "tests": {
+    "passed": 183,
+    "failed": 0
+  },
+  "signingMode": "public-adhoc",
+  "distribution": "public",
+  "adHocSignatureVerified": true,
+  "unnotarizedReleaseAcknowledged": true,
+  "codeSignatureVerified": true,
+  "helperCodeSignatureVerified": true,
+  "libraryCodeSignatureVerified": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "stapled": false,
+  "gatekeeperAccepted": false,
+  "helperSigned": false,
+  "librarySigned": false,
+  "helperRuntimeVerified": true,
+  "verifiedContainers": [
+    "dmg",
+    "zip",
+    "updater"
+  ],
+  "updater": {
+    "assetName": "DroidFun-App-0.10.9-macOS-universal.app.tar.gz",
+    "signatureName": "DroidFun-App-0.10.9-macOS-universal.app.tar.gz.sig",
+    "signatureVerified": true,
+    "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0IrSUpDRzJMSFFNVmZBSDlmMUoxV0NyODFBbGVRSFlPOU9EQzkyNEp0aitZVUFQK3lvb0xkWGhYeFBYcVJaWDFMUTFPWUhHSGpZaTFHZCtHL2VLNVFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTIwNjg3CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjkKUjBtbldLNG5sdUxMK1cxYTRIUS9CNWJwVkptazhhSWlQNk5qaWc1TnJRcCs0SFIvcnhGU0FYeVBRV3ZTOGVLd1ovRXplYVBBcnh5QjgwM2NhKytvQ2c9PQo=",
+    "keyId": "0d742970b9e840f8",
+    "signedVersion": "0.10.9",
+    "signedFileName": "DroidFun App.app.tar.gz"
+  },
+  "assets": [
+    {
+      "name": "DroidFun-App-0.10.9-macOS-universal.dmg",
+      "bytes": 23475687,
+      "sha256": "956c15903f1609a62f6c364123c3f115f8ce51fc0f5d4a927a26cc7f9c1591c4"
+    },
+    {
+      "name": "DroidFun-App-0.10.9-macOS-universal.zip",
+      "bytes": 23430552,
+      "sha256": "a8f8467df53940fc9357aff6b487c479d67f9caf2ad1464050cc2ea2b8253b18"
+    },
+    {
+      "name": "DroidFun-App-0.10.9-macOS-universal.app.tar.gz",
+      "bytes": 23424527,
+      "sha256": "b593b20e49cc2e737848dc6dc01320b26c09fd122276c57c7659acdbf834d6a6"
+    },
+    {
+      "name": "DroidFun-App-0.10.9-macOS-universal.app.tar.gz.sig",
+      "bytes": 432,
+      "sha256": "9916c7725ce066c4f380911e8822499b551d147a76bc25f3171e34d5589ea2cd"
+    }
+  ],
+  "remaining": [
+    "Local launch and upgrade verification",
+    "USB robot connection verification",
+    "Intel Mac runtime",
+    "Published with owner acknowledgement: no Developer ID signature or Apple notarization; macOS first-install warnings remain"
+  ]
+}

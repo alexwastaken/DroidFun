@@ -2,18 +2,18 @@
   "repository": "alexwastaken/DroidFun",
   "source_snapshot": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
   "source_commits": {
-    "macOS": "1722ba3b56ab5a25225d86969fa234f661070c46",
+    "macOS": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
     "Windows-x64": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
     "Windows-ARM64": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
     "Linux-x86_64": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae"
   },
-  "release": "v0.10.9-windows-linux",
+  "release": "v0.10.9",
   "platform_versions": {
-    "macOS": "0.10.0",
+    "macOS": "0.10.9",
     "Windows": "0.10.9",
     "Linux": "0.10.9"
   },
-  "distribution": "Windows and Linux 0.10.9. Mac remains at its existing public version pending Developer ID signing and notarization. Windows 0.10.0–0.10.7 needs one manual installer upgrade to the independent Windows update channel.",
+  "distribution": "Mac, Windows and Linux 0.10.9. Mac is an owner-authorized public ad-hoc build without Apple Developer ID signing or notarization; Mac and Windows update packages retain their verified updater signatures.",
   "files": [
     {
       "id": "droidfun-controller-guide",
@@ -35,17 +35,17 @@
       "id": "deskbot-020-macos",
       "title": "DroidFun App for Mac",
       "description": "Universal app for Apple Silicon and Intel. Requires macOS 13 or later.",
-      "version": "0.10.0",
-      "filename": "DroidFun-App-0.10.0-macOS-universal.dmg",
-      "size": 23412200,
+      "version": "0.10.9",
+      "filename": "DroidFun-App-0.10.9-macOS-universal.dmg",
+      "size": 23475687,
       "content_type": "application/octet-stream",
-      "object_key": "asset:/download-assets/DroidFun-App-0.10.0-macOS-universal.dmg",
+      "object_key": "asset:/download-assets/DroidFun-App-0.10.9-macOS-universal.dmg",
       "access": "free",
       "published": 1,
       "product_id": null,
-      "sha256": "37dd5889c7e8a88a71c1f8a1789d73ea3fd67332bd220ac9c84d98ccb3949e2f",
-      "source_commit": "1722ba3b56ab5a25225d86969fa234f661070c46",
-      "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.0"
+      "sha256": "956c15903f1609a62f6c364123c3f115f8ce51fc0f5d4a927a26cc7f9c1591c4",
+      "source_commit": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
+      "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.9"
     },
     {
       "id": "deskbot-020-windows-x64",
@@ -111,5 +111,12 @@
       "source_commit": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
       "source_release": "https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.9"
     }
-  ]
+  ],
+  "mac_publication": {
+    "signing_mode": "public-adhoc",
+    "allow_unnotarized": true,
+    "packaging_commit": "6735f72c5c154f2fb7f2d94dd0dbfe7cc4f89fb7",
+    "developer_id_signed": false,
+    "notarized": false
+  }
 }

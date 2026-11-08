@@ -1,0 +1,28 @@
+{
+  "architectures": {
+    "deskbot": [
+      "x86_64",
+      "arm64"
+    ],
+    "picotool": [
+      "x86_64",
+      "arm64"
+    ],
+    "libusb-1.0.0.dylib": [
+      "x86_64",
+      "arm64"
+    ]
+  },
+  "codeSignatureVerified": true,
+  "helperCodeSignatureVerified": true,
+  "libraryCodeSignatureVerified": true,
+  "developerIdSigned": false,
+  "notarized": false,
+  "stapled": false,
+  "gatekeeperAccepted": false,
+  "helperSigned": false,
+  "librarySigned": false,
+  "helperRuntimeVerified": true,
+  "localFullAppLaunch": false,
+  "usbDeviceOpened": false
+}

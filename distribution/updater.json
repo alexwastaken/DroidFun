@@ -1,23 +1,23 @@
 {
-  "version": "0.10.0",
-  "notes": "Switch droids with a compact menu and previous/next arrows at the top of the app.\n\nConnect up to four droids at once. Each keeps its own screens and display settings. A fifth waits for a free slot; older saved profiles remain intact. The selected droid receives live screens, while the others show their saved screens or fallback face.\n\nThis update preserves existing settings and factory firmware, including swapped-wiring boards.\n",
-  "pub_date": "2026-10-28T21:45:55Z",
+  "version": "0.10.9",
+  "notes": "Fix repeated Claude sign-in requests in Claw Bot.\n\nDroidFun App 0.10.9 lets installed Claude Code renew an expired session on a normal installation, uses startup options compatible with older and current clients, and refreshes the connection status shown in account settings. It sends no model prompt and preserves saved screens, droid profiles and firmware. A revoked or unrefreshable Claude login can still require sign-in.\n\nIncludes universal Mac (Apple Silicon and Intel), Windows x64, Windows ARM64 and Linux installers. The Mac build is ad-hoc signed and is not Apple Developer ID signed or notarized; macOS may show a first-install warning or block opening. Mac and Windows updates retain their cryptographically verified updater signatures. The shared updater feed supports earlier Mac and Windows clients, while Windows 0.10.8 and newer retain their independent update channel.\n\nValidation details are recorded with the native package artifacts. Expiry/recovery checks use isolated fixture credentials; a new natural live-account expiry was not observed. The Mac package records its application and packaging-tool source commits separately.\n",
+  "pub_date": "2026-11-08T06:18:57Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09nNlh4UEh0MjVETmpNUnVqK0I4Q3laVGkvSFNWM2swelh1YWFiZDd0L1h2V3Z6MnR3QmcrV29idmdmZzNFUFVkeGpqbm95Wlg1UC9aYXMxQmdGUWd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIzNjcwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjAKVGUrMXo4NWQvYXFmcWtUSlQxVFBvTnl3UTZZdkdEVWhSYjJhYnREY3Y3cTRvWW5vQytnUWpMTHFTYkpmR2NNMEEzQWhlc212WEptSmZMZGk4cjNsQkE9PQo="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.9/DroidFun-App-0.10.9-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0IrSUpDRzJMSFFNVmZBSDlmMUoxV0NyODFBbGVRSFlPOU9EQzkyNEp0aitZVUFQK3lvb0xkWGhYeFBYcVJaWDFMUTFPWUhHSGpZaTFHZCtHL2VLNVFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTIwNjg3CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjkKUjBtbldLNG5sdUxMK1cxYTRIUS9CNWJwVkptazhhSWlQNk5qaWc1TnJRcCs0SFIvcnhGU0FYeVBRV3ZTOGVLd1ovRXplYVBBcnh5QjgwM2NhKytvQ2c9PQo="
     },
     "darwin-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-macOS-universal.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK09nNlh4UEh0MjVETmpNUnVqK0I4Q3laVGkvSFNWM2swelh1YWFiZDd0L1h2V3Z6MnR3QmcrV29idmdmZzNFUFVkeGpqbm95Wlg1UC9aYXMxQmdGUWd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIzNjcwCWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjAKVGUrMXo4NWQvYXFmcWtUSlQxVFBvTnl3UTZZdkdEVWhSYjJhYnREY3Y3cTRvWW5vQytnUWpMTHFTYkpmR2NNMEEzQWhlc212WEptSmZMZGk4cjNsQkE9PQo="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.9/DroidFun-App-0.10.9-macOS-universal.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0IrSUpDRzJMSFFNVmZBSDlmMUoxV0NyODFBbGVRSFlPOU9EQzkyNEp0aitZVUFQK3lvb0xkWGhYeFBYcVJaWDFMUTFPWUhHSGpZaTFHZCtHL2VLNVFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTIwNjg3CWZpbGU6RHJvaWRGdW4gQXBwLmFwcC50YXIuZ3oJdmVyc2lvbjowLjEwLjkKUjBtbldLNG5sdUxMK1cxYTRIUS9CNWJwVkptazhhSWlQNk5qaWc1TnJRcCs0SFIvcnhGU0FYeVBRV3ZTOGVLd1ovRXplYVBBcnh5QjgwM2NhKytvQ2c9PQo="
     },
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NQSzZTQ3dMOHY1OVRZbFRVT3JVYW1XQ1pxZm5UVElxS01lUFJ5SjdxZ0pxMlZWZFlwVWVnZmhhQis4WUdzd25sTjROcU9jRU8zM1BvL1NheU9VaVFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIyNjQ3CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuMF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC4wCkFiNElKTTJOd3Mxak1EL3E5ZDZQSUI2Qm5kcWJyWEhoS2JTU3RBQjl2cmZlb0g1bmpueml1d2tNaGlDeVM4WVM2eVQzZkRuK1FrMmJRekVJaFl4V0NRPT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.9/DroidFun-App-0.10.9-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NMUk5GWFRxM090dXdUTVU4UFNEWVgyd2NrS2xXbFJQUVNCQnVhdGNWMWs0S1RKanpMYVFtZnRHbXJkVVMzRkZKRHQxek9WSnZiREtRbG10SUtNc3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTE4NTY2CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC45CndDQlZLYkVsOG01SlMwMTJ5VjVkTkpWVnp3RjVCSjA3OE9idHB3MEFsVWdjS1MxQ0ZXdnhBKzRLdjV5UEppRE5pL003cW8zRHBOc0cwNGxDd2UyY0N3PT0K"
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.0/DroidFun-App-0.10.0-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0JSZk1OQTNMOTdlc2U0djhpQ1VrVGRjSlVoWXE4cTNiQWhuWUZPTVFHRkhWekNIUE0yN0N1UEhnTWR4THlPaW1uaTJrWXYzVFhHYXExd0IzRGlXOUFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzMjIyNjQ0CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuMF9hcm02NC1zZXR1cC5leGUJdmVyc2lvbjowLjEwLjAKeGRZM2ZwTEhzVVg5dlU4RG01QXFpZ0s1VytvRkhzbHg5V0QxbVVXZitJdndBcjVkK0RHK252K25nQUFVL2JTM3JweER5ajVKTk4yaW04UGFYNTIrQ1E9PQo="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.9/DroidFun-App-0.10.9-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0Jacm1Cc0J2cTVNUEpISmQrQlk1THJMdk5lQjlpaktEYUxaQ0lDY1AzbHZYM29VMlpNK2VyM280TldQWU83K3hSa0lReGVRK2tlVm1HR0pFMVdVWlE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTE4NTQwCWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOV9hcm02NC1zZXR1cC5leGUJdmVyc2lvbjowLjEwLjkKOGx3ZEhlb1h3Q1ZmaTBpekJrMjFsdjF5c0FLQWJkTWNZdWxmWnJ3bmd3VnE4UGtCYmh1Q1FLeGdlc1hFYjllZURWNldSeFUzc0RQeGprNWU5czJqRFE9PQo="
     }
   }
 }

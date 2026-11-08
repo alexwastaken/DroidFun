@@ -1,0 +1,19 @@
+{
+  "source": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
+  "checkedAt": "2026-11-08T07:03:18.212Z",
+  "url": "https://droidfun.io/downloads",
+  "unchangedWindowsLinuxAndGuide": true,
+  "unchangedWindowsFeed": true,
+  "macNotarized": false,
+  "unchangedStoreAndProducts": true,
+  "results": [
+    {
+      "id": "deskbot-020-macos",
+      "filename": "DroidFun-App-0.10.9-macOS-universal.dmg",
+      "status": 200,
+      "bytes": 23475687,
+      "sha256": "956c15903f1609a62f6c364123c3f115f8ce51fc0f5d4a927a26cc7f9c1591c4",
+      "verified": true
+    }
+  ]
+}
