@@ -1,15 +1,15 @@
 {
-  "version": "0.10.8",
-  "notes": "Windows release: DroidFun App 0.10.8\n\nAdds the simpler clock, a separate calendar screen, smoother scrolling, and an independent Windows update channel.\n\nIf you have Windows 0.10.0–0.10.7, download the matching installer and install over your existing app once. Keep your saved screens and settings; no uninstall is needed. Future versions can be checked in Settings → App → App updates.\n\nIntel / AMD PCs: Windows-x64. Snapdragon / ARM PCs: Windows-ARM64. Check Windows Settings → System → About → System type if unsure.\n\nBoth installers are verified with version-bound updater signatures. Windows Authenticode signing is not configured, so Windows may show an installation warning. This release contains Windows packages only. Mac and Linux downloads are unchanged.\n",
-  "pub_date": "2026-11-02T23:57:24Z",
+  "version": "0.10.9",
+  "notes": "Fix repeated Claude sign-in requests in Claw Bot.\n\nDroidFun App 0.10.9 lets installed Claude Code renew an expired session on a normal installation, uses startup options compatible with older and current clients, and refreshes the connection status shown in account settings. It sends no model prompt and preserves saved screens, droid profiles and firmware. A revoked or unrefreshable Claude login can still require sign-in.\n\nWindows x64, Windows ARM64 and Linux installers are included. The public Mac installer remains at 0.10.0 while Apple Developer ID signing and notarization credentials are unavailable; no Mac update is advertised by this release. Windows versions before 0.10.8 need one manual installation from droidfun.io to use the independent Windows update channel.\n\nValidation details are recorded with the native package artifacts. Expiry/recovery checks use isolated fixture credentials; a new natural live-account expiry was not observed.\n",
+  "pub_date": "2026-11-08T06:18:57Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.8/DroidFun-App-0.10.8-Windows-x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK012SXByUnEzdzZEUjdSZXdlbVNma3BISVBBa0pwR0FTNHZYSVhhY1pnQWRCU2pwU0ZWZWVEQzBrdjB4OUUwTVBlVDZ6WnJmWVBRMWJEeTNDK2pUVGcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYzNzQzCWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOF94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC44CllBVTZlVk5SMEs2eStpaHlSQ2t2RHdoVTB3MDM5U1dMN0xadCtFcVNreStiNCthWXJ6a2tTNlYvTEkxRzJINzMzYlRvUDBLdVZQVllYOUhyWFFFREFBPT0K"
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.9/DroidFun-App-0.10.9-Windows-x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0NMUk5GWFRxM090dXdUTVU4UFNEWVgyd2NrS2xXbFJQUVNCQnVhdGNWMWs0S1RKanpMYVFtZnRHbXJkVVMzRkZKRHQxek9WSnZiREtRbG10SUtNc3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTE4NTY2CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOV94NjQtc2V0dXAuZXhlCXZlcnNpb246MC4xMC45CndDQlZLYkVsOG01SlMwMTJ5VjVkTkpWVnp3RjVCSjA3OE9idHB3MEFsVWdjS1MxQ0ZXdnhBKzRLdjV5UEppRE5pL003cW8zRHBOc0cwNGxDd2UyY0N3PT0K"
     },
     "windows-aarch64": {
-      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.8/DroidFun-App-0.10.8-Windows-ARM64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0QxUGdqeXllNldLanpyTlQvcTBnWndRaUMzZDl2VmNOYTdOUk8vbDg5VWRySDNDL0pQMlB0VjB5SWZSa2tsUk9wQkhNZjFka2ovZ1cvQmIrdXE0Q1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjYzNzc0CWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOF9hcm02NC1zZXR1cC5leGUJdmVyc2lvbjowLjEwLjgKaGUwSjAzNjNwTDhtK1YySHZKUTY3K2E5QmZaRVhwL2lJZGo1Z2Y0OGN4SE44ekwwOXUzWkErUGd5L2taK2c2eDBoRjBPQUZydENpWkRUcngzWUhRQkE9PQo="
+      "url": "https://github.com/alexwastaken/DroidFun/releases/download/v0.10.9/DroidFun-App-0.10.9-Windows-ARM64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTmRDbHd1ZWhBK0Jacm1Cc0J2cTVNUEpISmQrQlk1THJMdk5lQjlpaktEYUxaQ0lDY1AzbHZYM29VMlpNK2VyM280TldQWU83K3hSa0lReGVRK2tlVm1HR0pFMVdVWlE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTE4NTQwCWZpbGU6RHJvaWRGdW4gQXBwXzAuMTAuOV9hcm02NC1zZXR1cC5leGUJdmVyc2lvbjowLjEwLjkKOGx3ZEhlb1h3Q1ZmaTBpekJrMjFsdjF5c0FLQWJkTWNZdWxmWnJ3bmd3VnE4UGtCYmh1Q1FLeGdlc1hFYjllZURWNldSeFUzc0RQeGprNWU5czJqRFE9PQo="
     }
   }
 }

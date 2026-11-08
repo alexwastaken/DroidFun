@@ -1,0 +1,10 @@
+{
+  "source": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
+  "previousMain": "2616a9ef5757eeee4f85457bb605b6ee3efb7984",
+  "publishedMain": "f8988163d76fac1378af7115ceda79b52f18ca24",
+  "files": [
+    "distribution/current.json",
+    "distribution/windows-updater.json"
+  ],
+  "verified": true
+}

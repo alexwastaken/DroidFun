@@ -1,0 +1,11 @@
+{
+  "version": "0.10.9",
+  "checkedAt": "2026-11-08T06:21:00.418Z",
+  "url": "https://raw.githubusercontent.com/alexwastaken/DroidFun/main/distribution/windows-updater.json",
+  "targets": [
+    "windows-x86_64",
+    "windows-aarch64"
+  ],
+  "exactPublishedFeedVerified": true,
+  "legacyFeedUnchanged": true
+}

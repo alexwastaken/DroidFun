@@ -1,0 +1,32 @@
+{
+  "version": "0.10.9",
+  "applicationCommit": "819a4162f3371f8b6f3af53a2b7fdb2962c25fae",
+  "branch": "codex/claude-auth-renewal",
+  "nativeWorkflow": "https://github.com/alexwastaken/DroidFun/actions/runs/42453653736",
+  "localMacTests": {
+    "passed": 183,
+    "failed": 0,
+    "ignoredLiveAccount": 1
+  },
+  "releaseToolingTests": {
+    "passed": 25,
+    "failed": 0
+  },
+  "websiteTests": {
+    "passed": 73,
+    "failed": 0
+  },
+  "frontendBuild": "passed",
+  "macPackage": {
+    "architecture": "arm64",
+    "distribution": "internal",
+    "containersVerified": [
+      "dmg",
+      "zip"
+    ],
+    "publicBlocker": "Apple Developer ID signing and notarization credentials are not configured"
+  },
+  "liveAccountExpiryVerified": false,
+  "inferenceRequested": false,
+  "liveClaudeCredentialsInspected": false
+}

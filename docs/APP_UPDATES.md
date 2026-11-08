@@ -115,3 +115,13 @@ The [0.9.0 evidence](verification/0.9.0/README.md) records exact-source packages
 ## 0.10.0 droid-switching acceptance
 
 The [0.10.0 evidence](verification/0.10.0/README.md) covers all four native platforms, exact-source packages and updater signatures. The installed Mac completed 0.9.0 → 0.10.0 through the public feed, restarted automatically before any manual launch, matched the verified universal executable and passed strict code-signature validation. Saved settings were unchanged byte for byte. The native home screen showed the top droid menu, 0/4 attached, and disabled arrows with no boards connected. A fresh manual update check reported up to date. The four-droid behavior has native slot/profile tests and simulated browser checks; physical multi-USB acceptance remains open.
+
+## 0.10.9 Claude authentication publication
+
+On November 7, 2026 (Pacific), [0.10.9](https://github.com/alexwastaken/DroidFun/releases/tag/v0.10.9) was published for Windows x64, Windows ARM64 and Linux x86_64 from application commit `819a4162f3371f8b6f3af53a2b7fdb2962c25fae`. The repair removes the Unix pretrusted-scratch prerequisite, uses compatible isolated Claude Code startup options for renewal, and updates the account editor's status after recovery. Revoked or unrefreshable logins still require sign-in.
+
+[Native workflow 42453653736](https://github.com/alexwastaken/DroidFun/actions/runs/42453653736) passed 176 tests on each published target, including controlled credential recovery and native package checks. The local Mac suite passed 183 tests. Each target recorded zero failures and one intentionally ignored live-account test. Frontend checks, 25 release-tooling tests and 73 website tests passed. Both Windows updater signatures and all four live website installer hashes were verified; see [0.10.9 evidence](verification/0.10.9/README.md).
+
+The independent Windows feed and current distribution catalog were published at main commit `f8988163d76fac1378af7115ceda79b52f18ca24` and verified through the GitHub API. Windows 0.10.8 and later can use this feed; Windows 0.10.0–0.10.7 needs one manual installer upgrade from [Downloads](https://droidfun.io/downloads). Linux packages remain manual. The shared legacy feed, public Mac 0.10.0 installer, quick-start guide and store/product settings stayed unchanged.
+
+Internal Mac ARM64 0.10.9 DMG and ZIP packages passed verification but were neither published nor installed. Apple Developer ID signing and notarization credentials remain unavailable. This publication did not observe a new natural live-account expiration, perform a physical droid test, or establish a real Windows in-app upgrade. Historical acceptance records retain their original version and scope.
