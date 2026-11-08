@@ -15,13 +15,16 @@ function verifyCode(text,{teamId,executable=false,developerId=true}={}) {
   if (executable && !/^CodeDirectory=.*\bruntime\b/m.test(text)) throw new Error('An executable is missing hardened runtime.');
 }
 function verifyApp(app,{mode,teamId},command=run) {
+  if(!['developer-id','public-adhoc','internal-adhoc'].includes(mode))throw new Error('Unknown Mac verification mode.');
   command('/usr/bin/codesign',['--verify','--deep','--strict',app]);
   const publicBuild=mode==='developer-id';
   const targets=[['app',app,true],['helper',path.join(app,'Contents/MacOS/picotool'),true],['library',path.join(app,'Contents/Frameworks/libusb-1.0.0.dylib'),false]];
   for (const [label,file,executable] of targets) {
     if (!fs.existsSync(file)) throw new Error(`The signed ${label} is missing from its expected bundle location.`);
     command('/usr/bin/codesign',['--verify','--strict',file]);
-    verifyCode(command('/usr/bin/codesign',['-dvv',file])+'\n',{teamId,executable,developerId:publicBuild});
+    const details=command('/usr/bin/codesign',['-dvv',file])+'\n';
+    verifyCode(details,{teamId,executable,developerId:publicBuild});
+    if(mode==='public-adhoc'&&!/^Signature=adhoc$/m.test(details))throw new Error(`The public ad-hoc ${label} must have its verified ad-hoc signature.`);
   }
   const dependency=command('/usr/bin/otool',['-L',targets[1][1]]);
   if (!dependency.includes('@executable_path/../Frameworks/libusb-1.0.0.dylib') || /\/opt\/homebrew\/|\/usr\/local\//.test(dependency)) throw new Error('The USB helper must use its bundled signed library.');
@@ -33,7 +36,7 @@ function verifyApp(app,{mode,teamId},command=run) {
     command('/usr/bin/xcrun',['stapler','validate',app]);
     command('/usr/sbin/spctl',['--assess','--type','execute','--verbose=2',app]);
   }
-  return {codeSignatureVerified:true,developerIdSigned:publicBuild,notarized:publicBuild,stapled:publicBuild,gatekeeperAccepted:publicBuild,helperSigned:publicBuild,librarySigned:publicBuild,helperRuntimeVerified:true};
+  return {codeSignatureVerified:true,helperCodeSignatureVerified:true,libraryCodeSignatureVerified:true,developerIdSigned:publicBuild,notarized:publicBuild,stapled:publicBuild,gatekeeperAccepted:publicBuild,helperSigned:publicBuild,librarySigned:publicBuild,helperRuntimeVerified:true};
 }
 function treeDigest(root) {
   const output=[];

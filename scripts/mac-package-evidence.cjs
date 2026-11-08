@@ -4,13 +4,16 @@ const path = require('node:path');
 const {execFileSync} = require('node:child_process');
 const {collectUpdater,digest} = require('./updater-assets.cjs');
 const {verifyApp,verifyContainer}=require('./mac-trust.cjs');
+const {requirePublicMac}=require('./mac-release-policy.cjs');
 if (process.platform !== 'darwin') throw new Error('Run on macOS after native packaging');
 const run = (cmd, args) => execFileSync(cmd, args, {encoding:'utf8'}).trim();
 const version = JSON.parse(fs.readFileSync('package.json')).version;
 const config = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json'));
 if (config.version !== version || config.productName !== 'DroidFun App') throw new Error('Unexpected package identity');
 const mode=process.env.DROIDFUN_MAC_SIGNING_MODE||'developer-id';
-if(!['developer-id','internal-adhoc'].includes(mode))throw new Error('Unknown Mac signing mode');
+if(!['developer-id','public-adhoc','internal-adhoc'].includes(mode))throw new Error('Unknown Mac signing mode');
+const unnotarizedReleaseAcknowledged=mode==='public-adhoc'&&process.env.DROIDFUN_ALLOW_UNNOTARIZED==='1';
+if(mode==='public-adhoc'&&!unnotarizedReleaseAcknowledged)throw new Error('Public ad-hoc evidence requires explicit DROIDFUN_ALLOW_UNNOTARIZED=1 owner acknowledgement.');
 const signing={mode,teamId:process.env.APPLE_TEAM_ID};
 if(mode==='developer-id'&&!/^[A-Z0-9]{10}$/.test(signing.teamId||''))throw new Error('APPLE_TEAM_ID is required to verify the public Mac release');
 const release = path.join(process.env.CARGO_TARGET_DIR, 'universal-apple-darwin/release/bundle');
@@ -39,12 +42,15 @@ const passed = Number(testLog.match(/test result: ok\. (\d+) passed; 0 failed/)?
 if (!(passed > 0)) throw new Error('Passing native tests are required');
 const containers=['dmg','zip'];
 let updater;
-if(mode==='developer-id'){
+if(mode!=='internal-adhoc'){
  verifyContainer(`${app}.tar.gz`,'updater',app,signing);containers.push('updater');
  updater=collectUpdater(`${app}.tar.gz`,'packages',version,'macOS-universal',config.plugins?.updater?.pubkey);
 }
 const assets = [dmg,zip,...(updater?[path.join('packages',updater.assetName),path.join('packages',updater.signatureName)]:[])].map(digest);
-const evidence = {version,platform:'macOS-universal',productName:config.productName,identifier,applicationCommit:run('git',['rev-parse','HEAD']),architectures,tests:{passed,failed:0},signingMode:mode,distribution:mode==='developer-id'?'public':'internal',adHocSignatureVerified:mode==='internal-adhoc',...trust,verifiedContainers:containers,updater,assets,remaining:['Local launch and upgrade verification','USB robot connection verification','Intel Mac runtime',...(mode==='internal-adhoc'?['Internal testing only: Developer ID signing and Apple notarization are absent']:[])]};
+const packagingCommit=process.env.DROIDFUN_PACKAGING_COMMIT;
+if(packagingCommit&&!/^[0-9a-f]{40}$/.test(packagingCommit))throw new Error('Packaging commit must be a full source SHA.');
+const evidence = {version,platform:'macOS-universal',productName:config.productName,identifier,applicationCommit:run('git',['rev-parse','HEAD']),...(packagingCommit?{packagingCommit}:{}),architectures,tests:{passed,failed:0},signingMode:mode,distribution:mode==='internal-adhoc'?'internal':'public',adHocSignatureVerified:mode!=='developer-id',...(mode==='public-adhoc'?{unnotarizedReleaseAcknowledged}:{}),...trust,verifiedContainers:containers,updater,assets,remaining:['Local launch and upgrade verification','USB robot connection verification','Intel Mac runtime',...(mode==='internal-adhoc'?['Internal testing only: Developer ID signing and Apple notarization are absent']:mode==='public-adhoc'?['Published with owner acknowledgement: no Developer ID signature or Apple notarization; macOS first-install warnings remain']:[])]};
+if(mode!=='internal-adhoc')requirePublicMac(evidence);
 fs.writeFileSync(`packages/verification-${version}-macOS.json`,JSON.stringify(evidence,null,2)+'\n');
 fs.writeFileSync(`packages/SHA256SUMS-${version}-macOS.txt`,assets.map(a=>`${a.sha256}  ${a.name}`).join('\n')+'\n');
 console.log(JSON.stringify(evidence,null,2));

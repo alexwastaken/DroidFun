@@ -77,12 +77,24 @@ test('feed rejects draft, stale source, missing platform and changed published b
   release.assets[0]=input.release.assets[0];release.assets.push(input.release.assets[0]);
   assert.throws(()=>generate({...input,release}),/Published asset/);
 });
-test('feed refuses an internal or unnotarized Mac release even with a valid updater signature',t=>{
+test('feed refuses internal or unapproved unnotarized Mac releases even with a valid updater signature',t=>{
   const input=fixture(t);
   for(const change of [{signingMode:'internal-adhoc'},{notarized:false},{stapled:false},{helperSigned:false},{verifiedContainers:['dmg','zip']}]){
     const evidence=structuredClone(input.evidence);Object.assign(evidence[0],change);
     assert.throws(()=>generate({...input,evidence}),/Public Mac distribution/);
   }
+});
+test('approved public ad-hoc Mac release yields authenticated targets and rejects incomplete evidence',t=>{
+  const input=fixture(t);
+  Object.assign(input.evidence[0],{signingMode:'public-adhoc',unnotarizedReleaseAcknowledged:true,adHocSignatureVerified:true,helperCodeSignatureVerified:true,libraryCodeSignatureVerified:true,developerIdSigned:false,notarized:false,stapled:false,gatekeeperAccepted:false,helperSigned:false,librarySigned:false});
+  const manifest=generate(input);
+  assert.deepEqual(Object.keys(manifest.platforms),['darwin-aarch64','darwin-x86_64','windows-x86_64','windows-aarch64']);
+  for(const change of [{unnotarizedReleaseAcknowledged:false},{helperCodeSignatureVerified:false},{libraryCodeSignatureVerified:false},{signingMode:'internal-adhoc'},{notarized:true}]){
+    const evidence=structuredClone(input.evidence);Object.assign(evidence[0],change);
+    assert.throws(()=>generate({...input,evidence}),/Public Mac distribution/);
+  }
+  fs.appendFileSync(path.join(input.directory,input.evidence[0].updater.assetName),'changed');
+  assert.throws(()=>generate(input),/checksum mismatch/);
 });
 test('evidence rejects modified local bytes, signatures and stale metadata',t=>{
   const input=fixture(t),item=input.evidence[0];

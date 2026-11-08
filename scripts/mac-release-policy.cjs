@@ -1,11 +1,13 @@
-// Fail closed for public Mac packages. Never print credential values.
+// Apple-trusted publication is the default. Unnotarized publication requires
+// an explicit owner acknowledgement and keeps updater authentication required.
+// Never print credential values.
 const fs = require('node:fs');
 const APPLE_ENV = ['APPLE_SIGNING_IDENTITY','APPLE_CERTIFICATE','APPLE_CERTIFICATE_PASSWORD','APPLE_ID','APPLE_PASSWORD','APPLE_TEAM_ID','APPLE_API_KEY','APPLE_API_ISSUER','APPLE_API_KEY_PATH'];
 function macSigning(args, environment = process.env, {ci = !!environment.CI, exists = p => fs.statSync(p).isFile()} = {}) {
   const indexes = args.flatMap((arg,i) => arg === '--mac-signing' ? [i] : []);
   if (indexes.length > 1) throw new Error('Choose one --mac-signing mode.');
   const mode = indexes.length ? args[indexes[0]+1] : 'developer-id';
-  if (!['developer-id','internal-adhoc'].includes(mode)) throw new Error('Use --mac-signing developer-id or --mac-signing internal-adhoc.');
+  if (!['developer-id','public-adhoc','internal-adhoc'].includes(mode)) throw new Error('Use --mac-signing developer-id, public-adhoc or internal-adhoc.');
   const env = {...environment};
   for (const key of APPLE_ENV) if (!env[key]?.trim()) delete env[key];
   if (mode === 'internal-adhoc') {
@@ -13,6 +15,13 @@ function macSigning(args, environment = process.env, {ci = !!environment.CI, exi
     for (const key of [...APPLE_ENV,'TAURI_SIGNING_PRIVATE_KEY','TAURI_SIGNING_PRIVATE_KEY_PASSWORD','TAURI_SIGNING_PRIVATE_KEY_PATH']) delete env[key];
     return {mode, identity:'-', env};
   }
+  if (mode === 'public-adhoc') {
+    if (!args.includes('--allow-unnotarized')) throw new Error('Public ad-hoc publication requires explicit --allow-unnotarized owner acknowledgement.');
+    if (args.includes('--signed')) throw new Error('Public ad-hoc packages must not be described as Apple-signed.');
+    for (const key of APPLE_ENV) delete env[key];
+    return {mode,identity:'-',unnotarizedReleaseAcknowledged:true,env};
+  }
+  if (args.includes('--allow-unnotarized')) throw new Error('--allow-unnotarized is only valid with --mac-signing public-adhoc.');
   const identity = env.APPLE_SIGNING_IDENTITY;
   const match = /^Developer ID Application: .+ \(([A-Z0-9]{10})\)$/.exec(identity || '');
   if (!match) throw new Error('Public Mac releases require APPLE_SIGNING_IDENTITY for a Developer ID Application certificate. Use --mac-signing internal-adhoc only for private testing.');
@@ -32,7 +41,12 @@ function macSigning(args, environment = process.env, {ci = !!environment.CI, exi
   return {mode,identity,teamId:match[1],env};
 }
 function requirePublicMac(evidence) {
-  if (evidence.signingMode !== 'developer-id' || evidence.distribution !== 'public' || evidence.codeSignatureVerified !== true || evidence.developerIdSigned !== true || evidence.notarized !== true || evidence.stapled !== true || evidence.gatekeeperAccepted !== true || evidence.helperSigned !== true || evidence.librarySigned !== true || evidence.helperRuntimeVerified !== true || !evidence.architectures?.includes('arm64') || !evidence.architectures?.includes('x86_64') || !['dmg','zip','updater'].every(kind => evidence.verifiedContainers?.includes(kind))) throw new Error('Public Mac distribution requires a verified Developer ID signature, notarization, stapled ticket, helpers and all final containers. Internal ad-hoc packages cannot be published.');
+  const common=evidence.distribution === 'public' && evidence.codeSignatureVerified === true && evidence.helperRuntimeVerified === true && evidence.architectures?.includes('arm64') && evidence.architectures?.includes('x86_64') && ['dmg','zip','updater'].every(kind => evidence.verifiedContainers?.includes(kind));
+  const appleTrusted=evidence.signingMode === 'developer-id' && evidence.developerIdSigned === true && evidence.notarized === true && evidence.stapled === true && evidence.gatekeeperAccepted === true && evidence.helperSigned === true && evidence.librarySigned === true;
+  // The updater signature is independently checked against the configured
+  // public key by upload/feed tooling. This acknowledgement never replaces it.
+  const acknowledgedAdHoc=evidence.signingMode === 'public-adhoc' && evidence.unnotarizedReleaseAcknowledged === true && evidence.adHocSignatureVerified === true && evidence.helperCodeSignatureVerified === true && evidence.libraryCodeSignatureVerified === true && evidence.developerIdSigned === false && evidence.notarized === false && evidence.stapled === false && evidence.gatekeeperAccepted === false && evidence.helperSigned === false && evidence.librarySigned === false && evidence.updater?.signatureVerified === true;
+  if (!common || (!appleTrusted && !acknowledgedAdHoc)) throw new Error('Public Mac distribution requires verified universal code, helpers and all final containers, plus Developer ID/notarization or explicitly acknowledged public ad-hoc evidence with a signed updater. Internal ad-hoc packages cannot be published.');
 }
 module.exports = {macSigning, requirePublicMac};
 if (require.main === module) {

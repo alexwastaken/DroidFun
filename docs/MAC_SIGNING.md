@@ -1,10 +1,10 @@
 # Mac signing and first-install trust
 
-The public 0.10.0 Mac download is ad-hoc signed. It has a valid updater signature but does **not** have an Apple Developer ID signature or notarization ticket, so Gatekeeper can reject a fresh website download. The new pipeline below is prepared; it does not make an existing download trusted. A successful Apple-signed build and fresh-download acceptance are still required.
+The Mac pipeline defaults to Developer ID signing and notarization. The owner explicitly authorized a public, unnotarized 0.10.9 release on November 7, 2026. That release uses the separate `public-adhoc` mode below. Ad-hoc signatures and signed updater packages verify integrity but do **not** provide Apple Developer ID trust or a notarization ticket; macOS can block a fresh website download.
 
 ## Owner setup
 
-Apple requires an active Apple Developer Program membership and a **Developer ID Application** certificate for distribution outside the App Store. Create that certificate in the owner's Apple account, then store the following in the repository's GitHub Actions secrets. Never paste credentials into chat, commit them, or include them in build artifacts.
+The Apple-trusted distribution path requires an active Apple Developer Program membership and a **Developer ID Application** certificate. Create that certificate in the owner's Apple account, then store the following in the repository's GitHub Actions secrets. Never paste credentials into chat, commit them, or include them in build artifacts.
 
 | Secret | Purpose |
 | --- | --- |
@@ -17,7 +17,7 @@ Apple requires an active Apple Developer Program membership and a **Developer ID
 
 The existing `TAURI_SIGNING_PRIVATE_KEY` is a separate updater credential. It cannot replace Apple signing. Tauri imports the certificate into a temporary CI keychain and performs its supported signing and notarization workflow. Local builds may instead use an installed Developer ID identity. Local notarization also supports `APPLE_API_KEY`, `APPLE_API_ISSUER` and `APPLE_API_KEY_PATH` as an alternative to the Apple ID pair; do not set both methods.
 
-## Public release
+## Apple-trusted public release
 
 Run **Build DroidFun App for Mac** with `signing_mode: developer-id` (the default), or run:
 
@@ -32,6 +32,18 @@ Tauri signs public builds with hardened runtime, submits the app for notarizatio
 The updater archive is created only from that verified app. It is unpacked and checked before Tauri's signer authenticates its bytes and app version. Final package collection checks the DMG's contained app, ZIP, and updater archive against the original file contents, modes and symlinks, then repeats signature, staple and Gatekeeper checks on each extracted app. This verifies the app inside each container; the DMG itself does not require a separate notarization submission. No stapling or bundle changes may occur after updater signing. The draft-upload and feed-generation scripts reject internal or incomplete Mac trust evidence.
 
 Before publishing, test the actual website download in a normal browser on a Gatekeeper-enabled Mac and verify a real in-app upgrade. The ordinary first-run confirmation that an app came from the internet may still appear. Do not disable Gatekeeper or strip quarantine as a distribution fix.
+
+## Explicitly approved publication without Apple credentials
+
+The owner may choose `signing_mode: public-adhoc` and `allow_unnotarized: true` in the Mac workflow. Both are required. The equivalent local command is:
+
+```sh
+npm run release -- --target universal-apple-darwin --mac-signing public-adhoc --allow-unnotarized --updater
+```
+
+This mode removes Apple credentials from the build environment and requires the existing Tauri updater signing key. It verifies strict ad-hoc signatures on the app, USB helper and library, checks helper execution and both CPU architectures, and compares the DMG, ZIP and updater archive contents. The publication evidence requires an explicit acknowledgment and records Developer ID, notarization, stapling and Gatekeeper acceptance as false. The download page and release notes must disclose that the app is not Apple-notarized. It changes no OS security settings.
+
+When rebuilding an already published application commit with newer packaging tools, the workflow overlays only an explicit packaging-script allowlist from its pinned workflow commit. Evidence records the application and packaging commits separately, and CI checks that runtime sources and configuration remain unchanged.
 
 ## Private testing without Apple credentials
 

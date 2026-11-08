@@ -34,12 +34,31 @@ test('internal builds require explicit mode, remove signing credentials, and can
   assert.equal(result.identity,'-');assert.equal(result.mode,'internal-adhoc');assert.deepEqual(result.env,{PATH:'/usr/bin'});
   for(const flag of ['--updater','--signed'])assert.throws(()=>macSigning(['--mac-signing','internal-adhoc',flag],owner),/cannot create public/);
 });
+test('public ad-hoc packaging requires owner acknowledgement and retains only updater credentials',()=>{
+  assert.throws(()=>macSigning(['--mac-signing','public-adhoc'],owner),/explicit --allow-unnotarized/);
+  assert.throws(()=>macSigning(['--allow-unnotarized'],owner),/only valid/);
+  assert.throws(()=>macSigning(['--mac-signing','public-adhoc','--allow-unnotarized','--signed'],owner),/must not be described as Apple-signed/);
+  const result=macSigning(['--mac-signing','public-adhoc','--allow-unnotarized','--updater'],{...owner,TAURI_SIGNING_PRIVATE_KEY:'fixture-updater',PATH:'/usr/bin'});
+  assert.equal(result.identity,'-');assert.equal(result.mode,'public-adhoc');assert.equal(result.unnotarizedReleaseAcknowledged,true);
+  assert.deepEqual(result.env,{TAURI_SIGNING_PRIVATE_KEY:'fixture-updater',PATH:'/usr/bin'});
+});
 test('public publishing rejects absent trust checks and internal or historical ad-hoc evidence',()=>{
   assert.doesNotThrow(()=>requirePublicMac(trusted));
   for(const field of ['codeSignatureVerified','developerIdSigned','notarized','stapled','gatekeeperAccepted','helperSigned','librarySigned','helperRuntimeVerified'])assert.throws(()=>requirePublicMac({...trusted,[field]:false}),/Public Mac distribution/);
   for(const field of ['signingMode','distribution','architectures','verifiedContainers'])assert.throws(()=>requirePublicMac({...trusted,[field]:undefined}),/Public Mac distribution/);
   assert.throws(()=>requirePublicMac({...trusted,signingMode:'internal-adhoc'}),/Internal ad-hoc/);
   for(const kind of trusted.verifiedContainers)assert.throws(()=>requirePublicMac({...trusted,verifiedContainers:trusted.verifiedContainers.filter(x=>x!==kind)}),/Public Mac distribution/);
+});
+test('acknowledged unnotarized publishing still requires universal signatures, helpers, containers and updater evidence',()=>{
+  const acknowledged={...trusted,signingMode:'public-adhoc',unnotarizedReleaseAcknowledged:true,adHocSignatureVerified:true,helperCodeSignatureVerified:true,libraryCodeSignatureVerified:true,developerIdSigned:false,notarized:false,stapled:false,gatekeeperAccepted:false,helperSigned:false,librarySigned:false,updater:{signatureVerified:true}};
+  assert.doesNotThrow(()=>requirePublicMac(acknowledged));
+  for(const field of ['unnotarizedReleaseAcknowledged','adHocSignatureVerified','codeSignatureVerified','helperCodeSignatureVerified','libraryCodeSignatureVerified','helperRuntimeVerified'])assert.throws(()=>requirePublicMac({...acknowledged,[field]:false}),/Public Mac distribution/);
+  for(const field of ['developerIdSigned','notarized','stapled','gatekeeperAccepted','helperSigned','librarySigned'])assert.throws(()=>requirePublicMac({...acknowledged,[field]:true}),/Public Mac distribution/);
+  for(const updater of [undefined,{}, {signatureVerified:false}])assert.throws(()=>requirePublicMac({...acknowledged,updater}),/Public Mac distribution/);
+  for(const architecture of acknowledged.architectures)assert.throws(()=>requirePublicMac({...acknowledged,architectures:[architecture]}),/Public Mac distribution/);
+  for(const kind of acknowledged.verifiedContainers)assert.throws(()=>requirePublicMac({...acknowledged,verifiedContainers:acknowledged.verifiedContainers.filter(x=>x!==kind)}),/Public Mac distribution/);
+  assert.throws(()=>requirePublicMac({...acknowledged,signingMode:'internal-adhoc'}),/Internal ad-hoc/);
+  assert.throws(()=>requirePublicMac({...acknowledged,distribution:'internal'}),/Internal ad-hoc/);
 });
 test('code inspection requires Developer ID, matching team, timestamp and hardened executables',()=>{
   const details='CodeDirectory=v1 flags=0x10000(runtime)\nAuthority=Developer ID Application: Test Owner (ABCDE12345)\nTeamIdentifier=ABCDE12345\nTimestamp=Oct 29 2026\n';
@@ -107,6 +126,26 @@ test('bundle verification executes only helper version and rejects a library-loa
   assert.equal(verifyApp(app,{mode:'internal-adhoc'},command).helperRuntimeVerified,true);
   assert.deepEqual(calls.filter(([exe])=>exe===helper),[[helper,['version']]]);
   assert.throws(()=>verifyApp(app,{mode:'internal-adhoc'},(exe,args)=>{if(exe===helper)throw new Error('dyld: library validation failure');return command(exe,args);}),/library validation failure/);
+});
+test('public ad-hoc bundle checks verify every signature without claiming Apple trust or changing OS settings',t=>{
+  const app=fs.mkdtempSync(path.join(os.tmpdir(),'droidfun-public-adhoc-'));t.after(()=>fs.rmSync(app,{recursive:true,force:true}));
+  const helper=path.join(app,'Contents/MacOS/picotool'),library=path.join(app,'Contents/Frameworks/libusb-1.0.0.dylib');
+  for(const file of [helper,library]){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,'fixture');}
+  const calls=[];
+  const command=(exe,args)=>{
+    calls.push([exe,args]);
+    if(exe===helper)return 'picotool v2.0.0 (fixture)';
+    if(exe==='/usr/bin/otool')return '@executable_path/../Frameworks/libusb-1.0.0.dylib';
+    if(exe==='/usr/bin/codesign'&&args[0]==='-dvv')return 'Signature=adhoc\nTeamIdentifier=not set';
+    return '';
+  };
+  const evidence=verifyApp(app,{mode:'public-adhoc'},command);
+  for(const field of ['codeSignatureVerified','helperCodeSignatureVerified','libraryCodeSignatureVerified','helperRuntimeVerified'])assert.equal(evidence[field],true);
+  for(const field of ['developerIdSigned','notarized','stapled','gatekeeperAccepted','helperSigned','librarySigned'])assert.equal(evidence[field],false);
+  assert.equal(calls.filter(([exe,args])=>exe==='/usr/bin/codesign'&&args[0]==='--verify').length,4);
+  assert.ok(calls.every(([exe])=>!['/usr/sbin/spctl','/usr/bin/xattr','/usr/bin/xcrun'].includes(exe)));
+  for(const file of [app,helper,library])assert.throws(()=>verifyApp(app,{mode:'public-adhoc'},(exe,args)=>exe==='/usr/bin/codesign'&&args[0]==='-dvv'&&args[1]===file?'Authority=Developer ID Application: fixture':command(exe,args)),/verified ad-hoc signature/);
+  assert.throws(()=>verifyApp(app,{mode:'unknown'},command),/Unknown Mac verification mode/);
 });
 test('verification mount cleanup retries transient busy errors without forcing detach',()=>{
   const calls=[],waits=[],mount='/fixture/verification/mounted';

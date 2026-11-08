@@ -21,12 +21,17 @@ on:
           - macos-15
         default: macos-14
       signing_mode:
-        description: Public Apple-trusted release or private testing package
+        description: Choose Apple-trusted, approved unnotarized, or private testing package
         type: choice
         options:
           - developer-id
+          - public-adhoc
           - internal-adhoc
         default: developer-id
+      allow_unnotarized:
+        description: Explicitly approve a public Mac build without Apple Developer ID or notarization
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,12 +49,42 @@ jobs:
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
       DROIDFUN_MAC_SIGNING_MODE: ${{ inputs.signing_mode || 'developer-id' }}
+      DROIDFUN_ALLOW_UNNOTARIZED: ${{ inputs.allow_unnotarized && '1' || '0' }}
+      DROIDFUN_PACKAGING_COMMIT: ${{ github.sha }}
     steps:
       - name: Check out requested application source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ inputs.source_ref }}
           persist-credentials: false
+      - name: Check out pinned packaging tools
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .mac-packaging-pipeline
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/mac-release-policy.cjs
+            scripts/mac-trust.cjs
+            scripts/release.cjs
+            scripts/mac-package-evidence.cjs
+            scripts/mac-release.test.cjs
+            scripts/updater-release.test.cjs
+          sparse-checkout-cone-mode: false
+      - name: Stage packaging-only tools and preserve application source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'JS'
+          const fs=require('node:fs'),{execFileSync}=require('node:child_process');
+          const allowed=['mac-release-policy.cjs','mac-trust.cjs','release.cjs','mac-package-evidence.cjs','mac-release.test.cjs','updater-release.test.cjs'].map(name=>'scripts/'+name);
+          for(const file of allowed)fs.copyFileSync('.mac-packaging-pipeline/'+file,file);
+          const changed=execFileSync('git',['diff','--name-only','HEAD'],{encoding:'utf8'}).trim().split('\n').filter(Boolean);
+          if(changed.some(file=>!allowed.includes(file)))throw Error('Packaging overlay modified application source');
+          const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+          if(!/^[0-9a-f]{40}$/.test(sha)||!/^[0-9a-f]{40}$/.test(process.env.DROIDFUN_PACKAGING_COMMIT||''))throw Error('Exact application and packaging commits are required');
+          console.log({applicationCommit:sha,packagingCommit:process.env.DROIDFUN_PACKAGING_COMMIT,packagingOnlyFiles:changed});
+          JS
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -71,7 +106,12 @@ jobs:
             echo 'Internal ad-hoc packages cannot be uploaded to a public-release draft.' >&2
             exit 1
           fi
-          node scripts/mac-release-policy.cjs --mac-signing "$DROIDFUN_MAC_SIGNING_MODE"
+          if [[ "$DROIDFUN_MAC_SIGNING_MODE" == public-adhoc ]]; then
+            [[ "$DROIDFUN_ALLOW_UNNOTARIZED" == 1 ]] || { echo 'Explicit unnotarized publication approval is required.' >&2; exit 1; }
+            node scripts/mac-release-policy.cjs --mac-signing public-adhoc --allow-unnotarized
+          else
+            node scripts/mac-release-policy.cjs --mac-signing "$DROIDFUN_MAC_SIGNING_MODE"
+          fi
       - name: Set up Rust for Apple Silicon and Intel
         run: |
           rustup toolchain install 1.99.0 --profile minimal
@@ -114,9 +154,17 @@ jobs:
           set -euo pipefail
           if [[ "$DROIDFUN_MAC_SIGNING_MODE" == developer-id ]]; then
             npm run release -- --target universal-apple-darwin --mac-signing developer-id --updater
+          elif [[ "$DROIDFUN_MAC_SIGNING_MODE" == public-adhoc ]]; then
+            [[ "$DROIDFUN_ALLOW_UNNOTARIZED" == 1 ]] || exit 1
+            npm run release -- --target universal-apple-darwin --mac-signing public-adhoc --allow-unnotarized --updater
           else
             npm run release -- --target universal-apple-darwin --mac-signing internal-adhoc
           fi
+      - name: Confirm application source stayed unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code HEAD -- src src-tauri package.json package-lock.json firmware resources
       - name: Verify and collect Mac packages
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
