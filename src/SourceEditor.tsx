@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
 import ImageUpload from "./ImageUpload";
 import Oled from "./Oled";
@@ -27,6 +27,9 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
   const [locations, setLocations] = useState<Location[]>([]);
   const [windows, setWindows] = useState<Window[]>([]);
   const [info, setInfo] = useState<SourceInfo | null>(null);
+  const [infoChecking, setInfoChecking] = useState(widget.kind === "claude" && !offline);
+  const [infoError, setInfoError] = useState("");
+  const infoRequest = useRef<Promise<SourceInfo> | null>(null);
   const [pending, setPending] = useState("");
   const [imagePending,setImagePending] = useState(false);
   const [error, setError] = useState("");
@@ -49,11 +52,38 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
     return () => { active = false; window.clearTimeout(timer); };
   }, [draftKey]);
   useEffect(() => {
-    if(widget.kind !== "claude" || offline)return;
-    let active=true;setInfo(null);
-    const timer=window.setTimeout(() => invoke<SourceInfo>("source_info",{profile:config.claudeProfile}).then(value => {if(active)setInfo(value);}).catch(e => {if(active)setError(String(e));}),350);
-    return () => {active=false;window.clearTimeout(timer);};
-  },[widget.kind,config.claudeProfile,offline]);
+    setInfo(null); setInfoError("");
+    if (widget.kind !== "claude" || config.mode !== "live" || offline || pending) {
+      setInfoChecking(false);
+      return;
+    }
+    let active = true;
+    let timer: number;
+    setInfoChecking(true);
+    const refresh = async () => {
+      // A profile change can outlive its request. Wait for it to finish, then
+      // discard its result before starting a check for the current profile.
+      if (infoRequest.current) await infoRequest.current.catch(() => {});
+      if (!active) return;
+      setInfoChecking(true);
+      const request = invoke<SourceInfo>("source_info", { profile: config.claudeProfile });
+      infoRequest.current = request;
+      try {
+        const value = await request;
+        if (active) { setInfo(value); setInfoError(""); }
+      } catch (e) {
+        if (active) setInfoError(String(e));
+      } finally {
+        if (infoRequest.current === request) infoRequest.current = null;
+        if (active) {
+          setInfoChecking(false);
+          if (config.claudeSource === "account") timer = window.setTimeout(refresh, 60_000);
+        }
+      }
+    };
+    timer = window.setTimeout(refresh, 350);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [widget.kind, config.mode, config.claudeSource, config.claudeProfile, offline, pending]);
   async function run(name: string, action: () => Promise<void>) {
     setPending(name); setError(""); setNotice("");
     try { await action(); } catch (e) { setError(String(e)); } finally { setPending(""); }
@@ -127,17 +157,17 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
       <label>Allowance window<select value={config.window} onChange={e => patch({ window: e.target.value })}><option value="five_hour">Five-hour allowance</option><option value="seven_day">Seven-day allowance</option></select></label>
       <label>Usage source<select value={config.claudeSource} onChange={e => patch({ claudeSource: e.target.value })}><option value="account">Shared Claude account (desktop, web and Code)</option><option value="statusline">Claude Code status-line report</option></select></label>
       {config.claudeSource === "account" ? <>
-        <div className="source-group"><strong>Claude account</strong><p>{info?.claudeAccount.explanation ?? (offline ? "Account sign-in is paused with online data." : "Checking your local Claude sign-in…")}</p><p>Reads the allowance shared by the Claude desktop app, website and Code. Uses your Claude Code sign-in; no prompt is sent and no model tokens are consumed.</p><button type="button" disabled={offline || !!pending || !!info?.claudeAccount.connecting} onClick={() => run("Complete Claude sign-in in your browser", async () => { await invoke("connect_claude_account",{profile:config.claudeProfile}); setInfo(await invoke<SourceInfo>("source_info",{profile:config.claudeProfile})); setNotice("Claude account connected. The allowance will update shortly."); })}>{info?.claudeAccount.connecting ? "Sign-in open in your browser" : "Connect Claude account"}</button></div>
+        <div className="source-group"><strong>Claude account</strong><p role="status">{offline ? "Account sign-in is paused with online data." : infoError ? "Claude sign-in status could not be checked." : info?.claudeAccount.explanation ?? "Checking your local Claude sign-in…"}</p><p>Reads the allowance shared by the Claude desktop app, website and Code. Uses your Claude Code sign-in; no prompt is sent and no model tokens are consumed.</p><button type="button" disabled={offline || !!pending || infoChecking || (!info && !infoError) || !!info?.claudeAccount.connecting} onClick={() => run("Complete Claude sign-in in your browser", async () => { await invoke("connect_claude_account",{profile:config.claudeProfile}); setNotice("Claude account connected. The allowance will update shortly."); })}>{infoChecking && !info ? "Checking Claude sign-in…" : info?.claudeAccount.connecting ? "Sign-in open in your browser" : info?.claudeAccount.signedIn ? "Reconnect Claude account" : "Connect Claude account"}</button></div>
         <details><summary>Another Claude account profile</summary><label>Claude Code profile folder (optional)<input value={config.claudeProfile} onChange={e => patch({claudeProfile:e.target.value})} placeholder="Leave empty for your default sign-in"/></label><p>Use the absolute folder you configured with CLAUDE_CONFIG_DIR. This account can have different allowances. Connect uses the chosen profile; percentages are never added together.</p></details>
-        <p>Refreshes every five minutes. Missing or expired allowances show a reconnect explanation rather than a made-up percentage.</p>
+        <p>Usage refreshes every five minutes. DroidFun renews your saved Claude sign-in automatically. Reconnect only if renewal cannot complete. Allowance resets are separate from sign-in expiry.</p>
       </> : <>
-      <div className="source-group"><strong>Claude Code bridge</strong><p>{info?.claudeBridge.explanation ?? "Connect Claude Code's status line to report usage locally."}</p><p>Uses the most recent report in your local profile. A report arrives after an eligible Claude Code session receives an API response.</p><button type="button" disabled={offline || !info || !!pending} onClick={() => run("Updating bridge", async () => { await invoke("set_claude_bridge", { enabled: !info?.claudeBridge.enabled }); setInfo(await invoke<SourceInfo>("source_info",{profile:config.claudeProfile})); setNotice(info?.claudeBridge.enabled ? "Original status line restored." : "Bridge enabled. Use Claude Code to send its first report."); })}>{info?.claudeBridge.enabled ? "Restore original status line" : "Enable Claude Code bridge"}</button><details><summary>Proposed integration</summary><code>{info?.claudeBridge.command}</code><p>{info?.claudeBridge.enabled ? "The bridge is enabled. Restore original status line removes this integration and restores your saved setting." : info?.claudeBridge.hasExisting ? "Your current status-line command will be backed up and its output chained unchanged." : "No existing status-line command was found. A short Claude status line will be added."}</p></details></div>
+      <div className="source-group"><strong>Claude Code bridge</strong><p>{info?.claudeBridge.explanation ?? "Connect Claude Code's status line to report usage locally."}</p><p>Uses the most recent report in your local profile. A report arrives after an eligible Claude Code session receives an API response.</p><button type="button" disabled={offline || !info || !!pending || infoChecking} onClick={() => run("Updating bridge", async () => { await invoke("set_claude_bridge", { enabled: !info?.claudeBridge.enabled }); setNotice(info?.claudeBridge.enabled ? "Original status line restored." : "Bridge enabled. Use Claude Code to send its first report."); })}>{info?.claudeBridge.enabled ? "Restore original status line" : "Enable Claude Code bridge"}</button><details><summary>Proposed integration</summary><code>{info?.claudeBridge.command}</code><p>{info?.claudeBridge.enabled ? "The bridge is enabled. Restore original status line removes this integration and restores your saved setting." : info?.claudeBridge.hasExisting ? "Your current status-line command will be backed up and its output chained unchanged." : "No existing status-line command was found. A short Claude status line will be added."}</p></details></div>
       <details><summary>Choose a report folder or session</summary><label>Reports folder (optional)<input value={config.claudeReportDirectory} onChange={e => patch({claudeReportDirectory:e.target.value})} placeholder="Leave empty for local default reports"/></label><label>Report profile<input value={config.claudeReportProfile} onChange={e => patch({claudeReportProfile:e.target.value})}/></label><p>For WSL, use an accessible Windows path to the reports folder, and configure the helper inside WSL separately.</p><label>Session ID (optional)<input value={config.sessionId} onChange={e => patch({ sessionId: e.target.value })} placeholder="Leave empty for the most recent report" /></label></details>
       <p>Last reported by Claude Code; stale after 10 minutes. No report means waiting, never 0% usage.</p>
       </>}
 
     </>}
-    {pending && <p role="status">{pending}…</p>}{notice && <p className="source-notice" role="status">{notice}</p>}{error && <p className="source-error" role="alert">{error}</p>}
+    {pending && <p role="status">{pending}…</p>}{notice && <p className="source-notice" role="status">{notice}</p>}{infoError && <p className="source-error" role="alert">{infoError}</p>}{error && <p className="source-error" role="alert">{error}</p>}
     <div className="modal-actions"><button type="button" onClick={onClose}>Cancel</button><button type="submit" className="primary-control" disabled={!!pending || imagePending || previewPending || !!previewError || (widget.kind === "image" && !config.imagePixels)}>Apply</button></div>
     {widget.id !== "face" && <div className="remove-widget">{confirmRemove ? <><span>Remove this widget from your playlist?</span><button type="button" disabled={!!pending} onClick={() => run("Removing", async () => { if (await onRemove()) onClose(); })}>Remove widget</button><button type="button" onClick={() => setConfirmRemove(false)}>Keep it</button></> : <button type="button" onClick={() => setConfirmRemove(true)}>Remove from playlist</button>}</div>}
   </form></Modal>;

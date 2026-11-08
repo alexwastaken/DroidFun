@@ -1,6 +1,6 @@
 # Claude allowance recovery
 
-Updated October 13, 2026. This account widget reads the allowance shared by Claude desktop, web and Code through the installed Claude Code sign-in. It displays allowance percentages, not remaining tokens. The account-usage endpoint is a compatibility integration, not a documented public API.
+Updated November 7, 2026. This account widget reads the allowance shared by Claude desktop, web and Code through the installed Claude Code sign-in. It displays allowance percentages, not remaining tokens. The account-usage endpoint is a compatibility integration, not a documented public API.
 
 ## Window state and sign-in state are different
 
@@ -20,15 +20,25 @@ A freshly fetched reset-pending status is not a usable allowance percentage. Dia
 
 ## Automatic credential recovery
 
-On macOS/Linux, an expired stored access token invokes the installed credential owner in the existing, previously trusted app scratch folder. It sends no model prompt or terminal input, does not approve a trust dialog, and does not implement a separate refresh-token writer. The helper has a twenty-second deadline; credential reads use the remaining time budget. Its own process session and children are cleaned up when it succeeds, fails or times out.
+On macOS, Linux and Windows, an expired stored access token invokes the installed Claude Code client in an app-owned scratch folder, created as needed. No prior workspace-trust decision is required. It sends no model prompt or terminal input, does not approve a trust dialog, and does not implement a separate refresh-token writer. The helper has a twenty-second deadline; credential reads use the remaining time budget. Its own process session and children are cleaned up when it succeeds, fails or times out.
 
-If HTTP returns 401, the reader rechecks the shared local sign-in. A token rotated by another client is used immediately. If the same token remains, the app tries its bounded installed-client renewal path, requires a changed token, and retries the usage request once. Persistent rejection, missing client/trust or a failed renewal is an explicit authentication state with a five-minute automatic retry. HTTP 403 and quota failures do not cause an unbounded refresh loop.
+If HTTP returns 401, the reader rechecks the shared local sign-in. A token rotated by another client is used immediately. If the same token remains, the app tries its bounded installed-client renewal path, requires a changed token, and retries the usage request once. Persistent rejection, a missing client or a failed renewal is an explicit authentication state with a five-minute automatic retry. HTTP 403 and quota failures do not cause an unbounded refresh loop.
 
 This can renew refreshable access tokens. A revoked sign-in or a login that the credential owner cannot refresh requires the user to sign in again. Versions through 0.3.2 retain explicit Windows reconnect. The 0.3.3 release adds Windows automatic recovery using a hidden ConPTY session and a private process job; its native acceptance is documented in [Windows recovery](WINDOWS_CLAUDE_RECOVERY.md). Mac observations alone do not qualify Windows.
 
 Only fixed authentication/window state labels and observation times are added to diagnostics. Credentials, identity, allowance amounts, profile paths and exact credential expiry times are excluded. The bounded event history records `credential_expired`, `credential_rejected`, `renewal_started`, successful renewal and failed/unavailable renewal states.
 
-## Verification
+## Version 0.10.9 compatibility fix
+
+Normal installations previously lacked the pretrusted scratch folder required by the Unix helper. The helper also passed `--safe-mode`, which Claude Code 2.1.118 does not recognize, so affected clients exited before renewing. Version 0.10.9 creates the private scratch folder without writing trust settings and uses compatible inline settings plus the safe-mode environment flag. Claude Code remains the only credential writer and uses its own renewal lock. Inherited API-key/fixed-token overrides are removed from the child on both Unix and Windows; the chosen Claude profile is retained.
+
+The account settings check now attempts renewal before reporting an expired login as disconnected. The open account editor rechecks at most once per minute after the preceding request completes, ignores outdated profile results, and stops polling when closed, offline, or during a user action. Usage polling remains five minutes.
+
+Official Claude Code 2.1.118 and 2.1.319 accepted the compatible startup arguments in help-only checks. Inspection of those exact official packages found credential renewal begins during initialization before the workspace-trust screen. `claude auth status` does not reliably await renewal and is not used as a refresh operation. Personal/project settings and hooks are excluded; managed policies remain applicable. A future client can change this compatibility behavior, so timeout and credential-change verification remain required.
+
+Regression tests cover a newly created recovery folder without trust metadata, expired credentials followed by an authenticated local usage read, compatible arguments, successful helper exit without renewal, cancellation before folder creation, process cleanup, and the existing bounded 401 recovery. Windows fixtures additionally check hidden-console input remains empty and authentication overrides are removed. These are isolated fixtures; they do not claim a new natural live-account expiration test.
+
+## Earlier verification
 
 The local Mac candidate passed **39 Rust behavior tests**, with one explicitly ignored live response-shape diagnostic, plus frontend checking/building and an ARM64 app build. The ad-hoc signature was verified. This is a local fix, not a newly published or notarized release.
 

@@ -194,7 +194,9 @@ fn token_with_refresh(
 
 // Let the credential owner renew its own token. Never implement another
 // refresh-token writer or send an inference prompt. No trust prompt is answered
-// here; Unix retains its existing pretrusted-folder prerequisite.
+// here. Claude refreshes its stored sign-in during safe-mode startup, before
+// workspace trust. A fresh install must not depend on a previously trusted
+// folder that the account-login flow never creates.
 fn refresh_with_installed_client(profile: &str, rejected: Option<&str>) -> Result<(), String> {
     crate::network::ensure_allowed()?;
     static REFRESH: Mutex<()> = Mutex::new(());
@@ -206,34 +208,9 @@ fn refresh_with_installed_client(profile: &str, rejected: Option<&str>) -> Resul
         .map(PathBuf::from)
         .ok_or("Home unavailable")?;
     let scratch = home.join(".cache/deskbot/claude-usage-check");
-    #[cfg(unix)]
-    {
-        let metadata = if profile.is_empty() && std::env::var_os("CLAUDE_CONFIG_DIR").is_none() {
-            home.join(".claude.json")
-        } else {
-            config_dir(profile)?.join(".claude.json")
-        };
-        let trusted = fs::metadata(&metadata).is_ok_and(|m| m.len() <= 4 * 1024 * 1024)
-            && fs::read(&metadata)
-                .ok()
-                .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
-                .is_some_and(|v| {
-                    v["projects"][scratch.to_string_lossy().as_ref()]["hasTrustDialogAccepted"]
-                        == true
-                });
-        if !trusted || !scratch.is_dir() {
-            return Err("Your local Claude sign-in expired. Open Claude Code to refresh it, or use Connect Claude account in Edit.".into());
-        }
-    }
-    // Windows starts the credential owner in an empty app-owned folder. It
-    // sends no input and never accepts or persists a workspace-trust decision.
-    // Authentication can refresh during client startup; if that client needs
-    // interactive setup instead, the bounded attempt reports reconnecting.
-    #[cfg(windows)]
-    fs::create_dir_all(&scratch).map_err(|_| "Could not prepare Claude sign-in recovery")?;
     let executable = executable()?;
     event("renewal_started");
-    refresh_client_terminal(
+    refresh_in_directory(
         profile,
         &scratch,
         &executable,
@@ -243,6 +220,40 @@ fn refresh_with_installed_client(profile: &str, rejected: Option<&str>) -> Resul
         },
         Duration::from_secs(20),
     )
+}
+
+fn refresh_in_directory(
+    profile: &str,
+    scratch: &std::path::Path,
+    executable: &std::path::Path,
+    refreshed: impl Fn(Duration) -> bool,
+    timeout: Duration,
+) -> Result<(), String> {
+    crate::network::ensure_allowed()?;
+    let mut builder = fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    builder
+        .create(scratch)
+        .map_err(|_| "Could not prepare Claude sign-in recovery")?;
+    let metadata = fs::symlink_metadata(scratch)
+        .map_err(|_| "Could not inspect Claude sign-in recovery folder")?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err("Claude sign-in recovery needs an app-owned folder".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(scratch, fs::Permissions::from_mode(0o700))
+            .map_err(|_| "Could not protect Claude sign-in recovery folder")?;
+    }
+    // No settings or trust metadata are written. Never send terminal input,
+    // accept a prompt, or treat the client's exit code as proof of renewal.
+    refresh_client_terminal(profile, scratch, executable, refreshed, timeout)
 }
 
 #[cfg(unix)]
@@ -285,7 +296,10 @@ fn refresh_client_terminal(
     let mut command = Command::new(executable);
     command
         .args([
-            "--safe-mode",
+            "--setting-sources",
+            "",
+            "--settings",
+            "{\"disableAllHooks\":true,\"disableSkillShellExecution\":true}",
             "--permission-mode",
             "plan",
             "--strict-mcp-config",
@@ -295,6 +309,10 @@ fn refresh_client_terminal(
         .current_dir(scratch)
         .env("DISABLE_AUTOUPDATER", "1")
         .env("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1")
+        // Older Claude Code releases lack the --safe-mode switch and exit
+        // before refreshing. The explicit settings above work on those
+        // clients; newer clients also honor this environment flag.
+        .env("CLAUDE_CODE_SAFE_MODE", "1")
         .env("TERM", "xterm-256color")
         .stdin(
             terminal
@@ -307,6 +325,17 @@ fn refresh_client_terminal(
                 .map_err(|_| "Could not open refresh terminal")?,
         )
         .stderr(terminal);
+    // Match Windows: renew the selected stored login, not an inherited API
+    // key or an unrelated fixed-token override. The parent env stays intact.
+    for name in [
+        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_AUTH_TOKEN",
+        "CLAUDE_CODE_OAUTH_TOKEN",
+        "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
+        "CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR",
+    ] {
+        command.env_remove(name);
+    }
     if !profile.is_empty() {
         command.env("CLAUDE_CONFIG_DIR", config_dir(profile)?);
     }
@@ -397,7 +426,9 @@ impl Drop for LoginGuard {
     }
 }
 pub fn status(profile: &str) -> Value {
-    match stored_token(profile) {
+    // Expiry alone is not a signed-out account. Try the same bounded renewal
+    // used by allowance reads before asking the user to open a browser.
+    match token(profile) {
         Ok(_) => {
             json!({"signedIn":true,"connecting":CONNECTING.load(Ordering::Acquire),"explanation":"A local sign-in is available. Reads the account allowance shared by Claude desktop, web and Code."})
         }
@@ -791,6 +822,11 @@ mod tests {
         assert!(
             refresh_client_terminal("", &dir, &client, |_| false, Duration::from_secs(1)).is_err()
         );
+        fs::write(&client, "#!/bin/sh\nexit 0\n").unwrap();
+        assert!(
+            refresh_client_terminal("", &dir, &client, |_| false, Duration::from_secs(1)).is_err(),
+            "successful client exit without changed credentials is not renewal"
+        );
         fs::write(
             &client,
             "#!/bin/sh\necho $$ > pid\nwhile :; do sleep 1; done\n",
@@ -896,6 +932,26 @@ mod tests {
         .is_err());
     }
 
+    #[test]
+    fn canceled_renewal_does_not_create_a_workspace_or_start_a_client() {
+        let dir =
+            std::env::temp_dir().join(format!("droidfun-canceled-renewal-{}", std::process::id()));
+        assert!(!dir.exists());
+        let policy = crate::network::Policy::new("claw", false);
+        let ticket = policy.ticket("claude").unwrap();
+        policy.update("claw", true);
+        let _guard = ticket.enter();
+        let result = refresh_in_directory(
+            "",
+            &dir,
+            &dir.join("missing-client"),
+            |_| false,
+            Duration::from_secs(1),
+        );
+        assert!(result.unwrap_err().contains("canceled"));
+        assert!(!dir.exists());
+    }
+
     #[cfg(unix)]
     #[test]
     fn expired_sign_in_renews_with_owned_client_then_fetches_real_card() {
@@ -908,6 +964,8 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("deskbot-renewal-flow-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).unwrap();
+        let scratch = dir.join("new recovery workspace");
+        assert!(!scratch.exists());
         // Isolated fixture credentials only; the user's credential store is
         // never altered and no model prompt is submitted.
         let credentials = dir.join("fixture.json");
@@ -919,7 +977,20 @@ mod tests {
         let renewed =
             json!({"claudeAiOauth":{"accessToken":"fixture-renewed","expiresAt":(now+3600)*1000}});
         let client_path = dir.join("client");
-        fs::write(&client_path, format!("#!/bin/sh\ntest -t 0 && test -t 1 && test -t 2 || exit 2\necho $$ > pid\nprintf '%s' '{}' > fixture.json\nwhile :; do sleep 1; done\n", renewed)).unwrap();
+        fs::write(&client_path, format!(r#"#!/bin/sh
+test -t 0 && test -t 1 && test -t 2 || exit 2
+test "$#" = 9 || exit 3
+test "$1" = '--setting-sources' && test -z "$2" || exit 4
+test "$3" = '--settings' && test "$4" = '{{"disableAllHooks":true,"disableSkillShellExecution":true}}' || exit 5
+test "$5" = '--permission-mode' && test "$6" = 'plan' || exit 6
+test "$7" = '--strict-mcp-config' && test "$8" = '--mcp-config' && test "$9" = '{{"mcpServers":{{}}}}' || exit 7
+test "$CLAUDE_CODE_SAFE_MODE" = 1 || exit 8
+test -z "${{ANTHROPIC_API_KEY+x}}${{ANTHROPIC_AUTH_TOKEN+x}}${{CLAUDE_CODE_OAUTH_TOKEN+x}}${{CLAUDE_CODE_OAUTH_REFRESH_TOKEN+x}}${{CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR+x}}" || exit 9
+test ! -e .claude.json && test ! -e "$CLAUDE_CONFIG_DIR/.claude.json" || exit 10
+echo $$ > pid
+printf '%s' '{}' > "$CLAUDE_CONFIG_DIR/fixture.json"
+while :; do sleep 1; done
+"#, renewed)).unwrap();
         fs::set_permissions(&client_path, fs::Permissions::from_mode(0o700)).unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let url = format!("http://{}/usage", listener.local_addr().unwrap());
@@ -959,9 +1030,9 @@ mod tests {
         let card = read_with_token(&client, &url, "five_hour", || {
             token_with_refresh(stored, || {
                 renewals += 1;
-                refresh_client_terminal(
-                    "",
-                    &dir,
+                refresh_in_directory(
+                    dir.to_str().unwrap(),
+                    &scratch,
                     &client_path,
                     |_| stored().is_ok(),
                     Duration::from_secs(3),
@@ -974,7 +1045,13 @@ mod tests {
         assert_eq!(card.headline, "75%");
         assert_eq!(card.values["allowanceState"], "active");
         assert!(card.usable(unix_now()));
-        let pid: i32 = fs::read_to_string(dir.join("pid"))
+        assert!(!dir.join(".claude.json").exists());
+        assert!(!scratch.join(".claude.json").exists());
+        assert_eq!(
+            fs::metadata(&scratch).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        let pid: i32 = fs::read_to_string(scratch.join("pid"))
             .unwrap()
             .trim()
             .parse()

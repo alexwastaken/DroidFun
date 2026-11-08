@@ -31,7 +31,12 @@ use windows_sys::Win32::{
 
 const ERROR: &str = "Windows could not start automatic Claude sign-in recovery. Use Connect Claude account in Edit.";
 const ARGS: &[&str] = &[
-    "--safe-mode",
+    // Older supported clients reject --safe-mode before checking credentials.
+    // These options isolate startup on both old and current clients.
+    "--setting-sources",
+    "",
+    "--settings",
+    "{\"disableAllHooks\":true,\"disableSkillShellExecution\":true}",
     "--permission-mode",
     "plan",
     "--strict-mcp-config",
@@ -147,8 +152,15 @@ fn argument(value: &OsStr) -> Result<Vec<u16>, String> {
     Ok(out)
 }
 fn environment(profile: Option<&Path>) -> Result<Vec<u16>, String> {
+    environment_from(std::env::vars_os(), profile)
+}
+fn environment_from(
+    inherited: impl IntoIterator<Item = (OsString, OsString)>,
+    profile: Option<&Path>,
+) -> Result<Vec<u16>, String> {
     // Case-insensitive keys and ordering are required for a Windows block.
-    let mut values: BTreeMap<String, OsString> = std::env::vars_os()
+    let mut values: BTreeMap<String, OsString> = inherited
+        .into_iter()
         .map(|(k, v)| (k.to_string_lossy().to_uppercase(), v))
         .collect();
     for key in [
@@ -161,6 +173,7 @@ fn environment(profile: Option<&Path>) -> Result<Vec<u16>, String> {
         values.remove(key);
     }
     for (key, value) in [
+        ("CLAUDE_CODE_SAFE_MODE", "1"),
         ("DISABLE_AUTOUPDATER", "1"),
         ("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1"),
         ("TERM", "xterm-256color"),
@@ -364,4 +377,61 @@ pub(crate) fn refresh(
         );
     }
     Err("Your local Claude sign-in needs reconnecting. Use Connect Claude account in Edit.".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recovery_environment_removes_auth_overrides_and_keeps_the_selected_profile() {
+        let inherited = [
+            ("anthropic_api_key", "fixture-api-key"),
+            ("ANTHROPIC_AUTH_TOKEN", "fixture-auth-token"),
+            ("CLAUDE_CODE_OAUTH_TOKEN", "fixture-oauth-token"),
+            ("CLAUDE_CODE_OAUTH_REFRESH_TOKEN", "fixture-refresh-token"),
+            ("CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR", "99"),
+            ("CLAUDE_CODE_SAFE_MODE", "0"),
+            ("DISABLE_AUTOUPDATER", "0"),
+            ("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "0"),
+            ("CLAUDE_CONFIG_DIR", "old-profile"),
+            ("PATH", "fixture-path"),
+        ]
+        .into_iter()
+        .map(|(key, value)| (OsString::from(key), OsString::from(value)));
+        let profile = Path::new("C:\\profile spaces Ω");
+        let block = environment_from(inherited, Some(profile)).unwrap();
+        assert!(block.ends_with(&[0, 0]));
+        let values: BTreeMap<_, _> = block
+            .split(|c| *c == 0)
+            .filter(|entry| !entry.is_empty())
+            .map(|entry| {
+                let entry = String::from_utf16(entry).unwrap();
+                let (key, value) = entry.split_once('=').unwrap();
+                (key.to_owned(), value.to_owned())
+            })
+            .collect();
+        for key in [
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_OAUTH_TOKEN",
+            "CLAUDE_CODE_OAUTH_REFRESH_TOKEN",
+            "CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR",
+        ] {
+            assert!(
+                !values.contains_key(key),
+                "inherited authentication override survived"
+            );
+        }
+        for key in [
+            "CLAUDE_CODE_SAFE_MODE",
+            "DISABLE_AUTOUPDATER",
+            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+        ] {
+            assert_eq!(values.get(key).map(String::as_str), Some("1"));
+        }
+        assert_eq!(values["CLAUDE_CONFIG_DIR"], profile.to_str().unwrap());
+        assert_eq!(values["PATH"], "fixture-path");
+        assert_eq!(values["TERM"], "xterm-256color");
+    }
 }
