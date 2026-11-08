@@ -572,6 +572,7 @@ async fn codex_windows(
 #[tauri::command]
 async fn source_info(
     profile: Option<String>,
+    renew_account: Option<bool>,
     state: State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
     let ticket = source_ticket(&state, "claude")?;
@@ -583,7 +584,7 @@ async fn source_info(
     tauri::async_runtime::spawn_blocking(move || {
         let _guard = ticket.enter();
         network::ensure_allowed()?;
-        let result = serde_json::json!({"claudeBridge":claude_bridge::status(&bridge)?,"claudeAccount":claude_account::status(profile.as_deref().unwrap_or(""))});
+        let result = serde_json::json!({"claudeBridge":claude_bridge::status(&bridge)?,"claudeAccount":claude_account::status(profile.as_deref().unwrap_or(""), renew_account.unwrap_or(false))});
         network::ensure_allowed()?;
         Ok(result)
     }).await.map_err(|_| "Source setup stopped".to_string())?

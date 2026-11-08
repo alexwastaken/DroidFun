@@ -425,10 +425,11 @@ impl Drop for LoginGuard {
         CONNECTING.store(false, Ordering::Release);
     }
 }
-pub fn status(profile: &str) -> Value {
+pub fn status(profile: &str, renew: bool) -> Value {
     // Expiry alone is not a signed-out account. Try the same bounded renewal
     // used by allowance reads before asking the user to open a browser.
-    match token(profile) {
+    // Local status-line setup only inspects storage and never starts renewal.
+    match if renew { token(profile) } else { stored_token(profile) } {
         Ok(_) => {
             json!({"signedIn":true,"connecting":CONNECTING.load(Ordering::Acquire),"explanation":"A local sign-in is available. Reads the account allowance shared by Claude desktop, web and Code."})
         }

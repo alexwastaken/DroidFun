@@ -66,7 +66,7 @@ export default function SourceEditor({ model, widget, offline, orientation, onCl
       if (infoRequest.current) await infoRequest.current.catch(() => {});
       if (!active) return;
       setInfoChecking(true);
-      const request = invoke<SourceInfo>("source_info", { profile: config.claudeProfile });
+      const request = invoke<SourceInfo>("source_info", { profile: config.claudeProfile, renewAccount: config.claudeSource === "account" });
       infoRequest.current = request;
       try {
         const value = await request;
