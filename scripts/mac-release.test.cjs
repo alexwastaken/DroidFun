@@ -5,7 +5,7 @@ const os=require('node:os');
 const path=require('node:path');
 const {macSigning,requirePublicMac}=require('./mac-release-policy.cjs');
 const {verifyCode,verifyApp,treeDigest,detachVerificationMount,finishContainer}=require('./mac-trust.cjs');
-const {macPackagingArgs}=require('./mac-helper.cjs');
+const {stageMacHelper,macPackagingArgs}=require('./mac-helper.cjs');
 // Placeholder values only; these are not credentials.
 const owner={APPLE_SIGNING_IDENTITY:'Developer ID Application: Test Owner (ABCDE12345)',APPLE_TEAM_ID:'ABCDE12345',APPLE_ID:'owner@example.invalid',APPLE_PASSWORD:'placeholder',APPLE_CERTIFICATE:'placeholder',APPLE_CERTIFICATE_PASSWORD:'placeholder'};
 const trusted={signingMode:'developer-id',distribution:'public',architectures:['arm64','x86_64'],codeSignatureVerified:true,developerIdSigned:true,notarized:true,stapled:true,gatekeeperAccepted:true,helperSigned:true,librarySigned:true,helperRuntimeVerified:true,verifiedContainers:['dmg','zip','updater']};
@@ -74,6 +74,29 @@ test('direct Tauri Mac packaging stages the helper while preserving explicit con
   assert.equal(calls.length,before);
   const signed=macPackagingArgs(['build'],'/fixture/target',{APPLE_SIGNING_IDENTITY:owner.APPLE_SIGNING_IDENTITY},options);
   assert.equal(JSON.parse(signed[2]).bundle.macOS.hardenedRuntime,true);
+});
+test('universal staging provides all Tauri target names with the same patched helper',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'droidfun-universal-helper-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const original=path.join(root,'original'),output=path.join(root,'output');fs.mkdirSync(original);
+  fs.writeFileSync(path.join(original,'picotool'),'unmodified universal helper');fs.writeFileSync(path.join(original,'libusb-1.0.0.dylib'),'unmodified universal library');
+  const calls=[],command=(exe,args)=>{calls.push([exe,args]);fs.appendFileSync(args.at(-1),args[0]==='-change'?'\npatched Frameworks dependency':'\npatched library identity');};
+  const staged=stageMacHelper(output,'universal-apple-darwin',{original,command});
+  const directory=path.dirname(staged.externalBin[0]);
+  assert.deepEqual(fs.readdirSync(directory).sort(),['libusb-1.0.0.dylib','picotool-aarch64-apple-darwin','picotool-universal-apple-darwin','picotool-x86_64-apple-darwin']);
+  for(const target of ['universal-apple-darwin','aarch64-apple-darwin','x86_64-apple-darwin']) {
+    const file=`${staged.externalBin[0]}-${target}`;
+    assert.equal(fs.readFileSync(file,'utf8'),'unmodified universal helper\npatched Frameworks dependency');
+    assert.equal(fs.statSync(file).mode&0o777,0o755);
+  }
+  assert.equal(fs.readFileSync(staged.frameworks[0],'utf8'),'unmodified universal library\npatched library identity');
+  assert.equal(fs.readFileSync(path.join(original,'picotool'),'utf8'),'unmodified universal helper');
+  assert.equal(fs.readFileSync(path.join(original,'libusb-1.0.0.dylib'),'utf8'),'unmodified universal library');
+  assert.equal(calls.length,2);assert.ok(calls.every(([exe])=>exe==='/usr/bin/install_name_tool'));
+  for(const target of ['aarch64-apple-darwin','x86_64-apple-darwin']) {
+    const native=stageMacHelper(output,target,{original,command});
+    assert.deepEqual(fs.readdirSync(path.dirname(native.externalBin[0])).sort(),['libusb-1.0.0.dylib',`picotool-${target}`]);
+    assert.equal(fs.readFileSync(`${native.externalBin[0]}-${target}`,'utf8'),'unmodified universal helper\npatched Frameworks dependency');
+  }
 });
 test('bundle verification executes only helper version and rejects a library-load failure',t=>{
   const app=fs.mkdtempSync(path.join(os.tmpdir(),'droidfun-helper-runtime-'));t.after(()=>fs.rmSync(app,{recursive:true,force:true}));

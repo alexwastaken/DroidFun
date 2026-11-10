@@ -1,0 +1,107 @@
+{
+  "version": "0.10.4",
+  "kind": "Browser fixtures with simulated native event lifecycle and synthetic device IDs",
+  "physicalUsbTested": false,
+  "scenarios": [
+    {
+      "name": "one-replacement-claw-connection-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-claw-state-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-boo-connection-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-boo-state-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-meep-connection-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-meep-state-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-nimbus-connection-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "one-replacement-nimbus-state-first-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "second-attachment-keeps-current-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "absent-selected-multiple-candidates-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "fifth-attachment-not-admitted-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "auto-selection-closes-prior-settings-draft-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "auto-selection-closes-prior-model-picker-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "fresh-recognition-clears-same-board-manual-prompt-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "unrecognized-attached-target-keeps-manual-prompt-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "initial-menu-bar-settings-request-preserved-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "missing-both-board-ids-does-not-lock-model-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "same-board-model-correction-closes-settings-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "unrelated-connection-error-kept-on-selection-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "fresh-same-selected-identity-clears-manual-error-500",
+      "width": 500,
+      "passed": true
+    }
+  ]
+}

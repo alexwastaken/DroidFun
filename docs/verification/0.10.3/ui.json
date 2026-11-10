@@ -1,0 +1,72 @@
+{
+  "version": "0.10.3",
+  "kind": "Browser fixtures with simulated native commands and synthetic device IDs",
+  "physicalUsbTested": false,
+  "scenarios": [
+    {
+      "name": "corrected-claw-3d-usage-only-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "corrected-claw-3d-usage-only-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "factory-claw-recognized-connected-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "factory-claw-recognized-display_error-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "switch-nimbus-claw-back-profile-controls-360",
+      "width": 360,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-stale-disconnected-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-stale-busy-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-unrelated-board-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-unsupported-hardware-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-zero-generation-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-unknown-model-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "manual-model-available-no-identity-500",
+      "width": 500,
+      "passed": true
+    },
+    {
+      "name": "legacy-contextual-model-picker-360",
+      "width": 360,
+      "passed": true
+    }
+  ]
+}
